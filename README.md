@@ -1,11 +1,11 @@
-# Labsangkha Smartboard 🏥📊
+# Labsangkha Smartboard 
 ### ระบบบอร์ดอัจฉริยะสำหรับการส่งเวรและประสานงานห้องปฏิบัติการ (Sangkha Laboratory Shift Handover System)
 
 ระบบรายงาน ข้อมูล และการส่งเวรอัจฉริยะ (Smartboard) สำหรับเจ้าหน้าที่และบุคลากรสังขะห้องปฏิบัติการ (Sangkha Laboratory) เชื่อมต่อระบบฐานข้อมูลกลางและแจ้งเตือนผ่านช่องทาง LINE ทันทีเมื่อมีการส่งเวรหรือข่าวสารสำคัญ
 
 ---
 
-## 🌟 คุณสมบัติหลักของระบบ (Key Features)
+## Key Features
 
 *   **Portal สำหรับผู้ใช้งานทั่วไป (User Portal)**:
     *   ระบบลงทะเบียนเข้าเวรและส่งมอบงานการปฏิบัติการ (Handover Form)
@@ -22,7 +22,7 @@
 
 ---
 
-## 🛠️ เทคโนโลยีที่เลือกใช้ (Tech Stack)
+## Tech Stack
 
 *   **Frontend**: React (Vite) + Typescript + Tailwind CSS (สำหรับการจัดแต่งหน้าจอที่ทันสมัยและตอบสนองได้ดีเยี่ยมบน Smartboard)
 *   **Backend & Database**: [Supabase](https://supabase.com/) (Database, Authentication & Edge Functions แทนการใช้งานผ่าน Third-party ดั้งเดิม)
@@ -30,7 +30,7 @@
 
 ---
 
-## 🚀 การจัดการและรันระบบเบื้องต้น (Getting Started)
+## Getting Started
 
 ### 1. ติดตั้ง Dependencies
 ```bash
