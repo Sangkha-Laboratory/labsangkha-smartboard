@@ -1,0 +1,26 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Google AI Studio specific files
+metadata.json
+SKILL.md
+check_functions.ts
+firebase-blueprint.json
+firestore.rules
+firebase.json
+.firebaserc
+
+# IDEs and local config editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
