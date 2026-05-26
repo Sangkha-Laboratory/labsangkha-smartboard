@@ -378,6 +378,25 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
 
       if (handoverError) throw new Error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
 
+      // Try to notify LINE via Supabase Edge Function
+      try {
+        const firstRecord = (handoverData && handoverData.length > 0) ? handoverData[0] : null;
+        const fallbackId = firstRecord?.id || Math.random().toString(36).substring(2, 15);
+        await supabase.functions.invoke('handle-new-handover', {
+          body: {
+            id: fallbackId,
+            department: formData.dept,
+            shift: formData.shift,
+            sender_name: userRecord.full_name,
+            tasks: tasks.filter(t => t.title.trim() !== ''),
+            created_at: new Date().toISOString()
+          }
+        });
+        console.log('LINE notification triggered successfully!');
+      } catch (funcErr) {
+        console.error('Failed to trigger LINE notification Edge Function:', funcErr);
+      }
+
       setSubmitStatus('success');
       setTasks([{ id: '1', title: '', category: '', detail: '' }]);
       setFormData(prev => ({ ...prev, shift: '', pin: '', employeeName: '' }));
