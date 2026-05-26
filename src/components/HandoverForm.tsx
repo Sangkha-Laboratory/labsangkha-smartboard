@@ -165,6 +165,7 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [lineNotifyStatus, setLineNotifyStatus] = useState<{ status: 'idle' | 'success' | 'error'; message?: string; details?: any }>({ status: 'idle' });
   const [availableUsers, setAvailableUsers] = useState<Sender[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -379,29 +380,79 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
       if (handoverError) throw new Error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
 
       // Try to notify LINE via Supabase Edge Function
+      setLineNotifyStatus({ status: 'idle' });
       try {
         const firstRecord = (handoverData && handoverData.length > 0) ? handoverData[0] : null;
         const fallbackId = firstRecord?.id || Math.random().toString(36).substring(2, 15);
-        await supabase.functions.invoke('handle-new-handover', {
-          body: {
+        
+        console.log("Triggering LINE Edge Function with payload...");
+        
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+        const functionUrl = `${supabaseUrl}/functions/v1/handle-new-handover`;
+        
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+            'apikey': supabaseAnonKey
+          },
+          body: JSON.stringify({
             id: fallbackId,
             department: formData.dept,
             shift: formData.shift,
             sender_name: userRecord.full_name,
             tasks: tasks.filter(t => t.title.trim() !== ''),
             created_at: new Date().toISOString()
-          }
+          })
         });
-        console.log('LINE notification triggered successfully!');
-      } catch (funcErr) {
-        console.error('Failed to trigger LINE notification Edge Function:', funcErr);
+
+        const responseText = await response.text();
+        console.log("Edge Function response string:", responseText);
+
+        let responseJson: any = null;
+        try {
+          responseJson = JSON.parse(responseText);
+        } catch (e) {
+          // not JSON
+        }
+
+        if (!response.ok) {
+          console.error(`❌ LINE notification Edge Function error status: ${response.status}`);
+          setLineNotifyStatus({ 
+            status: 'error', 
+            message: responseJson?.error || `HTTP ${response.status}: ${responseText || 'เกิดข้อผิดพลาดในการรันแอปพลิเคชัน'}`,
+            details: responseJson || { raw_response: responseText, status_code: response.status }
+          });
+        } else if (responseJson && (responseJson.error || !responseJson.success)) {
+          console.error("❌ LINE Edge Function returned business-level error:", responseJson);
+          setLineNotifyStatus({ 
+            status: 'error', 
+            message: responseJson.error || 'Server Edge function business error',
+            details: responseJson
+          });
+        } else {
+          console.log('✅ LINE notification triggered successfully! Response:', responseJson);
+          setLineNotifyStatus({ status: 'success', message: 'ส่งไลน์แจ้งกลุ่มเวรสำเร็จ!' });
+        }
+      } catch (funcErr: any) {
+        console.error('❌ Expected failure during execution of LINE trigger step:', funcErr);
+        setLineNotifyStatus({ 
+          status: 'error', 
+          message: funcErr.message || 'เกิดข้อผิดพลาดขณะส่งข้อความ',
+          details: funcErr
+        });
       }
 
       setSubmitStatus('success');
       setTasks([{ id: '1', title: '', category: '', detail: '' }]);
       setFormData(prev => ({ ...prev, shift: '', pin: '', employeeName: '' }));
       await supabase.auth.signOut();
-      setTimeout(() => setSubmitStatus('idle'), 5000);
+      setTimeout(() => {
+        setSubmitStatus('idle');
+        setLineNotifyStatus({ status: 'idle' });
+      }, 15000);
     } catch (err: any) {
       await supabase.auth.signOut();
       setSubmitStatus('error');
@@ -636,14 +687,48 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
             </motion.div>
           )}
           {submitStatus === 'success' && (
-            <motion.div 
-               initial={{ opacity: 0, height: 0 }}
-               animate={{ opacity: 1, height: 'auto' }}
-               className="bg-green-50 dark:bg-green-950/20 px-4 py-3 rounded-2xl flex items-center gap-3 text-green-700 dark:text-green-400 font-bold text-[11px] border border-green-100 dark:border-green-900/30"
-            >
-               <CheckCircle2 size={16} />
-               บันทึกส่งมอบงานสำเร็จ!
-            </motion.div>
+            <div className="space-y-2">
+              <motion.div 
+                 initial={{ opacity: 0, height: 0 }}
+                 animate={{ opacity: 1, height: 'auto' }}
+                 className="bg-green-50 dark:bg-green-950/20 px-4 py-3 rounded-2xl flex items-center gap-3 text-green-700 dark:text-green-400 font-bold text-[11px] border border-green-100 dark:border-green-900/30"
+              >
+                 <CheckCircle2 size={16} />
+                 บันทึกส่งมอบงานสำเร็จ!
+              </motion.div>
+
+              {lineNotifyStatus.status === 'error' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-2xl flex flex-col gap-2 text-amber-800 dark:text-amber-400 font-medium text-[11px] border border-amber-100 dark:border-amber-900/30"
+                >
+                  <div className="flex items-center gap-2 font-bold">
+                    <AlertCircle size={15} className="text-amber-600 shrink-0" />
+                    <span>แจ้งเตือน LINE ไม่สำเร็จ: {lineNotifyStatus.message}</span>
+                  </div>
+                  {lineNotifyStatus.details && (
+                    <pre className="mt-1 p-2 bg-amber-100/50 dark:bg-amber-950/50 rounded-lg text-[9px] font-mono whitespace-pre-wrap break-all max-h-[140px] overflow-y-auto">
+                      {JSON.stringify(lineNotifyStatus.details, null, 2)}
+                    </pre>
+                  )}
+                  <p className="text-[9px] text-gray-500 mt-1">
+                    ต้องการตรวจสอบ? ตรวจสอบว่า LINE_CHANNEL_ACCESS_TOKEN ได้ถูกตั้งค่าใน Supabase Edge Functions Secrets หรือไม่ หรือตรวจสอบฟังก์ชั่น RPC get_active_line_group
+                  </p>
+                </motion.div>
+              )}
+
+              {lineNotifyStatus.status === 'success' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="bg-blue-50 dark:bg-blue-950/20 px-4 py-2.5 rounded-2xl flex items-center gap-2.5 text-blue-700 dark:text-blue-400 font-medium text-[11px] border border-blue-100 dark:border-blue-900/30"
+                >
+                  <CheckCircle2 size={14} className="text-blue-500 shrink-0" />
+                  <span>ส่งข้อความแจ้งเตือนผ่านกลุ่ม LINE เรียบร้อยแล้ว!</span>
+                </motion.div>
+              )}
+            </div>
           )}
         </AnimatePresence>
 

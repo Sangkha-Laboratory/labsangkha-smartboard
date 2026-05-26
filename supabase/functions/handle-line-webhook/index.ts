@@ -257,7 +257,6 @@ Deno.serve(async (req) => {
                     width: "24px",
                     height: "24px",
                     backgroundColor: isUnread ? "#f0fdf4" : "#f1f5f9",
-                    cornerRadius: "xxl",
                     alignItems: "center",
                     justifyContent: "center",
                     contents: [
@@ -305,7 +304,6 @@ Deno.serve(async (req) => {
                     backgroundColor: "#ffffff",
                     borderWidth: "1px",
                     borderColor: "#22c55e",
-                    cornerRadius: "xl",
                     paddingTop: "sm",
                     paddingBottom: "sm",
                     margin: "xl",
@@ -328,7 +326,6 @@ Deno.serve(async (req) => {
                     type: "box",
                     layout: "vertical",
                     backgroundColor: "#f1f5f9",
-                    cornerRadius: "xl",
                     paddingTop: "sm",
                     paddingBottom: "sm",
                     margin: "xl",
