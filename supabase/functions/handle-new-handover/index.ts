@@ -1,8 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("OK", { headers: { "Access-Control-Allow-Origin": "*" } });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -14,7 +20,7 @@ Deno.serve(async (req) => {
     if (!record || !record.id) {
       return new Response(JSON.stringify({ error: "Missing handover record or ID" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -44,7 +50,7 @@ Deno.serve(async (req) => {
     if (!groupId) {
       console.log("No active LINE group found. Message will not be sent to LINE.");
       return new Response(JSON.stringify({ success: true, message: "No active LINE group found" }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -368,13 +374,13 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ success: true, lineResult: lineData }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Critical error in handle-new-handover server-less function:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
