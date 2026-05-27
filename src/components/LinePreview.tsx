@@ -34,7 +34,7 @@ export default function LinePreview() {
 
                 <div className="flex items-start gap-3 mb-6">
                    <div className="w-12 h-12 bg-[#2B8BE8] rounded-xl flex items-center justify-center text-white overflow-hidden shrink-0 shadow-sm">
-                      <img src="/icons/icon-checklist.svg" alt="Checklist" className="w-7 h-7 object-contain" />
+                      <img src="https://img.icons8.com/ios-filled/100/ffffff/checklist.png" alt="Checklist" className="w-7 h-7 object-contain" />
                    </div>
                    <div>
                       <h4 className="font-bold text-gray-900 dark:text-white">ส่งเวร</h4>
@@ -45,7 +45,7 @@ export default function LinePreview() {
                 <div className="bg-[#F0F6FC] dark:bg-slate-800 rounded-xl p-4 mb-6 border border-blue-50 dark:border-slate-750 transition-colors">
                      <div className="flex items-center gap-3 mb-3">
                         <div className="w-9 h-9 bg-white dark:bg-slate-900 rounded-lg flex items-center justify-center border border-gray-100 dark:border-slate-700/50 shadow-sm overflow-hidden shrink-0">
-                           <img src="/icons/icon-building.svg" alt="Building" className="w-6 h-6 object-contain" />
+                           <img src="https://img.icons8.com/ios-filled/100/2b8be8/company.png" alt="Building" className="w-6 h-6 object-contain" />
                         </div>
                         <div>
                            <span className="text-sm font-bold text-[#1A1A2E] dark:text-white block leading-none mb-1">Blood Bank</span>

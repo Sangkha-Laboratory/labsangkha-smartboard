@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
       altText: `ส่งต่อเวรใหม่: ${department} (เวร${shift})`,
       contents: {
         type: "bubble",
-        size: "giga",
+        size: "mega",
         body: {
           type: "box",
           layout: "vertical",
@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
                   contents: [
                     {
                       type: "image",
-                      url: `${supabaseUrl}/storage/v1/object/public/icons/icon-checklist.svg`,
+                      url: "https://img.icons8.com/ios-filled/100/ffffff/checklist.png",
                       size: "28px",
                       aspectMode: "fit"
                     }
@@ -316,7 +316,7 @@ Deno.serve(async (req) => {
                       contents: [
                         {
                           type: "image",
-                          url: `${supabaseUrl}/storage/v1/object/public/icons/icon-building.svg`,
+                          url: "https://img.icons8.com/ios-filled/100/2b8be8/company.png",
                           size: "24px",
                           aspectMode: "fit"
                         }

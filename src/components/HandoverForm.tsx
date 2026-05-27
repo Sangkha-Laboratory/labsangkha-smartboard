@@ -866,7 +866,7 @@ function DynamicLinePreview({ data, tasks, isLoggedIn }: { data: any, tasks: Tas
       <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-50 dark:border-slate-700/50">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 bg-[#2B8BE8] rounded-xl flex items-center justify-center text-white shadow-sm overflow-hidden">
-            <img src="/icons/icon-checklist.svg" alt="Checklist" className="w-6 h-6 object-contain" />
+            <img src="https://img.icons8.com/ios-filled/100/ffffff/checklist.png" alt="Checklist" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h4 className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase leading-none mb-1">ส่งเวร</h4>
@@ -884,7 +884,7 @@ function DynamicLinePreview({ data, tasks, isLoggedIn }: { data: any, tasks: Tas
       <div className="bg-[#F0F6FC] rounded-xl p-3 mb-4 border border-blue-50 dark:border-slate-700/35">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center text-brand-blue shadow-sm border border-gray-100 dark:border-slate-750 overflow-hidden">
-            <img src="/icons/icon-building.svg" alt="Building" className="w-6 h-6 object-contain" />
+            <img src="https://img.icons8.com/ios-filled/100/2b8be8/company.png" alt="Building" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h5 className="text-[11px] font-bold text-[#1A1A2E] dark:text-white leading-none mb-1">{data.dept || 'Central Lab'}</h5>
