@@ -243,7 +243,6 @@ Deno.serve(async (req) => {
             return {
               type: "bubble",
               size: "micro",
-              cornerRadius: "xl",
               body: {
                 type: "box",
                 layout: "vertical",

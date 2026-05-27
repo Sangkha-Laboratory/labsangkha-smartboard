@@ -284,7 +284,7 @@ Deno.serve(async (req) => {
               margin: "md",
               paddingAll: "lg",
               backgroundColor: "#f8fafc",
-              borderWidth: "light",
+              borderWidth: "xs",
               borderColor: "#e2e8f0",
               cornerRadius: "xl",
               contents: [
