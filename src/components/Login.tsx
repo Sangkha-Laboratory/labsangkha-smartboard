@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogIn, User, Lock, ArrowRight, ShieldCheck, Database, ChevronLeft, ChevronDown, Search, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import MedtechIllustration from './MedtechIllustration';
 
 interface LoginProps {
   onLoginSuccess: (user: any) => void;
@@ -262,11 +263,7 @@ export default function LoginPage({ onLoginSuccess, onBack, onAdminClick }: Logi
               transition={{ delay: 0.3, duration: 0.8 }}
               className="w-full max-w-[150px]"
             >
-               <img 
-                 src="/medtech-illustration.svg" 
-                 alt="Medical Illustration" 
-                 className="w-full h-auto drop-shadow-[0_8px_20px_rgba(0,163,255,0.1)]"
-               />
+               <MedtechIllustration className="w-full h-auto drop-shadow-[0_8px_20px_rgba(0,163,255,0.1)]" />
             </motion.div>
           </div>
 
