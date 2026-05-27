@@ -131,7 +131,6 @@ Deno.serve(async (req) => {
         layout: "horizontal",
         spacing: "md",
         margin: "md",
-        alignItems: "center",
         contents: [
           // Circular index badge with soft green styling
           {
@@ -204,14 +203,12 @@ Deno.serve(async (req) => {
             {
               type: "box",
               layout: "horizontal",
-              alignItems: "center",
               contents: [
                 {
                   type: "box",
                   layout: "horizontal",
                   spacing: "md",
                   flex: 1,
-                  alignItems: "center",
                   contents: [
                     // Sleek professional sky blue list icon box matching mockup exactly
                     {
@@ -276,8 +273,8 @@ Deno.serve(async (req) => {
                           layout: "vertical",
                           backgroundColor: "#fef3c7",
                           cornerRadius: "6px",
-                          paddingStart: "sm",
-                          paddingEnd: "sm",
+                          paddingStart: "md",
+                          paddingEnd: "md",
                           paddingTop: "xs",
                           paddingBottom: "xs",
                           contents: [
@@ -295,7 +292,7 @@ Deno.serve(async (req) => {
                     {
                       type: "text",
                       text: `${formattedDate} • ${formattedTime}`,
-                      size: "xxs",
+                      size: "xs",
                       color: "#94a3b8",
                       margin: "xs",
                       align: "end"
@@ -311,7 +308,7 @@ Deno.serve(async (req) => {
               margin: "md",
               paddingAll: "md",
               backgroundColor: "#ffffff",
-              borderWidth: "1px",
+              borderWidth: "light",
               borderColor: "#e0f2fe",
               cornerRadius: "16px",
               contents: [
@@ -319,7 +316,6 @@ Deno.serve(async (req) => {
                   type: "box",
                   layout: "horizontal",
                   spacing: "md",
-                  alignItems: "center",
                   contents: [
                     // light blue icon box
                     {
@@ -350,14 +346,14 @@ Deno.serve(async (req) => {
                         {
                           type: "text",
                           text: department,
-                          size: "sm",
+                          size: "md",
                           weight: "bold",
                           color: "#1e293b"
                         },
                         {
                           type: "text",
                           text: `เวร${shift}`,
-                          size: "xs",
+                          size: "sm",
                           color: "#00a2ff",
                           weight: "bold"
                         }
@@ -376,20 +372,19 @@ Deno.serve(async (req) => {
                   layout: "horizontal",
                   spacing: "sm",
                   margin: "md",
-                  alignItems: "center",
                   contents: [
                     {
                       type: "text",
                       text: "👤",
-                      color: "#94a3b8",
-                      size: "xs",
+                      color: "#00a2ff",
+                      size: "sm",
                       flex: 0
                     },
                     {
                       type: "text",
                       text: `ผู้ส่งเวร: ${senderName}`,
-                      size: "xs",
-                      color: "#64748b"
+                      size: "sm",
+                      color: "#475569"
                     }
                   ]
                 }
@@ -399,8 +394,8 @@ Deno.serve(async (req) => {
             {
               type: "text",
               text: "รายการงาน",
-              size: "xs",
-              color: "#94a3b8",
+              size: "sm",
+              color: "#64748b",
               weight: "bold",
               margin: "lg"
             },
@@ -417,7 +412,7 @@ Deno.serve(async (req) => {
                   type: "box",
                   layout: "vertical",
                   backgroundColor: "#22c55e",
-                  cornerRadius: "12px",
+                  cornerRadius: "6px",
                   paddingTop: "sm",
                   paddingBottom: "sm",
                   alignItems: "center",
@@ -446,7 +441,7 @@ Deno.serve(async (req) => {
                   layout: "vertical",
                   borderWidth: "1px",
                   borderColor: "#22c55e",
-                  cornerRadius: "12px",
+                  cornerRadius: "6px",
                   paddingTop: "sm",
                   paddingBottom: "sm",
                   alignItems: "center",
