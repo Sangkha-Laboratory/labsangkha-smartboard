@@ -24,6 +24,7 @@ const publicClient = createClient(
 
 interface ShiftItem {
   id: string;
+  task_number?: string;
   date: string;
   rawDate: string; // ISO string
   time: string;
@@ -242,6 +243,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
           .from('handovers')
           .select(`
             id, 
+            task_number,
             handover_date, 
             created_at, 
             sender_id,
@@ -272,6 +274,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
             .from('handovers')
             .select(`
               id, 
+              task_number,
               handover_date, 
               created_at, 
               sender_id,
@@ -348,6 +351,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
 
         return {
           id: item.id,
+          task_number: item.task_number || '',
           date: rawHandoverDate 
             ? `${rawHandoverDate.substring(8, 10)}/${rawHandoverDate.substring(5, 7)}/${rawHandoverDate.substring(0, 4)}` 
             : 'ไม่ระบุ',
@@ -697,6 +701,11 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                                   <span className={`text-[10px] font-bold ${row.shift.includes('เช้า') ? 'text-brand-blue' : row.shift.includes('บ่าย') ? 'text-yellow-500' : 'text-purple-500'}`}>
                                      เวร{row.shift}
                                   </span>
+                                  {row.task_number && (
+                                    <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-900/50 rounded text-[9px] font-black text-blue-500 dark:text-blue-400 font-mono">
+                                       {row.task_number}
+                                    </span>
+                                  )}
                                   {row.category && (
                                     <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase">
                                        {row.category}
@@ -771,7 +780,13 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                     </h4>
 
                     <div className="flex items-center text-[11px] text-slate-400 dark:text-slate-500 font-bold mt-1.5 tracking-tight flex-wrap">
-                      <span>{formatBEInterval(row.date)} · {row.time}</span>
+                                      {row.task_number && (
+                                        <>
+                                          <span className="font-mono text-blue-500 dark:text-blue-400">{row.task_number}</span>
+                                          <span className="mx-1.5 font-light">·</span>
+                                        </>
+                                      )}
+                                      <span>{formatBEInterval(row.date)} · {row.time}</span>
                       <span className="mx-2 font-light"></span>
                       <span className={`font-black ${
                         row.shift.includes('เช้า') ? 'text-blue-500 dark:text-blue-400' :
@@ -1064,10 +1079,10 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                   </div>
                   <div>
                     <h3 className="text-sm md:text-sm font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-                      รายละเอียดใบส่งเวร
+                      รายละเอียดใบส่งเวร {selectedDetailItem.task_number && `(${selectedDetailItem.task_number})`}
                     </h3>
                     <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest font-mono mt-0.5">
-                      Ref ID: {selectedDetailItem.id.substring(0, 8).toUpperCase()}...
+                      Ref ID: {selectedDetailItem.id.toUpperCase()}
                     </p>
                   </div>
                 </div>

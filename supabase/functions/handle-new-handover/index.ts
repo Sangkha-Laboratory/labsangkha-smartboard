@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     }
 
     const handoverId = record.id;
-    const department = record.department || "General Lab";
+    const department = record.division || record.department || "General Lab";
     const shift = record.shift || "ไม่ระบุ";
     const senderName = record.sender_name || "เจ้าหน้าที่";
     const tasks = Array.isArray(record.tasks) ? record.tasks : [];
@@ -122,32 +122,46 @@ Deno.serve(async (req) => {
     // Generate short ID from UUID or ID safely to match "LAB-XXXX"
     const idStr = String(handoverId || "");
     const cleanIdPart = idStr.includes("-") ? idStr.split("-")[0] : idStr;
-    const shortId = `LAB-${cleanIdPart.substring(0, Math.min(6, cleanIdPart.length)).toUpperCase() || "NEW"}`;
+    let shortId = `LAB-${cleanIdPart.substring(0, Math.min(6, cleanIdPart.length)).toUpperCase() || "NEW"}`;
+
+    // Attempt to fetch the actual task_number from the database for this handover
+    try {
+      const { data: dbHandover, error: dbErr } = await supabase
+        .from("handovers")
+        .select("task_number")
+        .eq("id", handoverId)
+        .single();
+      if (!dbErr && dbHandover && dbHandover.task_number) {
+        console.log(`Using database sequential tracking number: ${dbHandover.task_number}`);
+        shortId = dbHandover.task_number;
+      } else {
+        console.warn("Could not retrieve task_number, falling back to UUID shortId:", dbErr);
+      }
+    } catch (dbFetchErr) {
+      console.error("Exception fetching task_number from DB:", dbFetchErr);
+    }
 
     // Build LINE Flex Message based on requested card design with maximum compatibility
     const taskComponents = tasks.map((t: any, idx: number) => {
       return {
         type: "box",
         layout: "horizontal",
-        spacing: "md",
         margin: "md",
         contents: [
-          // Circular index badge with soft green styling
           {
             type: "box",
             layout: "vertical",
             width: "24px",
             height: "24px",
-            backgroundColor: "#ecfdf5",
+            backgroundColor: "#DCFCE7",
             cornerRadius: "12px",
-            flex: 0,
             justifyContent: "center",
             alignItems: "center",
             contents: [
               {
                 type: "text",
                 text: String(idx + 1),
-                color: "#10b981",
+                color: "#16A34A",
                 size: "xs",
                 weight: "bold",
                 align: "center",
@@ -155,27 +169,27 @@ Deno.serve(async (req) => {
               }
             ]
           },
-          // Task content
           {
             type: "box",
             layout: "vertical",
             flex: 1,
-            spacing: "none",
+            margin: "md",
             contents: [
               {
                 type: "text",
                 text: t.title || "ไม่มีหัวข้อ",
-                size: "sm",
                 weight: "bold",
-                color: "#0f172a",
-                wrap: true
+                size: "lg",
+                color: "#1A1A2E",
+                wrap: true,
+                adjustMode: "shrink-to-fit"
               },
               ...(t.detail ? [
                 {
                   type: "text",
                   text: t.detail,
                   size: "xs",
-                  color: "#64748b",
+                  color: "#6B7280",
                   margin: "xs",
                   wrap: true
                 }
@@ -188,104 +202,81 @@ Deno.serve(async (req) => {
 
     const flexMessage = {
       type: "flex",
-      altText: `📢 ส่งต่อเวรใหม่: ${department} (เวร${shift})`,
+      altText: `ส่งต่อเวรใหม่: ${department} (เวร${shift})`,
       contents: {
         type: "bubble",
-        size: "mega",
+        size: "giga",
         body: {
           type: "box",
           layout: "vertical",
-          paddingAll: "lg",
+          paddingAll: "xl",
           backgroundColor: "#ffffff",
-          spacing: "md",
           contents: [
-            // Top row with Icon, Info and Badge
             {
               type: "box",
               layout: "horizontal",
               contents: [
                 {
                   type: "box",
-                  layout: "horizontal",
-                  spacing: "md",
-                  flex: 1,
+                  layout: "vertical",
+                  width: "52px",
+                  height: "52px",
+                  backgroundColor: "#2B8BE8",
+                  cornerRadius: "12px",
+                  justifyContent: "center",
+                  alignItems: "center",
                   contents: [
-                    // Sleek professional sky blue list icon box matching mockup exactly
                     {
-                      type: "box",
-                      layout: "vertical",
-                      width: "40px",
-                      height: "40px",
-                      backgroundColor: "#00a2ff",
-                      cornerRadius: "10px",
-                      flex: 0,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      contents: [
-                        {
-                          type: "text",
-                          text: "☰",
-                          color: "#ffffff",
-                          weight: "bold",
-                          size: "md",
-                          align: "center",
-                          gravity: "center"
-                        }
-                      ]
-                    },
-                    {
-                      type: "box",
-                      layout: "vertical",
-                      contents: [
-                        {
-                          type: "text",
-                          text: "ส่งเวร",
-                          size: "xs",
-                          color: "#94a3b8",
-                          weight: "bold"
-                        },
-                        {
-                          type: "text",
-                          text: shortId,
-                          size: "lg",
-                          weight: "bold",
-                          color: "#0f172a"
-                        }
-                      ]
+                      type: "image",
+                      url: `${supabaseUrl}/storage/v1/object/public/icons/icon-checklist.svg`,
+                      size: "28px",
+                      aspectMode: "fit"
                     }
                   ]
                 },
-                // PENDING badge and date display matching mockup perfectly
                 {
                   type: "box",
                   layout: "vertical",
-                  flex: 0,
+                  margin: "md",
+                  flex: 1,
+                  contents: [
+                    {
+                      type: "text",
+                      text: "ส่งเวร",
+                      size: "xs",
+                      color: "#6B7280"
+                    },
+                    {
+                      type: "text",
+                      text: shortId,
+                      size: "xl",
+                      weight: "bold",
+                      color: "#1A1A2E",
+                      adjustMode: "shrink-to-fit"
+                    }
+                  ]
+                },
+                {
+                  type: "box",
+                  layout: "vertical",
+                  alignItems: "flex-end",
                   contents: [
                     {
                       type: "box",
-                      layout: "horizontal",
+                      layout: "vertical",
+                      backgroundColor: "#FEF3C7",
+                      cornerRadius: "20px",
+                      paddingStart: "md",
+                      paddingEnd: "md",
+                      paddingTop: "xs",
+                      paddingBottom: "xs",
                       contents: [
                         {
-                          type: "filler"
-                        },
-                        {
-                          type: "box",
-                          layout: "vertical",
-                          backgroundColor: "#fef3c7",
-                          cornerRadius: "6px",
-                          paddingStart: "md",
-                          paddingEnd: "md",
-                          paddingTop: "xs",
-                          paddingBottom: "xs",
-                          contents: [
-                            {
-                              type: "text",
-                              text: "PENDING",
-                              color: "#d97706",
-                              size: "xxs",
-                              weight: "bold"
-                            }
-                          ]
+                          type: "text",
+                          text: "PENDING",
+                          size: "xs",
+                          weight: "bold",
+                          color: "#D97706"
                         }
                       ]
                     },
@@ -293,68 +284,62 @@ Deno.serve(async (req) => {
                       type: "text",
                       text: `${formattedDate} • ${formattedTime}`,
                       size: "xs",
-                      color: "#94a3b8",
+                      color: "#9CA3AF",
                       margin: "xs",
-                      align: "end"
+                      wrap: false
                     }
                   ]
                 }
               ]
             },
-            // Department Card Box - match preview card outline style perfectly
             {
               type: "box",
               layout: "vertical",
-              margin: "md",
+              margin: "lg",
+              backgroundColor: "#F0F6FC",
+              cornerRadius: "12px",
               paddingAll: "md",
-              backgroundColor: "#ffffff",
-              borderWidth: "light",
-              borderColor: "#e0f2fe",
-              cornerRadius: "16px",
               contents: [
                 {
                   type: "box",
                   layout: "horizontal",
-                  spacing: "md",
                   contents: [
-                    // light blue icon box
                     {
                       type: "box",
                       layout: "vertical",
-                      width: "36px",
-                      height: "36px",
-                      backgroundColor: "#e0f2fe",
-                      cornerRadius: "8px",
-                      flex: 0,
+                      width: "40px",
+                      height: "40px",
+                      backgroundColor: "#ffffff",
+                      cornerRadius: "10px",
                       justifyContent: "center",
                       alignItems: "center",
                       contents: [
                         {
-                          type: "text",
-                          text: "🏢",
-                          size: "sm",
-                          align: "center",
-                          gravity: "center"
+                          type: "image",
+                          url: `${supabaseUrl}/storage/v1/object/public/icons/icon-building.svg`,
+                          size: "24px",
+                          aspectMode: "fit"
                         }
                       ]
                     },
                     {
                       type: "box",
                       layout: "vertical",
-                      flex: 1,
+                      margin: "md",
+                      justifyContent: "center",
                       contents: [
                         {
                           type: "text",
                           text: department,
-                          size: "md",
                           weight: "bold",
-                          color: "#1e293b"
+                          size: "md",
+                          color: "#1A1A2E"
                         },
                         {
                           type: "text",
                           text: `เวร${shift}`,
                           size: "sm",
-                          color: "#00a2ff",
+                          color: "#2B8BE8",
                           weight: "bold"
                         }
                       ]
@@ -364,107 +349,85 @@ Deno.serve(async (req) => {
                 {
                   type: "separator",
                   margin: "md",
-                  color: "#f1f5f9"
+                  color: "#E5E7EB"
                 },
-                // Sender Row with Outline icon
                 {
                   type: "box",
                   layout: "horizontal",
-                  spacing: "sm",
                   margin: "md",
                   contents: [
                     {
-                      type: "text",
-                      text: "👤",
-                      color: "#00a2ff",
-                      size: "sm",
-                      flex: 0
+                      type: "box",
+                      layout: "vertical",
+                      width: "20px",
+                      height: "20px",
+                      backgroundColor: "#ffffff",
+                      cornerRadius: "10px",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      contents: [
+                        {
+                          type: "text",
+                          text: "P",
+                          size: "xxs",
+                          color: "#6B7280",
+                          align: "center",
+                          gravity: "center"
+                        }
+                      ]
                     },
                     {
                       type: "text",
                       text: `ผู้ส่งเวร: ${senderName}`,
                       size: "sm",
-                      color: "#475569"
+                      color: "#6B7280",
+                      margin: "sm",
+                      gravity: "center",
+                      flex: 1,
+                      wrap: true
                     }
                   ]
                 }
               ]
             },
-            // Title and Tasks summary section
             {
               type: "text",
               text: "รายการงาน",
-              size: "sm",
-              color: "#64748b",
+              size: "xs",
+              color: "#6B7280",
               weight: "bold",
               margin: "lg"
             },
-            ...taskComponents,
-            // Clean, custom, click-responsive buttons that look beautiful and premium
+            ...taskComponents
+          ]
+        },
+        footer: {
+          type: "box",
+          layout: "horizontal",
+          spacing: "md",
+          paddingAll: "lg",
+          contents: [
             {
-              type: "box",
-              layout: "horizontal",
-              margin: "lg",
-              spacing: "md",
-              contents: [
-                // Solid Green Button: "รับทั้งหมด"
-                {
-                  type: "box",
-                  layout: "vertical",
-                  backgroundColor: "#22c55e",
-                  cornerRadius: "6px",
-                  paddingTop: "sm",
-                  paddingBottom: "sm",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flex: 1,
-                  action: {
-                    type: "postback",
-                    label: "รับทั้งหมด",
-                    data: `action=accept_all&taskId=${handoverId}`
-                  },
-                  contents: [
-                    {
-                      type: "text",
-                      text: "รับทั้งหมด",
-                      color: "#ffffff",
-                      weight: "bold",
-                      size: "sm",
-                      align: "center",
-                      gravity: "center"
-                    }
-                  ]
-                },
-                // Outline Green Button: "เลือกรับงาน"
-                {
-                  type: "box",
-                  layout: "vertical",
-                  borderWidth: "1px",
-                  borderColor: "#22c55e",
-                  cornerRadius: "6px",
-                  paddingTop: "sm",
-                  paddingBottom: "sm",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flex: 1,
-                  action: {
-                    type: "postback",
-                    label: "เลือกรับงาน",
-                    data: `action=select&taskId=${handoverId}`
-                  },
-                  contents: [
-                    {
-                      type: "text",
-                      text: "เลือกรับงาน",
-                      color: "#22c55e",
-                      weight: "bold",
-                      size: "sm",
-                      align: "center",
-                      gravity: "center"
-                    }
-                  ]
-                }
-              ]
+              type: "button",
+              style: "primary",
+              color: "#16A34A",
+              height: "md",
+              action: {
+                type: "postback",
+                label: "รับทั้งหมด",
+                data: `action=accept_all&handoverId=${handoverId}`
+              }
+            },
+            {
+              type: "button",
+              style: "link",
+              color: "#16A34A",
+              height: "md",
+              action: {
+                type: "postback",
+                label: "เลือกรับงาน",
+                data: `action=select&handoverId=${handoverId}`
+              }
             }
           ]
         }

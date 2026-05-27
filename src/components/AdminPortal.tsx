@@ -621,7 +621,7 @@ export default function AdminPortal({
       const ageStr = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins/60)}h` : `${Math.floor(mins/1440)}d`;
       
       return {
-        id: h.id.substring(0, 8).toUpperCase(),
+        id: h.task_number || h.id.substring(0, 8).toUpperCase(),
         title: h.title,
         division: h.division,
         status: h.status,
@@ -1637,11 +1637,11 @@ export default function AdminPortal({
                           <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/80 hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer" onClick={() => setSelectedHandover(item)}>
                             <td className="px-5 py-4 text-[13px] font-black text-slate-400 pl-6" onClick={(e) => e.stopPropagation()}>
                               <span 
-                                onClick={() => navigator.clipboard.writeText(item.id)}
+                                onClick={() => navigator.clipboard.writeText(item.task_number || item.id)}
                                 className="cursor-copy bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-250/20 dark:border-slate-700 font-mono text-[12px]"
-                                title="คลิกเพื่อคัดลอกรหัสหลัก"
+                                title={item.task_number ? "คลิกเพื่อคัดลอกรหัสงาน" : "คลิกเพื่อคัดลอกรหัสหลัก"}
                               >
-                                {item.id.substring(0, 8).toUpperCase()}
+                                {item.task_number || item.id.substring(0, 8).toUpperCase()}
                               </span>
                             </td>
                             <td className="px-5 py-4 min-w-[130px]">

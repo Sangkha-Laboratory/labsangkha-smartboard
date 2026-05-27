@@ -819,7 +819,7 @@ export default function UserPortal({
                                   เวร{item.shift || 'ปกติ'} - {item.division || 'ทั่วไป'}
                                 </p>
                                 <p className="text-[13px] font-bold text-slate-400 mt-0.5">
-                                  {new Date(item.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })} • ID: {item.id.substring(0, 6).toUpperCase()}
+                                  {new Date(item.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })} • ID: {item.task_number || item.id.substring(0, 6).toUpperCase()}
                                 </p>
                               </div>
                             </div>
@@ -987,7 +987,7 @@ export default function UserPortal({
                             <tr key={item.id || index} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/20 transition-colors">
                               <td className="px-5 py-4">
                                 <span className="text-sm lg:text-base font-black text-[#0f2d52] dark:text-white block">{dateFormatted} {timeFormatted}</span>
-                                <span className="text-[11px] lg:text-xs font-bold text-slate-400 uppercase tracking-tight block mt-0.5">ID: {item.id.substring(0, 8).toUpperCase()}</span>
+                                <span className="text-[11px] lg:text-xs font-bold text-slate-400 uppercase tracking-tight block mt-0.5">ID: {item.task_number || item.id.substring(0, 8).toUpperCase()}</span>
                               </td>
                               <td className="px-5 py-4">
                                 <div className="flex flex-col">

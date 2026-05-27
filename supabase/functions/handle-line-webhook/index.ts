@@ -171,9 +171,9 @@ Deno.serve(async (req) => {
 
         // B) action = accept_all
         if (action === "accept_all") {
-          const handoverId = params.get("taskId");
+          const handoverId = params.get("handoverId") || params.get("taskId");
           if (!handoverId) {
-            console.warn("Missing taskId in accept_all request");
+            console.warn("Missing handoverId or taskId in accept_all request");
             continue;
           }
 
@@ -210,9 +210,9 @@ Deno.serve(async (req) => {
 
         // C) action = select
         if (action === "select") {
-          const handoverId = params.get("taskId");
+          const handoverId = params.get("handoverId") || params.get("taskId");
           if (!handoverId) {
-            console.warn("Missing taskId in select request");
+            console.warn("Missing handoverId or taskId in select request");
             continue;
           }
 
