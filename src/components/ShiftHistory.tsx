@@ -890,7 +890,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="bg-white dark:bg-slate-900 w-full max-w-[320px] rounded-2xl sm:rounded-[2rem] shadow-2xl relative border border-gray-100 dark:border-slate-800 overflow-y-auto max-h-[86vh]"
+                className="bg-white dark:bg-slate-900 w-full max-w-[320px] rounded-2xl sm:rounded-[2rem] shadow-2xl relative border border-gray-100 dark:border-slate-800 overflow-visible"
               >
               <button 
                 onClick={() => setIsModalOpen(false)}
@@ -957,24 +957,24 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                               animate={{ opacity: 1, y: 0, scale: 1 }}
                               exit={{ opacity: 0, y: 10, scale: 0.95 }}
                               transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-                              className="relative z-50 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden"
+                              className="relative z-50 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.12)] overflow-hidden"
                             >
                               <div className="p-2 border-b border-gray-50 dark:border-slate-700/50">
                                 <div className="relative">
-                                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={13} />
                                   <input 
                                     autoFocus
                                     type="text"
                                     placeholder="ค้นหาชื่อ..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-3 bg-[#F8FAFC] dark:bg-slate-900 border-none rounded-lg outline-none text-xs font-medium dark:text-white placeholder:text-gray-400"
+                                    className="w-full pl-8 pr-3 py-2 bg-[#F8FAFC] dark:bg-slate-900 border-none rounded-lg outline-none text-xs font-medium dark:text-white placeholder:text-gray-400"
                                   />
                                 </div>
                               </div>
 
                               <div 
-                                className="max-h-[200px] overflow-y-auto py-1 custom-scrollbar"
+                                className="max-h-[130px] overflow-y-auto py-0.5 custom-scrollbar"
                                 style={{ scrollbarWidth: 'thin' }}
                               >
                                 {filteredUsers.length > 0 ? (
@@ -986,7 +986,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                                         setReceiverName(user.id);
                                         setIsDropdownOpen(false);
                                       }}
-                                      className={`w-full px-4 py-2.5 text-left text-xs font-medium transition-all hover:bg-brand-light dark:hover:bg-slate-700/50 ${
+                                      className={`w-full px-3.5 py-2 text-left text-[11.5px] font-medium transition-all hover:bg-brand-light dark:hover:bg-slate-700/50 ${
                                         receiverName === user.id ? 'text-brand-blue bg-brand-light/50 dark:bg-brand-blue/20' : 'text-gray-700 dark:text-gray-300'
                                       }`}
                                     >
@@ -994,7 +994,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                                     </button>
                                   ))
                                 ) : (
-                                  <div className="px-4 py-6 text-xs text-gray-400 text-center">
+                                  <div className="px-4 py-4 text-xs text-gray-400 text-center">
                                     ไม่พบรายชื่อ
                                   </div>
                                 )}
