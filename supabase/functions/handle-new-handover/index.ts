@@ -183,15 +183,15 @@ Deno.serve(async (req) => {
       return {
         type: "box",
         layout: "horizontal",
-        margin: "sm",
+        margin: "md",
         contents: [
           {
             type: "box",
             layout: "vertical",
-            width: "16px",
-            height: "16px",
+            width: "20px",
+            height: "20px",
             backgroundColor: "#DCFCE7",
-            cornerRadius: "8px",
+            cornerRadius: "10px",
             justifyContent: "center",
             alignItems: "center",
             contents: [
@@ -210,13 +210,13 @@ Deno.serve(async (req) => {
             type: "box",
             layout: "vertical",
             flex: 1,
-            margin: "sm",
+            margin: "md",
             contents: [
               {
                 type: "text",
                 text: maskedTitle,
                 weight: "bold",
-                size: "xs",
+                size: "sm",
                 color: "#1A1A2E",
                 wrap: true,
                 adjustMode: "shrink-to-fit"
@@ -242,11 +242,11 @@ Deno.serve(async (req) => {
       altText: `ส่งต่อเวรใหม่: ${department} (เวร${shift})`,
       contents: {
         type: "bubble",
-        size: "kilo",
+        size: "mega",
         body: {
           type: "box",
           layout: "vertical",
-          paddingAll: "lg",
+          paddingAll: "xl",
           backgroundColor: "#ffffff",
           contents: [
             {
@@ -256,17 +256,17 @@ Deno.serve(async (req) => {
                 {
                   type: "box",
                   layout: "vertical",
-                  width: "42px",
-                  height: "42px",
+                  width: "52px",
+                  height: "52px",
                   backgroundColor: "#2B8BE8",
-                  cornerRadius: "10px",
+                  cornerRadius: "12px",
                   justifyContent: "center",
                   alignItems: "center",
                   contents: [
                     {
                       type: "image",
                       url: "https://img.icons8.com/ios-filled/100/ffffff/checklist.png",
-                      size: "22px",
+                      size: "28px",
                       aspectMode: "fit"
                     }
                   ]
@@ -280,13 +280,13 @@ Deno.serve(async (req) => {
                     {
                       type: "text",
                       text: "ส่งเวร",
-                      size: "xxs",
+                      size: "xs",
                       color: "#6B7280"
                     },
                     {
                       type: "text",
                       text: shortId,
-                      size: "md",
+                      size: "lg",
                       weight: "bold",
                       color: "#1A1A2E",
                       adjustMode: "shrink-to-fit"
@@ -303,8 +303,8 @@ Deno.serve(async (req) => {
                       layout: "vertical",
                       backgroundColor: "#FEF3C7",
                       cornerRadius: "20px",
-                      paddingStart: "sm",
-                      paddingEnd: "sm",
+                      paddingStart: "md",
+                      paddingEnd: "md",
                       paddingTop: "xs",
                       paddingBottom: "xs",
                       contents: [
@@ -332,10 +332,10 @@ Deno.serve(async (req) => {
             {
               type: "box",
               layout: "vertical",
-              margin: "md",
+              margin: "lg",
               backgroundColor: "#F0F6FC",
-              cornerRadius: "10px",
-              paddingAll: "sm",
+              cornerRadius: "12px",
+              paddingAll: "md",
               contents: [
                 {
                   type: "box",
@@ -344,17 +344,17 @@ Deno.serve(async (req) => {
                     {
                       type: "box",
                       layout: "vertical",
-                      width: "32px",
-                      height: "32px",
+                      width: "40px",
+                      height: "40px",
                       backgroundColor: "#ffffff",
-                      cornerRadius: "8px",
+                      cornerRadius: "10px",
                       justifyContent: "center",
                       alignItems: "center",
                       contents: [
                         {
                           type: "image",
                           url: "https://img.icons8.com/ios-filled/100/2b8be8/company.png",
-                          size: "18px",
+                          size: "24px",
                           aspectMode: "fit"
                         }
                       ]
@@ -362,20 +362,20 @@ Deno.serve(async (req) => {
                     {
                       type: "box",
                       layout: "vertical",
-                      margin: "sm",
+                      margin: "md",
                       justifyContent: "center",
                       contents: [
                         {
                           type: "text",
                           text: department,
                           weight: "bold",
-                          size: "xs",
+                          size: "sm",
                           color: "#1A1A2E"
                         },
                         {
                           type: "text",
                           text: `เวร${shift}`,
-                          size: "xxs",
+                          size: "xs",
                           color: "#2B8BE8",
                           weight: "bold"
                         }
@@ -385,21 +385,21 @@ Deno.serve(async (req) => {
                 },
                 {
                   type: "separator",
-                  margin: "sm",
+                  margin: "md",
                   color: "#E5E7EB"
                 },
                 {
                   type: "box",
                   layout: "horizontal",
-                  margin: "sm",
+                  margin: "md",
                   contents: [
                     {
                       type: "box",
                       layout: "vertical",
-                      width: "16px",
-                      height: "16px",
+                      width: "20px",
+                      height: "20px",
                       backgroundColor: "#ffffff",
-                      cornerRadius: "8px",
+                      cornerRadius: "10px",
                       justifyContent: "center",
                       alignItems: "center",
                       contents: [
@@ -416,7 +416,7 @@ Deno.serve(async (req) => {
                     {
                       type: "text",
                       text: `ผู้ส่งเวร: ${senderName}`,
-                      size: "xxs",
+                      size: "xs",
                       color: "#6B7280",
                       margin: "sm",
                       gravity: "center",
@@ -433,7 +433,7 @@ Deno.serve(async (req) => {
               size: "xxs",
               color: "#6B7280",
               weight: "bold",
-              margin: "md"
+              margin: "lg"
             },
             ...taskComponents
           ]
@@ -441,14 +441,14 @@ Deno.serve(async (req) => {
         footer: {
           type: "box",
           layout: "horizontal",
-          spacing: "sm",
-          paddingAll: "md",
+          spacing: "md",
+          paddingAll: "lg",
           contents: [
             {
               type: "button",
               style: "primary",
               color: "#16A34A",
-              height: "sm",
+              height: "md",
               action: {
                 type: "postback",
                 label: "รับทั้งหมด",
@@ -459,7 +459,7 @@ Deno.serve(async (req) => {
               type: "button",
               style: "link",
               color: "#16A34A",
-              height: "sm",
+              height: "md",
               action: {
                 type: "postback",
                 label: "เลือกรับงาน",
