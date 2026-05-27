@@ -865,8 +865,8 @@ function DynamicLinePreview({ data, tasks, isLoggedIn }: { data: any, tasks: Tas
       {/* Mini LINE Header */}
       <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-50 dark:border-slate-700/50">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center text-white shadow-md">
-            <ListChecks size={16} />
+          <div className="w-10 h-10 bg-[#2B8BE8] rounded-xl flex items-center justify-center text-white shadow-sm overflow-hidden">
+            <img src="/icons/icon-checklist.svg" alt="Checklist" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h4 className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase leading-none mb-1">ส่งเวร</h4>
@@ -875,19 +875,19 @@ function DynamicLinePreview({ data, tasks, isLoggedIn }: { data: any, tasks: Tas
         </div>
         
         <div className="text-right">
-          <span className="bg-yellow-100 text-yellow-600 dark:bg-yellow-950/30 dark:text-yellow-400 px-1.5 py-0.5 rounded-md text-[8px] font-black tracking-tighter mb-0.5 inline-block">PENDING</span>
+          <span className="bg-[#FEF3C7] text-[#D97706] px-1.5 py-0.5 rounded-md text-[8px] font-black tracking-tighter mb-0.5 inline-block">PENDING</span>
           <p className="text-[8px] text-gray-400 font-bold tabular-nums leading-none">{formattedDate} • 09:15</p>
         </div>
       </div>
 
       {/* Lab Station Plate */}
-      <div className="bg-brand-light/40 dark:bg-brand-blue/10 rounded-xl p-3 mb-4 border border-brand-blue/10 dark:border-brand-blue/20">
+      <div className="bg-[#F0F6FC] rounded-xl p-3 mb-4 border border-blue-50 dark:border-slate-700/35">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-white dark:bg-slate-800 rounded-md flex items-center justify-center text-brand-blue shadow-sm border border-brand-light">
-            <Building2 size={14} />
+          <div className="w-9 h-9 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center text-brand-blue shadow-sm border border-gray-100 dark:border-slate-750 overflow-hidden">
+            <img src="/icons/icon-building.svg" alt="Building" className="w-6 h-6 object-contain" />
           </div>
           <div>
-            <h5 className="text-[11px] font-bold text-gray-800 dark:text-white leading-none mb-1">{data.dept || 'Central Lab'}</h5>
+            <h5 className="text-[11px] font-bold text-[#1A1A2E] dark:text-white leading-none mb-1">{data.dept || 'Central Lab'}</h5>
             <div className="flex items-center gap-1.5 text-brand-blue dark:text-brand-blue font-black text-[9px]">
               <span>เวร{data.shift || 'เช้า'}</span>
             </div>

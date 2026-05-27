@@ -33,27 +33,29 @@ export default function LinePreview() {
                 </div>
 
                 <div className="flex items-start gap-3 mb-6">
-                   <div className="w-10 h-10 bg-gray-900 dark:bg-slate-800 rounded-xl flex items-center justify-center text-white transition-colors">
-                      <ListChecks size={20} />
+                   <div className="w-12 h-12 bg-[#2B8BE8] rounded-xl flex items-center justify-center text-white overflow-hidden shrink-0 shadow-sm">
+                      <img src="/icons/icon-checklist.svg" alt="Checklist" className="w-7 h-7 object-contain" />
                    </div>
                    <div>
                       <h4 className="font-bold text-gray-900 dark:text-white">ส่งเวร</h4>
-                      <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">LAB-0008</p>
+                      <p className="text-2xl font-black text-[#1A1A2E] dark:text-white tracking-tight">LAB-0008</p>
                    </div>
                 </div>
 
-                <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 mb-6 border border-gray-100 dark:border-slate-700 transition-colors">
-                    <div className="flex items-center gap-2 mb-2">
-                       <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center">
-                          <Check size={14} strokeWidth={3} />
-                       </div>
-                       <span className="text-sm font-bold text-gray-900 dark:text-white">Blood Bank</span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 ml-8 leading-tight">
-                       | เวรเช้า<br />
-                       ผู้ส่งเวร: นายไพศาล
-                    </p>
-                </div>
+                <div className="bg-[#F0F6FC] dark:bg-slate-800 rounded-xl p-4 mb-6 border border-blue-50 dark:border-slate-750 transition-colors">
+                     <div className="flex items-center gap-3 mb-3">
+                        <div className="w-9 h-9 bg-white dark:bg-slate-900 rounded-lg flex items-center justify-center border border-gray-100 dark:border-slate-700/50 shadow-sm overflow-hidden shrink-0">
+                           <img src="/icons/icon-building.svg" alt="Building" className="w-6 h-6 object-contain" />
+                        </div>
+                        <div>
+                           <span className="text-sm font-bold text-[#1A1A2E] dark:text-white block leading-none mb-1">Blood Bank</span>
+                           <span className="text-[10px] text-[#2B8BE8] font-bold block leading-none">เวรเช้า</span>
+                        </div>
+                     </div>
+                     <p className="text-xs text-gray-500 dark:text-gray-400 ml-12 leading-tight">
+                        ผู้ส่งเวร: นายไพศาล
+                     </p>
+                 </div>
 
                 <div className="space-y-3 mb-6">
                    <TaskItem text="ตามผลแลป urgent" isDarkMode={true} />
