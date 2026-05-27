@@ -256,16 +256,18 @@ Deno.serve(async (req) => {
                     layout: "vertical",
                     width: "24px",
                     height: "24px",
-                    backgroundColor: isUnread ? "#f0fdf4" : "#f1f5f9",
+                    backgroundColor: isUnread ? "#eff6ff" : "#f1f5f9",
                     alignItems: "center",
                     justifyContent: "center",
                     contents: [
                       {
                         type: "text",
                         text: String(index + 1),
-                        color: isUnread ? "#16a34a" : "#94a3b8",
+                        color: isUnread ? "#2563eb" : "#94a3b8",
                         size: "xs",
-                        weight: "bold"
+                        weight: "bold",
+                        align: "center",
+                        gravity: "center"
                       }
                     ]
                   },
@@ -301,7 +303,7 @@ Deno.serve(async (req) => {
                   isUnread ? {
                     type: "button",
                     style: "primary",
-                    color: "#10b981",
+                    color: "#0f172a",
                     height: "sm",
                     margin: "md",
                     action: {

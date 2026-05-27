@@ -129,29 +129,16 @@ Deno.serve(async (req) => {
       return {
         type: "box",
         layout: "horizontal",
-        spacing: "md",
+        spacing: "sm",
         margin: "md",
-        alignItems: "center",
         contents: [
           {
-            type: "box",
-            layout: "vertical",
-            width: "20px",
-            height: "20px",
-            backgroundColor: "#f0fdf4",
-            cornerRadius: "xxl",
-            alignItems: "center",
-            justifyContent: "center",
+            type: "text",
+            text: "•",
+            color: "#94a3b8",
+            size: "md",
             flex: 0,
-            contents: [
-              {
-                type: "text",
-                text: String(idx + 1),
-                color: "#16a34a",
-                size: "xs",
-                weight: "bold"
-              }
-            ]
+            weight: "bold"
           },
           {
             type: "box",
@@ -208,22 +195,26 @@ Deno.serve(async (req) => {
                   flex: 1,
                   alignItems: "center",
                   contents: [
-                    // Sleek professional dark-slate icon box with text icon representing a clinical clipboard
+                    // Sleek professional dark-slate icon box from mockup design
                     {
                       type: "box",
                       layout: "vertical",
                       width: "40px",
                       height: "40px",
-                      backgroundColor: "#f1f5f9",
-                      cornerRadius: "lg",
+                      backgroundColor: "#0f172a",
+                      cornerRadius: "xl",
                       alignItems: "center",
                       justifyContent: "center",
                       flex: 0,
                       contents: [
                         {
                           type: "text",
-                          text: "📋",
-                          size: "md"
+                          text: "✓",
+                          color: "#ffffff",
+                          weight: "bold",
+                          size: "sm",
+                          align: "center",
+                          gravity: "center"
                         }
                       ]
                     },
@@ -292,7 +283,7 @@ Deno.serve(async (req) => {
               layout: "vertical",
               margin: "md",
               paddingAll: "lg",
-              backgroundColor: "#ffffff",
+              backgroundColor: "#f8fafc",
               borderWidth: "light",
               borderColor: "#e2e8f0",
               cornerRadius: "xl",
@@ -306,18 +297,22 @@ Deno.serve(async (req) => {
                     {
                       type: "box",
                       layout: "vertical",
-                      width: "32px",
-                      height: "32px",
+                      width: "24px",
+                      height: "24px",
                       backgroundColor: "#eff6ff",
-                      cornerRadius: "lg",
+                      cornerRadius: "md",
                       alignItems: "center",
                       justifyContent: "center",
                       flex: 0,
                       contents: [
                         {
                           type: "text",
-                          text: "🏥",
-                          size: "sm"
+                          text: "✓",
+                          color: "#2563eb",
+                          size: "xs",
+                          weight: "bold",
+                          align: "center",
+                          gravity: "center"
                         }
                       ]
                     },
@@ -334,41 +329,12 @@ Deno.serve(async (req) => {
                         },
                         {
                           type: "text",
-                          text: `เวร${shift}`,
+                          text: `เวร${shift} • ผู้ส่งเวร: ${senderName}`,
                           size: "xs",
-                          color: "#0ea5e9",
-                          weight: "bold",
+                          color: "#64748b",
                           margin: "xs"
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  type: "separator",
-                  margin: "md",
-                  color: "#f1f5f9"
-                },
-                // Indented Sender details matching LinePreview
-                {
-                  type: "box",
-                  layout: "horizontal",
-                  margin: "md",
-                  spacing: "sm",
-                  alignItems: "center",
-                  contents: [
-                    {
-                      type: "text",
-                      text: "👤",
-                      size: "xs",
-                      color: "#64748b",
-                      flex: 0
-                    },
-                    {
-                      type: "text",
-                      text: `ผู้ส่งเวร: ${senderName}`,
-                      size: "xs",
-                      color: "#64748b"
                     }
                   ]
                 }
@@ -394,7 +360,7 @@ Deno.serve(async (req) => {
                 {
                   type: "button",
                   style: "primary",
-                  color: "#10b981",
+                  color: "#0f172a",
                   height: "sm",
                   action: {
                     type: "postback",
