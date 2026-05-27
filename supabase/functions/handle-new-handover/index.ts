@@ -151,10 +151,10 @@ Deno.serve(async (req) => {
           {
             type: "box",
             layout: "vertical",
-            width: "24px",
-            height: "24px",
+            width: "20px",
+            height: "20px",
             backgroundColor: "#DCFCE7",
-            cornerRadius: "12px",
+            cornerRadius: "10px",
             justifyContent: "center",
             alignItems: "center",
             contents: [
@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
                 type: "text",
                 text: String(idx + 1),
                 color: "#16A34A",
-                size: "xs",
+                size: "xxs",
                 weight: "bold",
                 align: "center",
                 gravity: "center"
@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
                 type: "text",
                 text: t.title || "ไม่มีหัวข้อ",
                 weight: "bold",
-                size: "lg",
+                size: "sm",
                 color: "#1A1A2E",
                 wrap: true,
                 adjustMode: "shrink-to-fit"
@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
                 {
                   type: "text",
                   text: t.detail,
-                  size: "xs",
+                  size: "xxs",
                   color: "#6B7280",
                   margin: "xs",
                   wrap: true
@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
                     {
                       type: "text",
                       text: shortId,
-                      size: "xl",
+                      size: "lg",
                       weight: "bold",
                       color: "#1A1A2E",
                       adjustMode: "shrink-to-fit"
@@ -274,7 +274,7 @@ Deno.serve(async (req) => {
                         {
                           type: "text",
                           text: "PENDING",
-                          size: "xs",
+                          size: "xxs",
                           weight: "bold",
                           color: "#D97706"
                         }
@@ -283,7 +283,7 @@ Deno.serve(async (req) => {
                     {
                       type: "text",
                       text: `${formattedDate} • ${formattedTime}`,
-                      size: "xs",
+                      size: "xxs",
                       color: "#9CA3AF",
                       margin: "xs",
                       wrap: false
@@ -332,13 +332,13 @@ Deno.serve(async (req) => {
                           type: "text",
                           text: department,
                           weight: "bold",
-                          size: "md",
+                          size: "sm",
                           color: "#1A1A2E"
                         },
                         {
                           type: "text",
                           text: `เวร${shift}`,
-                          size: "sm",
+                          size: "xs",
                           color: "#2B8BE8",
                           weight: "bold"
                         }
@@ -379,7 +379,7 @@ Deno.serve(async (req) => {
                     {
                       type: "text",
                       text: `ผู้ส่งเวร: ${senderName}`,
-                      size: "sm",
+                      size: "xs",
                       color: "#6B7280",
                       margin: "sm",
                       gravity: "center",
@@ -393,7 +393,7 @@ Deno.serve(async (req) => {
             {
               type: "text",
               text: "รายการงาน",
-              size: "xs",
+              size: "xxs",
               color: "#6B7280",
               weight: "bold",
               margin: "lg"
