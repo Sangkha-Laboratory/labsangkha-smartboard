@@ -256,8 +256,7 @@ Deno.serve(async (req) => {
                     width: "24px",
                     height: "24px",
                     backgroundColor: isUnread ? "#eff6ff" : "#f1f5f9",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    cornerRadius: "12px",
                     contents: [
                       {
                         type: "text",

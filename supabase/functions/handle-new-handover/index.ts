@@ -202,9 +202,7 @@ Deno.serve(async (req) => {
                       width: "40px",
                       height: "40px",
                       backgroundColor: "#0f172a",
-                      cornerRadius: "xl",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      cornerRadius: "12px",
                       flex: 0,
                       contents: [
                         {
@@ -244,25 +242,33 @@ Deno.serve(async (req) => {
                 {
                   type: "box",
                   layout: "vertical",
-                  alignItems: "end",
                   flex: 0,
                   contents: [
                     {
                       type: "box",
-                      layout: "vertical",
-                      backgroundColor: "#fef3c7",
-                      cornerRadius: "md",
-                      paddingStart: "sm",
-                      paddingEnd: "sm",
-                      paddingTop: "xs",
-                      paddingBottom: "xs",
+                      layout: "horizontal",
                       contents: [
                         {
-                          type: "text",
-                          text: "PENDING",
-                          color: "#d97706",
-                          size: "xxs",
-                          weight: "bold"
+                          type: "filler"
+                        },
+                        {
+                          type: "box",
+                          layout: "vertical",
+                          backgroundColor: "#fef3c7",
+                          cornerRadius: "6px",
+                          paddingStart: "sm",
+                          paddingEnd: "sm",
+                          paddingTop: "xs",
+                          paddingBottom: "xs",
+                          contents: [
+                            {
+                              type: "text",
+                              text: "PENDING",
+                              color: "#d97706",
+                              size: "xxs",
+                              weight: "bold"
+                            }
+                          ]
                         }
                       ]
                     },
@@ -271,7 +277,8 @@ Deno.serve(async (req) => {
                       text: `${formattedDate} • ${formattedTime}`,
                       size: "xxs",
                       color: "#94a3b8",
-                      margin: "xs"
+                      margin: "xs",
+                      align: "end"
                     }
                   ]
                 }
@@ -284,9 +291,9 @@ Deno.serve(async (req) => {
               margin: "md",
               paddingAll: "lg",
               backgroundColor: "#f8fafc",
-              borderWidth: "xs",
+              borderWidth: "light",
               borderColor: "#e2e8f0",
-              cornerRadius: "xl",
+              cornerRadius: "12px",
               contents: [
                 {
                   type: "box",
@@ -300,9 +307,7 @@ Deno.serve(async (req) => {
                       width: "24px",
                       height: "24px",
                       backgroundColor: "#eff6ff",
-                      cornerRadius: "md",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      cornerRadius: "6px",
                       flex: 0,
                       contents: [
                         {
