@@ -255,13 +255,15 @@ Deno.serve(async (req) => {
                     layout: "vertical",
                     width: "24px",
                     height: "24px",
-                    backgroundColor: isUnread ? "#eff6ff" : "#f1f5f9",
+                    backgroundColor: isUnread ? "#ecfdf5" : "#f1f5f9",
                     cornerRadius: "12px",
+                    justifyContent: "center",
+                    alignItems: "center",
                     contents: [
                       {
                         type: "text",
                         text: String(index + 1),
-                        color: isUnread ? "#2563eb" : "#94a3b8",
+                        color: isUnread ? "#10b981" : "#94a3b8",
                         size: "xs",
                         weight: "bold",
                         align: "center",
@@ -297,28 +299,54 @@ Deno.serve(async (req) => {
                     margin: "md",
                     wrap: true
                   },
-                  // Button
+                  // Styled action boxes for premium look
                   isUnread ? {
-                    type: "button",
-                    style: "primary",
-                    color: "#0f172a",
-                    height: "sm",
+                    type: "box",
+                    layout: "vertical",
+                    backgroundColor: "#22c55e",
+                    cornerRadius: "8px",
+                    paddingTop: "xs",
+                    paddingBottom: "xs",
+                    alignItems: "center",
+                    justifyContent: "center",
                     margin: "md",
                     action: {
                       type: "postback",
                       label: "รับงานนี้",
                       data: `action=accept_one&handoverId=${handoverId}&index=${index}`
-                    }
+                    },
+                    contents: [
+                      {
+                        type: "text",
+                        text: "รับงานนี้",
+                        color: "#ffffff",
+                        weight: "bold",
+                        size: "xs",
+                        align: "center",
+                        gravity: "center"
+                      }
+                    ]
                   } : {
-                    type: "button",
-                    style: "secondary",
-                    height: "sm",
+                    type: "box",
+                    layout: "vertical",
+                    backgroundColor: "#f1f5f9",
+                    cornerRadius: "8px",
+                    paddingTop: "xs",
+                    paddingBottom: "xs",
+                    alignItems: "center",
+                    justifyContent: "center",
                     margin: "md",
-                    action: {
-                      type: "postback",
-                      label: "รับแล้ว",
-                      data: "noop"
-                    }
+                    contents: [
+                      {
+                        type: "text",
+                        text: "รับแล้ว",
+                        color: "#94a3b8",
+                        weight: "bold",
+                        size: "xs",
+                        align: "center",
+                        gravity: "center"
+                      }
+                    ]
                   }
                 ]
               }

@@ -129,28 +129,46 @@ Deno.serve(async (req) => {
       return {
         type: "box",
         layout: "horizontal",
-        spacing: "sm",
+        spacing: "md",
         margin: "md",
+        alignItems: "center",
         contents: [
+          // Circular index badge with soft green styling
           {
-            type: "text",
-            text: "•",
-            color: "#94a3b8",
-            size: "md",
+            type: "box",
+            layout: "vertical",
+            width: "24px",
+            height: "24px",
+            backgroundColor: "#ecfdf5",
+            cornerRadius: "12px",
             flex: 0,
-            weight: "bold"
+            justifyContent: "center",
+            alignItems: "center",
+            contents: [
+              {
+                type: "text",
+                text: String(idx + 1),
+                color: "#10b981",
+                size: "xs",
+                weight: "bold",
+                align: "center",
+                gravity: "center"
+              }
+            ]
           },
+          // Task content
           {
             type: "box",
             layout: "vertical",
             flex: 1,
+            spacing: "none",
             contents: [
               {
                 type: "text",
                 text: t.title || "ไม่มีหัวข้อ",
                 size: "sm",
                 weight: "bold",
-                color: "#1e293b",
+                color: "#0f172a",
                 wrap: true
               },
               ...(t.detail ? [
@@ -195,22 +213,24 @@ Deno.serve(async (req) => {
                   flex: 1,
                   alignItems: "center",
                   contents: [
-                    // Sleek professional dark-slate icon box from mockup design
+                    // Sleek professional sky blue list icon box matching mockup exactly
                     {
                       type: "box",
                       layout: "vertical",
                       width: "40px",
                       height: "40px",
-                      backgroundColor: "#0f172a",
-                      cornerRadius: "12px",
+                      backgroundColor: "#00a2ff",
+                      cornerRadius: "10px",
                       flex: 0,
+                      justifyContent: "center",
+                      alignItems: "center",
                       contents: [
                         {
                           type: "text",
-                          text: "✓",
+                          text: "☰",
                           color: "#ffffff",
                           weight: "bold",
-                          size: "sm",
+                          size: "md",
                           align: "center",
                           gravity: "center"
                         }
@@ -289,11 +309,11 @@ Deno.serve(async (req) => {
               type: "box",
               layout: "vertical",
               margin: "md",
-              paddingAll: "lg",
-              backgroundColor: "#f8fafc",
-              borderWidth: "light",
-              borderColor: "#e2e8f0",
-              cornerRadius: "12px",
+              paddingAll: "md",
+              backgroundColor: "#ffffff",
+              borderWidth: "1px",
+              borderColor: "#e0f2fe",
+              cornerRadius: "16px",
               contents: [
                 {
                   type: "box",
@@ -301,21 +321,22 @@ Deno.serve(async (req) => {
                   spacing: "md",
                   alignItems: "center",
                   contents: [
+                    // light blue icon box
                     {
                       type: "box",
                       layout: "vertical",
-                      width: "24px",
-                      height: "24px",
-                      backgroundColor: "#eff6ff",
-                      cornerRadius: "6px",
+                      width: "36px",
+                      height: "36px",
+                      backgroundColor: "#e0f2fe",
+                      cornerRadius: "8px",
                       flex: 0,
+                      justifyContent: "center",
+                      alignItems: "center",
                       contents: [
                         {
                           type: "text",
-                          text: "✓",
-                          color: "#2563eb",
-                          size: "xs",
-                          weight: "bold",
+                          text: "🏢",
+                          size: "sm",
                           align: "center",
                           gravity: "center"
                         }
@@ -324,22 +345,51 @@ Deno.serve(async (req) => {
                     {
                       type: "box",
                       layout: "vertical",
+                      flex: 1,
                       contents: [
                         {
                           type: "text",
                           text: department,
                           size: "sm",
                           weight: "bold",
-                          color: "#0f172a"
+                          color: "#1e293b"
                         },
                         {
                           type: "text",
-                          text: `เวร${shift} • ผู้ส่งเวร: ${senderName}`,
+                          text: `เวร${shift}`,
                           size: "xs",
-                          color: "#64748b",
-                          margin: "xs"
+                          color: "#00a2ff",
+                          weight: "bold"
                         }
                       ]
+                    }
+                  ]
+                },
+                {
+                  type: "separator",
+                  margin: "md",
+                  color: "#f1f5f9"
+                },
+                // Sender Row with Outline icon
+                {
+                  type: "box",
+                  layout: "horizontal",
+                  spacing: "sm",
+                  margin: "md",
+                  alignItems: "center",
+                  contents: [
+                    {
+                      type: "text",
+                      text: "👤",
+                      color: "#94a3b8",
+                      size: "xs",
+                      flex: 0
+                    },
+                    {
+                      type: "text",
+                      text: `ผู้ส่งเวร: ${senderName}`,
+                      size: "xs",
+                      color: "#64748b"
                     }
                   ]
                 }
@@ -348,40 +398,76 @@ Deno.serve(async (req) => {
             // Title and Tasks summary section
             {
               type: "text",
-              text: `รายการงาน (${tasks.length} งาน)`,
+              text: "รายการงาน",
               size: "xs",
               color: "#94a3b8",
               weight: "bold",
               margin: "lg"
             },
             ...taskComponents,
-            // Clean, native, robust buttons 100% compliant with LINE clients for premium clinical look
+            // Clean, custom, click-responsive buttons that look beautiful and premium
             {
               type: "box",
               layout: "horizontal",
               margin: "lg",
               spacing: "md",
               contents: [
+                // Solid Green Button: "รับทั้งหมด"
                 {
-                  type: "button",
-                  style: "primary",
-                  color: "#0f172a",
-                  height: "sm",
+                  type: "box",
+                  layout: "vertical",
+                  backgroundColor: "#22c55e",
+                  cornerRadius: "12px",
+                  paddingTop: "sm",
+                  paddingBottom: "sm",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flex: 1,
                   action: {
                     type: "postback",
                     label: "รับทั้งหมด",
                     data: `action=accept_all&taskId=${handoverId}`
-                  }
+                  },
+                  contents: [
+                    {
+                      type: "text",
+                      text: "รับทั้งหมด",
+                      color: "#ffffff",
+                      weight: "bold",
+                      size: "sm",
+                      align: "center",
+                      gravity: "center"
+                    }
+                  ]
                 },
+                // Outline Green Button: "เลือกรับงาน"
                 {
-                  type: "button",
-                  style: "secondary",
-                  height: "sm",
+                  type: "box",
+                  layout: "vertical",
+                  borderWidth: "1px",
+                  borderColor: "#22c55e",
+                  cornerRadius: "12px",
+                  paddingTop: "sm",
+                  paddingBottom: "sm",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flex: 1,
                   action: {
                     type: "postback",
                     label: "เลือกรับงาน",
                     data: `action=select&taskId=${handoverId}`
-                  }
+                  },
+                  contents: [
+                    {
+                      type: "text",
+                      text: "เลือกรับงาน",
+                      color: "#22c55e",
+                      weight: "bold",
+                      size: "sm",
+                      align: "center",
+                      gravity: "center"
+                    }
+                  ]
                 }
               ]
             }
