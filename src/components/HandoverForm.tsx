@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
+import { maskSensitiveData } from '../lib/maskUtils';
 
 interface TaskItem {
   id: string;
@@ -903,17 +904,21 @@ function DynamicLinePreview({ data, tasks, isLoggedIn }: { data: any, tasks: Tas
       <div className="space-y-2 mb-4">
         <p className="text-[8px] font-bold text-gray-300 uppercase tracking-widest ml-1 mb-0.5">รายการงาน</p>
         {tasks.filter(t => t.title.trim() !== '').length > 0 ? (
-          tasks.filter(t => t.title.trim() !== '').map((task, i) => (
-            <div key={i} className="flex gap-2.5">
-              <div className="w-4 h-4 rounded-md bg-green-50 text-green-600 dark:bg-green-950/20 dark:text-green-400 flex items-center justify-center text-[9px] font-black shrink-0 border border-green-100/30">
-                {i + 1}
+          tasks.filter(t => t.title.trim() !== '').map((task, i) => {
+            const maskedTitle = maskSensitiveData(task.title, false);
+            const maskedDesc = task.detail ? maskSensitiveData(task.detail, false) : maskSensitiveData(task.category, false);
+            return (
+              <div key={i} className="flex gap-2.5">
+                <div className="w-4 h-4 rounded-md bg-green-50 text-green-600 dark:bg-green-950/20 dark:text-green-400 flex items-center justify-center text-[9px] font-black shrink-0 border border-green-100/30">
+                  {i + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-bold text-gray-700 dark:text-gray-200 leading-tight truncate">{maskedTitle}</p>
+                  <p className="text-[9px] text-gray-400 leading-tight truncate">{maskedDesc}</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold text-gray-700 dark:text-gray-200 leading-tight truncate">{task.title}</p>
-                <p className="text-[9px] text-gray-400 leading-tight truncate">{task.detail || task.category}</p>
-              </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="flex items-center gap-2.5 opacity-20">
              <div className="w-4 h-4 rounded-md bg-gray-100 dark:bg-slate-700 font-bold flex items-center justify-center text-[9px]">1</div>
