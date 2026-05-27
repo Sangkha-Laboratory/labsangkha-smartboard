@@ -165,7 +165,7 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [lineNotifyStatus, setLineNotifyStatus] = useState<{ status: 'idle' | 'success' | 'error'; message?: string; details?: any }>({ status: 'idle' });
+  const [lineNotifyStatus, setLineNotifyStatus] = useState<{ status: 'idle' | 'loading' | 'success' | 'error'; message?: string; details?: any }>({ status: 'idle' });
   const [availableUsers, setAvailableUsers] = useState<Sender[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -379,76 +379,91 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
 
       if (handoverError) throw new Error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
 
-      // Try to notify LINE via Supabase Edge Function
-      setLineNotifyStatus({ status: 'idle' });
-      try {
-        const firstRecord = (handoverData && handoverData.length > 0) ? handoverData[0] : null;
-        const fallbackId = firstRecord?.id || Math.random().toString(36).substring(2, 15);
-        
-        console.log("Triggering LINE Edge Function with payload...");
-        
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-        const functionUrl = `${supabaseUrl}/functions/v1/handle-new-handover`;
-        
-        const response = await fetch(functionUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseAnonKey}`,
-            'apikey': supabaseAnonKey
-          },
-          body: JSON.stringify({
-            id: fallbackId,
-            department: formData.dept,
-            shift: formData.shift,
-            sender_name: userRecord.full_name,
-            tasks: tasks.filter(t => t.title.trim() !== ''),
-            created_at: new Date().toISOString()
-          })
-        });
+      // 1. Prepare data for LINE Edge Function
+      const firstRecord = (handoverData && handoverData.length > 0) ? handoverData[0] : null;
+      const fallbackId = firstRecord?.id || Math.random().toString(36).substring(2, 15);
+      const payload = {
+        id: fallbackId,
+        department: formData.dept,
+        shift: formData.shift,
+        sender_name: userRecord.full_name,
+        tasks: tasks.filter(t => t.title.trim() !== ''),
+        created_at: new Date().toISOString()
+      };
 
-        const responseText = await response.text();
-        console.log("Edge Function response string:", responseText);
-
-        let responseJson: any = null;
-        try {
-          responseJson = JSON.parse(responseText);
-        } catch (e) {
-          // not JSON
-        }
-
-        if (!response.ok) {
-          console.error(`❌ LINE notification Edge Function error status: ${response.status}`);
-          setLineNotifyStatus({ 
-            status: 'error', 
-            message: responseJson?.error || `HTTP ${response.status}: ${responseText || 'เกิดข้อผิดพลาดในการรันแอปพลิเคชัน'}`,
-            details: responseJson || { raw_response: responseText, status_code: response.status }
-          });
-        } else if (responseJson && (responseJson.error || !responseJson.success)) {
-          console.error("❌ LINE Edge Function returned business-level error:", responseJson);
-          setLineNotifyStatus({ 
-            status: 'error', 
-            message: responseJson.error || 'Server Edge function business error',
-            details: responseJson
-          });
-        } else {
-          console.log('✅ LINE notification triggered successfully! Response:', responseJson);
-          setLineNotifyStatus({ status: 'success', message: 'ส่งไลน์แจ้งกลุ่มเวรสำเร็จ!' });
-        }
-      } catch (funcErr: any) {
-        console.error('❌ Expected failure during execution of LINE trigger step:', funcErr);
-        setLineNotifyStatus({ 
-          status: 'error', 
-          message: funcErr.message || 'เกิดข้อผิดพลาดขณะส่งข้อความ',
-          details: funcErr
-        });
-      }
-
+      // 2. Set UI status immediately to success so user doesn't wait
       setSubmitStatus('success');
       setTasks([{ id: '1', title: '', category: '', detail: '' }]);
       setFormData(prev => ({ ...prev, shift: '', pin: '', employeeName: '' }));
-      await supabase.auth.signOut();
+      setIsConfirmModalOpen(false);
+      setIsSubmitting(false);
+
+      // Start fetching the LINE notification in the background
+      setLineNotifyStatus({ status: 'loading', message: 'กำลังส่งแจ้งเตือนผ่าน Line...' });
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+      const functionUrl = `${supabaseUrl}/functions/v1/handle-new-handover`;
+
+      // Background self-executing promise
+      (async () => {
+        try {
+          console.log("Triggering LINE Edge Function in background...");
+          const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseAnonKey}`,
+              'apikey': supabaseAnonKey
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const responseText = await response.text();
+          console.log("Edge Function background response:", responseText);
+
+          let responseJson: any = null;
+          try {
+            responseJson = JSON.parse(responseText);
+          } catch (e) {
+            // not JSON
+          }
+
+          if (!response.ok) {
+            console.error(`❌ LINE notification Edge Function error status: ${response.status}`);
+            setLineNotifyStatus({ 
+              status: 'error', 
+              message: responseJson?.error || `HTTP ${response.status}: ${responseText || 'เกิดข้อผิดพลาดในการรันแอปพลิเคชัน'}`,
+              details: responseJson || { raw_response: responseText, status_code: response.status }
+            });
+          } else if (responseJson && (responseJson.error || !responseJson.success)) {
+            console.error("❌ LINE Edge Function returned business-level error in background:", responseJson);
+            setLineNotifyStatus({ 
+              status: 'error', 
+              message: responseJson.error || 'Server Edge function business error',
+              details: responseJson
+            });
+          } else {
+            console.log('✅ LINE notification triggered in background successfully!');
+            setLineNotifyStatus({ status: 'success', message: 'ส่งไลน์แจ้งกลุ่มเวรสำเร็จ!' });
+          }
+        } catch (funcErr: any) {
+          console.error('❌ Expected failure during background execution of LINE trigger step:', funcErr);
+          setLineNotifyStatus({ 
+            status: 'error', 
+            message: funcErr.message || 'เกิดข้อผิดพลาดขณะส่งข้อความ',
+            details: funcErr
+          });
+        } finally {
+          // Always safely sign out the temporary session in background
+          try {
+            await supabase.auth.signOut();
+          } catch (soErr) {
+            console.error("Signout check failed:", soErr);
+          }
+        }
+      })();
+
       setTimeout(() => {
         setSubmitStatus('idle');
         setLineNotifyStatus({ status: 'idle' });
@@ -696,6 +711,17 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
                  <CheckCircle2 size={16} />
                  บันทึกส่งมอบงานสำเร็จ!
               </motion.div>
+
+              {lineNotifyStatus.status === 'loading' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="bg-blue-50/50 dark:bg-blue-950/10 px-4 py-2.5 rounded-2xl flex items-center gap-2.5 text-blue-600 dark:text-blue-400 font-medium text-[11px] border border-blue-100/10 dark:border-blue-900/10"
+                >
+                  <div className="w-3.5 h-3.5 border-2 border-brand-blue/30 border-t-brand-blue rounded-full animate-spin shrink-0" />
+                  <span>กำลังส่งข้อมูลแจ้งเตือนไปยังแอปพลิเคชัน LINE...</span>
+                </motion.div>
+              )}
 
               {lineNotifyStatus.status === 'error' && (
                 <motion.div

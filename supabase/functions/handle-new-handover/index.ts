@@ -125,6 +125,63 @@ Deno.serve(async (req) => {
     const shortId = `LAB-${cleanIdPart.substring(0, Math.min(6, cleanIdPart.length)).toUpperCase() || "NEW"}`;
 
     // Build LINE Flex Message based on requested card design with maximum compatibility
+    const taskComponents = tasks.map((t: any, idx: number) => {
+      return {
+        type: "box",
+        layout: "horizontal",
+        spacing: "md",
+        margin: "md",
+        alignItems: "center",
+        contents: [
+          {
+            type: "box",
+            layout: "vertical",
+            width: "20px",
+            height: "20px",
+            backgroundColor: "#f0fdf4",
+            cornerRadius: "xxl",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: 0,
+            contents: [
+              {
+                type: "text",
+                text: String(idx + 1),
+                color: "#16a34a",
+                size: "xs",
+                weight: "bold"
+              }
+            ]
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            flex: 1,
+            contents: [
+              {
+                type: "text",
+                text: t.title || "ไม่มีหัวข้อ",
+                size: "sm",
+                weight: "bold",
+                color: "#1e293b",
+                wrap: true
+              },
+              ...(t.detail ? [
+                {
+                  type: "text",
+                  text: t.detail,
+                  size: "xs",
+                  color: "#64748b",
+                  margin: "xs",
+                  wrap: true
+                }
+              ] : [])
+            ]
+          }
+        ]
+      };
+    });
+
     const flexMessage = {
       type: "flex",
       altText: `📢 ส่งต่อเวรใหม่: ${department} (เวร${shift})`,
@@ -142,77 +199,127 @@ Deno.serve(async (req) => {
             {
               type: "box",
               layout: "horizontal",
-              spacing: "md",
+              alignItems: "center",
               contents: [
                 {
-                  type: "image",
-                  url: "https://img.icons8.com/color/96/todo-list.png",
-                  size: "xs",
-                  flex: 0
-                },
-                {
                   type: "box",
-                  layout: "vertical",
+                  layout: "horizontal",
+                  spacing: "md",
                   flex: 1,
+                  alignItems: "center",
                   contents: [
+                    // Sleek professional dark-slate icon box with text icon representing a clinical clipboard
                     {
-                      type: "text",
-                      text: "ส่งเวร",
-                      size: "xs",
-                      color: "#94a3b8",
-                      weight: "bold"
+                      type: "box",
+                      layout: "vertical",
+                      width: "40px",
+                      height: "40px",
+                      backgroundColor: "#f1f5f9",
+                      cornerRadius: "lg",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flex: 0,
+                      contents: [
+                        {
+                          type: "text",
+                          text: "📋",
+                          size: "md"
+                        }
+                      ]
                     },
                     {
-                      type: "text",
-                      text: shortId,
-                      size: "lg",
-                      weight: "bold",
-                      color: "#0f172a"
+                      type: "box",
+                      layout: "vertical",
+                      contents: [
+                        {
+                          type: "text",
+                          text: "ส่งเวร",
+                          size: "xs",
+                          color: "#94a3b8",
+                          weight: "bold"
+                        },
+                        {
+                          type: "text",
+                          text: shortId,
+                          size: "lg",
+                          weight: "bold",
+                          color: "#0f172a"
+                        }
+                      ]
                     }
                   ]
                 },
+                // PENDING badge and date display matching mockup perfectly
                 {
                   type: "box",
                   layout: "vertical",
+                  alignItems: "end",
+                  flex: 0,
                   contents: [
                     {
-                      type: "text",
-                      text: "PENDING",
-                      color: "#ca8a04",
-                      size: "xs",
-                      weight: "bold",
-                      align: "end"
+                      type: "box",
+                      layout: "vertical",
+                      backgroundColor: "#fef3c7",
+                      cornerRadius: "md",
+                      paddingStart: "sm",
+                      paddingEnd: "sm",
+                      paddingTop: "xs",
+                      paddingBottom: "xs",
+                      contents: [
+                        {
+                          type: "text",
+                          text: "PENDING",
+                          color: "#d97706",
+                          size: "xxs",
+                          weight: "bold"
+                        }
+                      ]
                     },
                     {
                       type: "text",
                       text: `${formattedDate} • ${formattedTime}`,
                       size: "xxs",
                       color: "#94a3b8",
-                      margin: "sm",
-                      align: "end"
+                      margin: "xs"
                     }
                   ]
                 }
               ]
             },
-            // Department Card Box
+            // Department Card Box - match preview card outline style perfectly
             {
               type: "box",
               layout: "vertical",
               margin: "md",
-              paddingAll: "md",
-              backgroundColor: "#f8fafc",
+              paddingAll: "lg",
+              backgroundColor: "#ffffff",
+              borderWidth: "1px",
+              borderColor: "#e2e8f0",
+              cornerRadius: "xl",
               contents: [
                 {
                   type: "box",
                   layout: "horizontal",
                   spacing: "md",
+                  alignItems: "center",
                   contents: [
                     {
-                      type: "image",
-                      url: "https://img.icons8.com/fluency/96/hospital.png",
-                      size: "xxs",
-                      flex: 0
+                      type: "box",
+                      layout: "vertical",
+                      width: "32px",
+                      height: "32px",
+                      backgroundColor: "#eff6ff",
+                      cornerRadius: "lg",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flex: 0,
+                      contents: [
+                        {
+                          type: "text",
+                          text: "🏥",
+                          size: "sm"
+                        }
+                      ]
                     },
                     {
                       type: "box",
@@ -223,13 +330,13 @@ Deno.serve(async (req) => {
                           text: department,
                           size: "sm",
                           weight: "bold",
-                          color: "#1e293b"
+                          color: "#0f172a"
                         },
                         {
                           type: "text",
                           text: `เวร${shift}`,
                           size: "xs",
-                          color: "#0284c7",
+                          color: "#0ea5e9",
                           weight: "bold",
                           margin: "xs"
                         }
@@ -238,15 +345,23 @@ Deno.serve(async (req) => {
                   ]
                 },
                 {
+                  type: "separator",
+                  margin: "md",
+                  color: "#f1f5f9"
+                },
+                // Indented Sender details matching LinePreview
+                {
                   type: "box",
                   layout: "horizontal",
                   margin: "md",
-                  spacing: "xs",
+                  spacing: "sm",
+                  alignItems: "center",
                   contents: [
                     {
-                      type: "image",
-                      url: "https://img.icons8.com/fluency/96/user-male-circle.png",
-                      size: "xxs",
+                      type: "text",
+                      text: "👤",
+                      size: "xs",
+                      color: "#64748b",
                       flex: 0
                     },
                     {
@@ -266,19 +381,20 @@ Deno.serve(async (req) => {
               size: "xs",
               color: "#94a3b8",
               weight: "bold",
-              margin: "md"
+              margin: "lg"
             },
-            // Two elegant custom action buttons using robust native button types
+            ...taskComponents,
+            // Clean, native, robust buttons 100% compliant with LINE clients for premium clinical look
             {
               type: "box",
               layout: "horizontal",
               margin: "lg",
-              spacing: "sm",
+              spacing: "md",
               contents: [
                 {
                   type: "button",
                   style: "primary",
-                  color: "#22c55e",
+                  color: "#10b981",
                   height: "sm",
                   action: {
                     type: "postback",
@@ -289,7 +405,6 @@ Deno.serve(async (req) => {
                 {
                   type: "button",
                   style: "secondary",
-                  color: "#22c55e",
                   height: "sm",
                   action: {
                     type: "postback",

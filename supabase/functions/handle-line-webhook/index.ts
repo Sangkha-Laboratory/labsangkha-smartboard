@@ -299,46 +299,26 @@ Deno.serve(async (req) => {
                   },
                   // Button
                   isUnread ? {
-                    type: "box",
-                    layout: "vertical",
-                    backgroundColor: "#ffffff",
-                    borderWidth: "1px",
-                    borderColor: "#22c55e",
-                    paddingTop: "sm",
-                    paddingBottom: "sm",
-                    margin: "xl",
+                    type: "button",
+                    style: "primary",
+                    color: "#10b981",
+                    height: "sm",
+                    margin: "md",
                     action: {
                       type: "postback",
                       label: "รับงานนี้",
                       data: `action=accept_one&handoverId=${handoverId}&index=${index}`
-                    },
-                    contents: [
-                      {
-                        type: "text",
-                        text: "รับงานนี้",
-                        color: "#22c55e",
-                        align: "center",
-                        size: "xs",
-                        weight: "bold"
-                      }
-                    ]
+                    }
                   } : {
-                    type: "box",
-                    layout: "vertical",
-                    backgroundColor: "#f1f5f9",
-                    paddingTop: "sm",
-                    paddingBottom: "sm",
-                    margin: "xl",
-                    contents: [
-                      {
-                        type: "text",
-                        text: "รับแล้ว",
-                        color: "#94a3b8",
-                        align: "center",
-                        size: "xs",
-                        weight: "bold"
-                      }
-                    ]
+                    type: "button",
+                    style: "secondary",
+                    height: "sm",
+                    margin: "md",
+                    action: {
+                      type: "postback",
+                      label: "รับแล้ว",
+                      data: "noop"
+                    }
                   }
                 ]
               }
