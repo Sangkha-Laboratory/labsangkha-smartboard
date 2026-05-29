@@ -1,7 +1,12 @@
 import React from 'react';
 import { Phone, Mail, MapPin, Book, MessageSquare, Shield, ArrowRight } from 'lucide-react';
 
-export default function Footer() {
+interface FooterProps {
+  onPrivacyClick?: () => void;
+  onTermsClick?: () => void;
+}
+
+export default function Footer({ onPrivacyClick, onTermsClick }: FooterProps) {
   return (
     <footer className="bg-[#0f172a] text-white rounded-t-[2.5rem] mt-4 sm:mt-6 pt-6 pb-4 overflow-hidden relative border-t border-white/5">
       <div className="absolute top-0 right-0 w-96 h-96 bg-brand-blue/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
@@ -39,9 +44,20 @@ export default function Footer() {
              <span className="hidden sm:inline text-gray-700">|</span>
              <p>Smart Medical Laboratory</p>
            </div>
-           <div className="flex gap-6 justify-center">
-             <a href="#" className="hover:text-blue-400 transition-colors">Privacy Policy</a>
-             <a href="#" className="hover:text-blue-400 transition-colors">Terms of Service</a>
+           <div className="flex gap-6 justify-center font-thai text-xs text-gray-400">
+             <button 
+               onClick={(e) => { e.preventDefault(); onPrivacyClick?.(); }} 
+               className="hover:text-blue-400 transition-colors cursor-pointer bg-transparent border-none p-0 text-gray-500 hover:text-white font-medium"
+             >
+               ประกาศความเป็นส่วนตัว
+             </button>
+             <span className="text-gray-700">|</span>
+             <button 
+               onClick={(e) => { e.preventDefault(); onTermsClick?.(); }} 
+               className="hover:text-blue-400 transition-colors cursor-pointer bg-transparent border-none p-0 text-gray-500 hover:text-white font-medium"
+             >
+               ข้อกำหนดการใช้บริการ
+             </button>
            </div>
         </div>
       </div>

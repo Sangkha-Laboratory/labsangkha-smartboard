@@ -24,3 +24,8 @@ firebase.json
 *.njsproj
 *.sln
 *.swp
+
+# Organization-specific Privacy Policy details document
+privacy-policy-details.md
+privacy-policy-internal.md
+privacy-policy-public.md

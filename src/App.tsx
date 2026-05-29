@@ -29,6 +29,7 @@ export default function App() {
   const [showManual, setShowManual] = useState(false);
   const [showContact, setShowContact] = useState(false);
   const [showSafety, setShowSafety] = useState(false);
+  const [safetyTab, setSafetyTab] = useState<'public_privacy' | 'public_terms'>('public_privacy');
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +39,25 @@ export default function App() {
       setError(`เกิดข้อผิดพลาด: ${e.error?.message || 'ไม่ทราบสาเหตุ'}`);
     };
     window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
+
+    const handleOpenTab = (e: Event) => {
+      const customEvent = e as CustomEvent<'public_privacy' | 'public_terms'>;
+      if (customEvent.detail) {
+        setSafetyTab(customEvent.detail);
+        setIsAdminPortal(false);
+        setIsUserPortal(false);
+        setShowManual(false);
+        setShowContact(false);
+        setShowSafety(true);
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    };
+    window.addEventListener('open-safety-tab', handleOpenTab as EventListener);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('open-safety-tab', handleOpenTab as EventListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -266,11 +285,13 @@ export default function App() {
           }}
           isContactActive={showContact}
           onSafetyClick={() => {
+            setSafetyTab('public_privacy');
             setIsAdminPortal(false);
             setIsUserPortal(false);
             setShowManual(false);
             setShowContact(false);
             setShowSafety(true);
+            window.scrollTo({ top: 0, behavior: 'instant' });
           }}
           isSafetyActive={showSafety}
           onHomeClick={() => {
@@ -303,7 +324,7 @@ export default function App() {
             </div>
           ) : showSafety ? (
             <div className="py-2.5">
-              <SafetyPolicy onClose={() => setShowSafety(false)} />
+              <SafetyPolicy initialTab={safetyTab} onClose={() => setShowSafety(false)} />
             </div>
           ) : (
             <>
@@ -324,16 +345,48 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Bottom Support Section (Horizontal) */}
-                <div className="mt-4 sm:mt-6">
-                  <SupportSection vertical={false} onManualClick={() => setShowManual(true)} onContactClick={() => setShowContact(true)} onSafetyClick={() => setShowSafety(true)} />
-                </div>
-              </div>
-            </>
-          )}
-        </main>
-  
-        <Footer />
+                 {/* Bottom Support Section (Horizontal) */}
+                 <div className="mt-4 sm:mt-6">
+                   <SupportSection 
+                     vertical={false} 
+                     onManualClick={() => setShowManual(true)} 
+                     onContactClick={() => setShowContact(true)} 
+                     onSafetyClick={() => {
+                       setSafetyTab('public_privacy');
+                       setIsAdminPortal(false);
+                       setIsUserPortal(false);
+                       setShowManual(false);
+                       setShowContact(false);
+                       setShowSafety(true);
+                       window.scrollTo({ top: 0, behavior: 'instant' });
+                     }} 
+                   />
+                 </div>
+               </div>
+             </>
+           )}
+         </main>
+   
+         <Footer 
+           onPrivacyClick={() => {
+             setSafetyTab('public_privacy');
+             setIsAdminPortal(false);
+             setIsUserPortal(false);
+             setShowManual(false);
+             setShowContact(false);
+             setShowSafety(true);
+             window.scrollTo({ top: 0, behavior: 'instant' });
+           }}
+           onTermsClick={() => {
+             setSafetyTab('public_terms');
+             setIsAdminPortal(false);
+             setIsUserPortal(false);
+             setShowManual(false);
+             setShowContact(false);
+             setShowSafety(true);
+             window.scrollTo({ top: 0, behavior: 'instant' });
+           }}
+         />
       </div>
     </div>
   );

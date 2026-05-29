@@ -169,6 +169,7 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
   const [lineNotifyStatus, setLineNotifyStatus] = useState<{ status: 'idle' | 'loading' | 'success' | 'error'; message?: string; details?: any }>({ status: 'idle' });
   const [availableUsers, setAvailableUsers] = useState<Sender[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -248,6 +249,11 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
     if (validTasks.length === 0) {
       setSubmitStatus('error');
       setErrorMessage('กรุณาเพิ่มรายการงานอย่างน้อย 1 รายการ');
+      return;
+    }
+    if (!acceptedTerms) {
+      setSubmitStatus('error');
+      setErrorMessage('กรุณายอมรับข้อกำหนดการใช้บริการและประกาศความเป็นส่วนตัวก่อนส่งมอบเวร');
       return;
     }
     setSubmitStatus('idle');
@@ -758,6 +764,36 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
             </div>
           )}
         </AnimatePresence>
+
+        {/* Verification Checkbox */}
+        <div className="flex items-start gap-2.5 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-gray-100 dark:border-slate-700/60 mt-1 mb-2">
+          <input 
+            type="checkbox" 
+            id="accept-terms-checkbox"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue cursor-pointer"
+          />
+          <label htmlFor="accept-terms-checkbox" className="text-[11px] sm:text-xs text-slate-655 dark:text-slate-400 font-medium font-thai leading-relaxed select-none cursor-pointer">
+            ข้าพเจ้ายอมรับ 
+            <button 
+              type="button" 
+              onClick={() => window.dispatchEvent(new CustomEvent('open-safety-tab', { detail: 'public_terms' }))} 
+              className="text-brand-blue hover:underline bg-transparent border-none p-0 mx-1 font-bold inline hover:text-brand-dark cursor-pointer"
+            >
+              ข้อกำหนดการใช้บริการ
+            </button> 
+            และ 
+            <button 
+              type="button" 
+              onClick={() => window.dispatchEvent(new CustomEvent('open-safety-tab', { detail: 'public_privacy' }))} 
+              className="text-brand-blue hover:underline bg-transparent border-none p-0 mx-1 font-bold inline hover:text-brand-dark cursor-pointer"
+            >
+              ประกาศความเป็นส่วนตัว
+            </button> 
+            ในการจัดเก็บและคุ้มครองข้อมูลเวรห้องปฏิบัติการ
+          </label>
+        </div>
 
         {/* Final Submit Button */}
         <button 

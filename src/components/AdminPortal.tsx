@@ -188,6 +188,156 @@ export default function AdminPortal({
   const [exportedImage, setExportedImage] = useState<string | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
+  // LINE Settings States
+  const [lineGroups, setLineGroups] = useState<any[]>([]);
+  const [isLoadingLineSettings, setIsLoadingLineSettings] = useState(false);
+  const [activeLineGroupId, setActiveLineGroupId] = useState<string>('');
+  const [newLineGroupId, setNewLineGroupId] = useState<string>('');
+  const [isSavingLineSettings, setIsSavingLineSettings] = useState(false);
+  const [testNotificationStatus, setTestNotificationStatus] = useState<{
+    status: 'idle' | 'loading' | 'success' | 'error';
+    message?: string;
+  }>({ status: 'idle' });
+
+  const fetchLineSettings = useCallback(async () => {
+    setIsLoadingLineSettings(true);
+    try {
+      const { data: activeGroupId, error: rpcError } = await supabase.rpc('get_active_line_group');
+      if (rpcError) {
+        console.warn('RPC get_active_line_group failed, fallback to select:', rpcError);
+      }
+      
+      const { data: groups, error: fetchError } = await supabase
+        .from('line_groups')
+        .select('*')
+        .order('joined_at', { ascending: false });
+        
+      if (fetchError) throw fetchError;
+      
+      setLineGroups(groups || []);
+      
+      const matchedActive = activeGroupId || groups?.find(g => g.is_active)?.group_id || '';
+      setActiveLineGroupId(matchedActive);
+      setNewLineGroupId(matchedActive);
+    } catch (err: any) {
+      console.error('Error fetching LINE settings:', err);
+    } finally {
+      setIsLoadingLineSettings(false);
+    }
+  }, []);
+
+  const handleSaveLineGroup = async (groupIdToSave: string) => {
+    if (!groupIdToSave.trim()) {
+      alert('กรุณากรอก Group ID');
+      return;
+    }
+    setIsSavingLineSettings(true);
+    try {
+      const { error } = await supabase.rpc('save_line_group', { p_group_id: groupIdToSave.trim() });
+      if (error) throw error;
+      
+      await fetchLineSettings();
+      alert('บันทึกตั้งค่ากลุ่ม LINE สำเร็จ');
+    } catch (err: any) {
+      console.error('Error saving LINE group:', err);
+      alert('เกิดข้อผิดพลาดในการบันทึก: ' + (err.message || ''));
+    } finally {
+      setIsSavingLineSettings(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    if (!activeLineGroupId) {
+      setTestNotificationStatus({ 
+        status: 'error', 
+        message: 'กรุณาเลือกและตั้งค่ากลุ่ม LINE ที่ใช้งานอยู่ (Active) ก่อนทำการทดสอบ' 
+      });
+      return;
+    }
+    
+    setTestNotificationStatus({ status: 'loading' });
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+      const functionUrl = `${supabaseUrl}/functions/v1/handle-new-handover`;
+      
+      const payload = {
+        id: "00000000-0000-0000-0000-000000000000",
+        division: "ทดสอบการเชื่อมต่อระบบ",
+        shift: "กลางวัน/ทดสอบ",
+        sender_name: user?.full_name || "ผู้ดูแลระบบ",
+        tasks: [
+          {
+            id: "test-task",
+            title: "ทดสอบการส่งการแจ้งเตือน LINE Flex Message",
+            detail: "นี่คือข้อความทดสอบจากหน้าตั้งค่าระบบ LINE Settings ใน Admin Portal ระบบของคุณพร้อมรับส่งเวรและแจ้งเตือนแล้ว"
+          }
+        ],
+        created_at: new Date().toISOString()
+      };
+
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'apikey': supabaseAnonKey
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await response.text();
+      console.log("LINE Test response:", text);
+
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        // Not JSON
+      }
+
+      if (response.ok && (data.success !== false)) {
+        setTestNotificationStatus({ 
+          status: 'success', 
+          message: 'ส่งข้อความทดสอบไปยังกลุ่ม LINE สำเร็จแล้ว! กรุณาตรวจสอบในกลุ่ม LINE ของท่าน' 
+        });
+      } else {
+        throw new Error(data.error || 'การส่งแจ้งเตือนตอบกลับว่าไม่สำเร็จ');
+      }
+    } catch (err: any) {
+      console.error('Error testing LINE notify:', err);
+      setTestNotificationStatus({ 
+        status: 'error', 
+        message: 'ส่งล้มเหลว: ' + (err.message || 'ไม่สามารถติดต่อ Edge Function ได้') 
+      });
+    }
+  };
+
+  const handleDeleteLineGroup = async (groupIdToDelete: string) => {
+    if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบกลุ่ม LINE นี้จากประวัติ?')) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('line_groups')
+        .delete()
+        .eq('group_id', groupIdToDelete);
+        
+      if (error) throw error;
+      
+      if (activeLineGroupId === groupIdToDelete) {
+        setActiveLineGroupId('');
+        setNewLineGroupId('');
+      }
+      
+      await fetchLineSettings();
+    } catch (err: any) {
+      console.error('Error deleting LINE group:', err);
+      alert('ไม่สามารถลบกลุ่มไลน์ได้: ' + (err.message || ''));
+    }
+  };
+
   const fetchUsersData = useCallback(async () => {
     setIsLoadingUsers(true);
     try {
@@ -569,6 +719,12 @@ export default function AdminPortal({
       fetchUsersData();
     }
   }, [activeTab, fetchUsersData]);
+
+  useEffect(() => {
+    if (activeTab === 'Settings') {
+      fetchLineSettings();
+    }
+  }, [activeTab, fetchLineSettings]);
 
   useEffect(() => {
     let filteredData = [...handovers];
@@ -2083,8 +2239,8 @@ export default function AdminPortal({
                                   ann.category === 'critical' 
                                     ? 'bg-red-50 text-red-500 border border-red-100/50 dark:bg-red-950/20 dark:border-red-900/30' 
                                     : ann.category === 'important'
-                                    ? 'bg-yellow-50 text-yellow-600 border border-yellow-100/50 dark:bg-yellow-950/20 dark:border-yellow-905/30'
-                                    : 'bg-blue-50 text-brand-blue border border-blue-100/50 dark:bg-blue-950/20 dark:border-blue-900/30'
+                                    ? 'bg-yellow-50 text-yellow-600 border border-yellow-101 dark:bg-yellow-950/20 dark:border-yellow-905/30'
+                                    : 'bg-blue-50 text-brand-blue border border-blue-101 dark:bg-blue-950/20 dark:border-blue-900/30'
                                 }`}>
                                   {ann.category === 'critical' ? 'ด่วนที่สุด' : ann.category === 'important' ? 'สำคัญ' : 'ทั่วไป'}
                                 </span>
@@ -2140,6 +2296,242 @@ export default function AdminPortal({
                 </div>
               )}
             </div>
+          </div>
+        ) : activeTab === 'Settings' ? (
+          <div className="p-6 space-y-6 md:space-y-8 animate-fadeIn min-h-[500px] max-w-full overflow-hidden font-thai">
+            {/* Header section with styling matching other pages */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#06C755] animate-pulse"></span>
+                  <p className="text-[10px] font-black uppercase text-[#06C755] tracking-widest font-mono">LINE Integration</p>
+                </div>
+                <h1 className="text-2xl md:text-3xl font-black text-[#0f2d52] dark:text-white leading-tight font-thai">
+                  ตั้งค่าระบบแจ้งเตือน LINE
+                </h1>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-bold leading-relaxed font-thai">
+                  เชื่อมโยงและบริหารจัดการกลุ่ม LINE สำหรับส่งใบงานการส่งมอบเวรของแผนกเทคนิคการแพทย์
+                </p>
+              </div>
+
+              {/* Refresh Button */}
+              <button
+                type="button"
+                onClick={fetchLineSettings}
+                disabled={isLoadingLineSettings}
+                className="w-full md:w-auto h-11 px-6 bg-slate-50 hover:bg-slate-100 dark:bg-slate-850 dark:hover:bg-slate-800 rounded-xl flex items-center justify-center gap-2 text-xs font-black text-[#0f2d52] dark:text-slate-250 border border-slate-150 dark:border-slate-800 transition cursor-pointer disabled:opacity-50 flex-shrink-0"
+              >
+                <RefreshCw size={14} className={isLoadingLineSettings ? "animate-spin" : ""} />
+                <span>รีเฟรชการเชื่อมต่อ</span>
+              </button>
+            </div>
+
+            {isLoadingLineSettings && lineGroups.length === 0 ? (
+              <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 p-16 text-center flex flex-col items-center justify-center gap-4">
+                <div className="w-10 h-10 border-3 border-[#06C755]/30 border-t-[#06C755] rounded-full animate-spin"></div>
+                <p className="text-xs text-slate-400 font-bold font-thai">กำลังตรวจสอบข้อมูลกลุ่ม LINE ในระบบ...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                {/* Left Column - Forms & Testing (7 cols) */}
+                <div className="lg:col-span-7 space-y-6 max-w-full">
+                  
+                  {/* Active Status Display Box */}
+                  <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 dark:from-emerald-950/20 dark:to-teal-950/10 border border-emerald-500/20 dark:border-emerald-800/30 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col md:flex-row items-center gap-5">
+                    <div className="w-14 h-14 rounded-2xl bg-[#06C755] flex items-center justify-center text-white flex-shrink-0 shadow-[0_8px_20px_rgba(6,199,85,0.25)]">
+                      <Bell size={24} />
+                    </div>
+                    <div className="text-center md:text-left space-y-1 min-w-0 flex-1">
+                      <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">สถานะการทำงานปัจจุบัน</span>
+                      <h4 className="text-base font-black text-[#0f2d52] dark:text-white leading-none font-thai">
+                        {activeLineGroupId ? 'เชื่อมต่อ LINE Notification สำเร็จ' : 'ยังไม่ได้เชื่อมต่อกลุ่ม LINE'}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-bold max-w-sm font-thai break-all">
+                        {activeLineGroupId 
+                          ? `ระบบกำลังส่งส่งมอบเวรไปยังกลุ่ม LINE ID: ${activeLineGroupId}`
+                          : 'กรุณากรอกและเปิดใช้งาน Group ID เพื่อให้ระบบสามารถแจ้งเตือนไปยังกลุ่ม LINE ของท่าน'
+                        }
+                      </p>
+                    </div>
+                    {activeLineGroupId && (
+                      <div className="flex-shrink-0 md:ml-auto flex items-center gap-1.5 px-3 py-1 bg-[#06C755]/20 text-[#06C755] border border-[#06C755]/10 rounded-full text-[10px] font-black uppercase tracking-wider">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#06C755] animate-ping"></span>
+                        <span>Active</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Settings Input Form */}
+                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-black text-[#0f2d52] dark:text-white font-thai leading-none">ระบุกลุ่มแจ้งเตือนไลน์</h3>
+                      <p className="text-xs text-slate-400 font-bold font-thai">อัปเดต ID กลุ่ม LINE เพื่อเปลี่ยนปลายทางสำหรับการแจ้งเตือน</p>
+                    </div>
+
+                    <form onSubmit={(e) => { e.preventDefault(); handleSaveLineGroup(newLineGroupId); }} className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block font-thai">LINE Group ID (สืบค้นจาก LINE Chat)</label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            required
+                            value={newLineGroupId}
+                            onChange={(e) => setNewLineGroupId(e.target.value)}
+                            placeholder="ตัวอย่างเช่น: Ca9e6ca..."
+                            className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 font-mono text-sm font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                        <button
+                          type="submit"
+                          disabled={isSavingLineSettings || !newLineGroupId.trim()}
+                          className="w-full sm:w-auto px-6 h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(16,185,129,0.2)] disabled:opacity-50"
+                        >
+                          {isSavingLineSettings ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          ) : (
+                            <CheckCircle2 size={14} />
+                          )}
+                          <span>อัปเดตและเปิดใช้งานกลุ่ม (Save & Activate)</span>
+                        </button>
+                      </div>
+                    </form>
+
+                    {/* How-to guide info */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2.5">
+                      <div className="flex items-center gap-2 text-[11px] font-black text-slate-500 dark:text-slate-400">
+                        <AlertTriangle size={13} className="text-amber-500" />
+                        <span className="font-thai">วิธีการรับสิทธิ์และค้นหา Line Group ID:</span>
+                      </div>
+                      <ol className="list-decimal list-inside text-[11px] text-slate-450 dark:text-slate-500 space-y-1 font-thai font-bold">
+                        <li>เชิญบอทไลน์ของระบบเข้าร่วมกลุ่ม LINE ของแผนก</li>
+                        <li>บอทจะพิมพ์ข้อความตอบรับพร้อมแจ้ง ID กลุ่มลงในแชทโดยอัตโนมัติ</li>
+                        <li>คัดลอกรหัสกลุ่มดังกล่าวมาระบุในแบบฟอร์มด้านบนนี้เพื่อเชื่อมข้อมูล</li>
+                        <li>ทดสอบส่งการแจ้งเตือนโดยกดปุ่มตรวจวัดสุขภาพด้านล่างได้ทันที</li>
+                      </ol>
+                    </div>
+                  </div>
+
+                  {/* Diagnostics & Connection Test */}
+                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-black text-[#0f2d52] dark:text-white font-thai leading-none">ทดสอบระบบ (Interactive Diagnostic)</h3>
+                      <p className="text-xs text-slate-400 font-bold font-thai">เพื่อความแม่นยำในการตั้งค่า ทดสอบส่งการแจ้งเตือนเสมือนจริง</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {testNotificationStatus.status === 'success' && (
+                        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold leading-relaxed font-thai break-words">
+                          ✓ {testNotificationStatus.message}
+                        </div>
+                      )}
+                      
+                      {testNotificationStatus.status === 'error' && (
+                        <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 text-red-550 text-xs font-bold leading-relaxed font-thai break-words">
+                          ⚠ {testNotificationStatus.message}
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleTestNotification}
+                        disabled={testNotificationStatus.status === 'loading'}
+                        className="w-full px-5 h-12 bg-[#06C755] hover:bg-[#05b34c] text-white rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(6,199,85,0.15)] disabled:opacity-50"
+                      >
+                        {testNotificationStatus.status === 'loading' ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        ) : (
+                          <RefreshCw size={14} />
+                        )}
+                        <span>ยิงข้อความทดสอบไปยัง Line Group (Send Test Message)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Right Column - Registered Groups List (5 cols) */}
+                <div className="lg:col-span-5 space-y-6 max-w-full">
+                  
+                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-5">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-black text-[#0f2d52] dark:text-white font-thai leading-none">กลุ่มที่เคยลงทะเบียน ({lineGroups.length})</h3>
+                      <span className="text-[10px] bg-slate-50 dark:bg-slate-950 text-slate-400 border border-slate-150 dark:border-slate-800 px-2.5 py-0.5 rounded-full font-bold">History Log</span>
+                    </div>
+
+                    {lineGroups.length === 0 ? (
+                      <div className="py-12 text-center text-slate-400 font-bold text-xs uppercase tracking-wider font-thai">
+                        ยังไม่มีประวัติกลุ่ม LINE ที่เชื่อมต่อ
+                      </div>
+                    ) : (
+                      <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+                        {lineGroups.map((group) => {
+                          const isActive = group.group_id === activeLineGroupId;
+                          return (
+                            <div 
+                              key={group.group_id}
+                              className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                                isActive 
+                                  ? 'bg-emerald-500/5 dark:bg-emerald-950/10 border-emerald-500/20 dark:border-emerald-500/30 shadow-sm' 
+                                  : 'bg-slate-50/50 dark:bg-slate-950/40 border-slate-100 dark:border-slate-800/60'
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="text-slate-850 dark:text-slate-200 font-mono font-bold text-xs truncate max-w-[120px] xs:max-w-[150px] sm:max-w-[180px] md:max-w-none block" title={group.group_id}>
+                                    {group.group_id}
+                                  </span>
+                                  {isActive && (
+                                    <span className="flex-shrink-0 px-2 py-0.2 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 rounded text-[8px] font-black uppercase">
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-slate-400 block font-bold font-thai">
+                                  เชื่อมต่อเมื่อ: {new Date(group.joined_at).toLocaleDateString('th-TH', { 
+                                    day: 'numeric', 
+                                    month: 'short', 
+                                    year: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {!isActive && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveLineGroup(group.group_id)}
+                                    className="px-2.5 h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 border border-slate-150 dark:border-slate-700 text-slate-600 dark:text-slate-200 rounded-lg text-[10px] font-black transition cursor-pointer"
+                                  >
+                                    เปิดใช้
+                                  </button>
+                                )}
+                                
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteLineGroup(group.group_id)}
+                                  className="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-transparent hover:border-red-100 flex items-center justify-center transition cursor-pointer"
+                                  title="ลบกลุ่มจากประวัติ"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+
+              </div>
+            )}
           </div>
         ) : (
           <div className="p-8 md:p-12 flex flex-col items-center justify-center min-h-[400px] animate-fadeIn">

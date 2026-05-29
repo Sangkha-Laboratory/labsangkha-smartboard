@@ -105,7 +105,7 @@ export default function MedtechIllustration({ className }: { className?: string 
         <circle cx="65" cy="118" r="4.5" fill="#1E6FD9" />
         <circle cx="85" cy="118" r="4.5" fill="#20BEFF" />
         <path d="M 65,108 L 85,118" stroke="#FFFFFF" strokeWidth="1" opacity="0.5" />
-        <path d="M 65,118 L 85,108" stroke="#FFFFFF" stroke-width="1" opacity="0.5" />
+        <path d="M 65,118 L 85,108" stroke="#FFFFFF" strokeWidth="1" opacity="0.5" />
       </g>
 
       {/* Crosshair/Status Check at bottom-right of central graphic */}
