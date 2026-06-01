@@ -174,8 +174,11 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then((res) => {
+      const session = res?.data?.session ?? null;
       setIsLoggedIn(!!session);
+    }).catch((err) => {
+      console.warn("Failed to get session in HandoverForm:", err);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

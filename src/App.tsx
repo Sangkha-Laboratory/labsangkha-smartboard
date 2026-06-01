@@ -84,11 +84,30 @@ export default function App() {
       }
     }
 
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    // Check initial session safely to avoid crashes on null data
+    supabase.auth.getSession().then((res) => {
+      const session = res?.data?.session ?? null;
+      const error = res?.error ?? null;
+
       if (error) {
         console.error('Supabase Auth Error:', error.message);
+        // Clear stale local session items if we encounter a refresh token error
+        if (
+          error.message.includes('Refresh Token') || 
+          error.message.includes('refresh_token_not_found') || 
+          error.message.includes('invalid_grant')
+        ) {
+          localStorage.removeItem('sangkha_handover_local_user');
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+              localStorage.removeItem(key);
+            }
+          }
+          supabase.auth.signOut().catch(() => {});
+        }
       }
+
       const u = session?.user ?? null;
       setUser(u);
       

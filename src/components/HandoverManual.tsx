@@ -45,8 +45,11 @@ export default function HandoverManual({ onClose }: HandoverManualProps) {
         setIsLoggedIn(true);
         return;
       }
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().then((res) => {
+        const session = res?.data?.session ?? null;
         setIsLoggedIn(!!session);
+      }).catch((err) => {
+        console.warn("Failed to get session in HandoverManual:", err);
       });
     };
     checkUser();
