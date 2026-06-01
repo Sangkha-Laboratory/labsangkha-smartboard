@@ -199,12 +199,29 @@ Deno.serve(async (req) => {
           const lowerBound = new Date(targetTime - 5000).toISOString();
           const upperBound = new Date(targetTime + 5000).toISOString();
 
+          // Try to look up a registered user by name to match their UUID
+          let registeredUserId: string | null = null;
+          try {
+            const { data: matchedUsers } = await supabase
+              .from('users')
+              .select('id')
+              .eq('full_name', displayName)
+              .limit(1);
+            if (matchedUsers && matchedUsers.length > 0) {
+              registeredUserId = matchedUsers[0].id;
+            }
+          } catch (err) {
+            console.warn("Failed to lookup registering user ID in webhook:", err);
+          }
+
           // 3. Update all pending items in this batch to Accepted
           const { data: updatedBatch, error: updateError } = await supabase
             .from('handovers')
             .update({
               status: 'Accepted',
-              receiver_id: displayName,
+              receiver_id: registeredUserId,
+              accepted_by_line_name: displayName,
+              accepted_by_line_user_id: userId,
               accepted_at: new Date().toISOString()
             })
             .eq('sender_id', refTask.sender_id)

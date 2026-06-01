@@ -1012,7 +1012,7 @@ export default function UserPortal({
                                 </div>
                               </td>
                               <td className="px-5 py-4 text-xs lg:text-sm font-bold text-[#0f2d52] dark:text-white">
-                                {item.receiver?.full_name || 'ยังไม่มีผู้รับเวร'}
+                                {item.receiver?.full_name || item.accepted_by_line_name || 'ยังไม่มีผู้รับเวร'}
                               </td>
                               <td className="px-5 py-4 text-right">
                                 <button
@@ -1086,7 +1086,7 @@ export default function UserPortal({
                             </div>
                             <div className="text-right">
                               <span className="font-normal">ผู้รับ: </span>
-                              <span className="font-black text-slate-600 dark:text-slate-350">{item.receiver?.full_name || 'รอรับเวร ⏳'}</span>
+                              <span className="font-black text-slate-600 dark:text-slate-350">{item.receiver?.full_name || item.accepted_by_line_name || 'รอรับเวร ⏳'}</span>
                             </div>
                           </div>
                         </div>
@@ -1375,7 +1375,7 @@ export default function UserPortal({
                   </div>
                   <div>
                     <span className="block text-[12px] uppercase font-black tracking-wider text-slate-400 mb-0.5">ผู้รับช่วงต่อ</span>
-                    <span className="font-bold text-[#0f2d52] dark:text-white">{selectedHandover.receiver?.full_name || 'ยังไม่มีผู้ตอบรับ'}</span>
+                    <span className="font-bold text-[#0f2d52] dark:text-white">{selectedHandover.receiver?.full_name || selectedHandover.accepted_by_line_name || 'ยังไม่มีผู้ตอบรับ'}</span>
                   </div>
                 </div>
 

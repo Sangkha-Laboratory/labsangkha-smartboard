@@ -252,6 +252,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
             shift,
             status,
             receiver_id,
+            accepted_by_line_name,
             title,
             description,
             sender:users!handovers_sender_id_fkey ( full_name ),
@@ -282,6 +283,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
               category, 
               status,
               receiver_id,
+              accepted_by_line_name,
               title,
               description,
               sender:users!handovers_sender_id_fkey ( full_name ),
@@ -364,7 +366,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
           summary: item.title || 'ไม่มีหัวข้อ',
           description: item.description || '',
           status: item.status === 'Pending' ? 'รอรับงาน' : 'รับงานแล้ว',
-          receiver_name: item.receiver?.full_name || usersMap[item.receiver_id] || item.receiver_id || ''
+          receiver_name: item.receiver?.full_name || usersMap[item.receiver_id] || item.accepted_by_line_name || item.receiver_id || ''
         };
       });
 
