@@ -164,8 +164,14 @@ export default function App() {
   };
 
   const urlParams = new URLSearchParams(window.location.search);
-  const currentView = urlParams.get('view') || window.location.pathname.replace(/^\/|\/$/g, '');
-  if (currentView === 'liff' || window.location.pathname === '/liff') {
+  const currentView = urlParams.get('view') || '';
+  const isLiff = 
+    currentView === 'liff' || 
+    window.location.pathname === '/liff' || 
+    window.location.pathname.endsWith('/liff') || 
+    window.location.pathname.endsWith('/liff/');
+
+  if (isLiff) {
     return <LineLiffAccept isDarkMode={isDarkMode} onToggleDarkMode={() => setIsDarkMode(!isDarkMode)} />;
   }
 

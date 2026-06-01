@@ -75,9 +75,39 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
   const [usersMap, setUsersMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // 1. Get handover ID from URL params
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('handover_id') || params.get('id');
+    // Helper to extract parameters from URL query, hash, or LINE LIFF storage
+    const getLiffParam = (key: string): string | null => {
+      // 1. Try URL search params
+      const searchParams = new URLSearchParams(window.location.search);
+      let val = searchParams.get(key);
+      if (val) return val;
+
+      // 2. Try window hash parsing (common for SPAs inside LIFF Webviews)
+      if (window.location.hash) {
+        const hashPart = window.location.hash.split('?')[1] || window.location.hash.split('#')[1] || '';
+        const hashParams = new URLSearchParams(hashPart);
+        val = hashParams.get(key);
+        if (val) return val;
+      }
+
+      // 3. Try LINE LIFF getSearch helper (if loaded)
+      try {
+        const anyLiff = liff as any;
+        if (anyLiff && typeof anyLiff.getSearch === 'function') {
+          const liffSearch = anyLiff.getSearch();
+          if (liffSearch) {
+            const liffParams = new URLSearchParams(liffSearch);
+            val = liffParams.get(key);
+            if (val) return val;
+          }
+        }
+      } catch (e) {}
+
+      return null;
+    };
+
+    // 1. Get handover ID from URL params/hash/LIFF
+    const id = getLiffParam('handover_id') || getLiffParam('id');
     setTargetId(id);
 
     // 2. Initialize LIFF SDK (Load dynamically based on active platform - Google AI Studio vs Git Page vs Cloudflare)
@@ -86,6 +116,12 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
     
     liff.init({ liffId })
       .then(() => {
+        // After LIFF SDK initializes, attempt parameter fallback again in case liff.getSearch succeeded
+        const secondAttemptId = getLiffParam('handover_id') || getLiffParam('id');
+        if (secondAttemptId) {
+          setTargetId(secondAttemptId);
+        }
+
         if (liff.isLoggedIn()) {
           liff.getProfile()
             .then(profile => {
