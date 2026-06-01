@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
             .update({
               status: 'Accepted',
               receiver_id: registeredUserId,
-              accepted_by_line_name: displayName,
+              receiver_line_name: displayName,
               accepted_by_line_user_id: userId,
               accepted_at: new Date().toISOString()
             })

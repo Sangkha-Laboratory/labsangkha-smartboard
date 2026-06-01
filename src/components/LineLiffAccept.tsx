@@ -228,7 +228,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             description: item.description || '',
             status: item.status,
             receiver_id: item.receiver_id || '',
-            receiver_name: m[item.receiver_id] || item.accepted_by_line_name || item.receiver_id || '',
+            receiver_name: m[item.receiver_id] || item.receiver_line_name || item.receiver_id || '',
             accepted_at: item.accepted_at
           };
         });
@@ -290,7 +290,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
           .update({
             status: 'Accepted',
             receiver_id: receiverId,
-            accepted_by_line_name: currentUserName,
+            receiver_line_name: currentUserName,
             accepted_by_line_user_id: liffProfile?.userId || null,
             accepted_at: nowStr
           })
