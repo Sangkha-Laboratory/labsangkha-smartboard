@@ -291,7 +291,6 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             status: 'Accepted',
             receiver_id: receiverId,
             receiver_line_name: currentUserName,
-            accepted_by_line_user_id: liffProfile?.userId || null,
             accepted_at: nowStr
           })
           .eq('id', id);

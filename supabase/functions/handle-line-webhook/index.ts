@@ -221,7 +221,6 @@ Deno.serve(async (req) => {
               status: 'Accepted',
               receiver_id: registeredUserId,
               receiver_line_name: displayName,
-              accepted_by_line_user_id: userId,
               accepted_at: new Date().toISOString()
             })
             .eq('sender_id', refTask.sender_id)
