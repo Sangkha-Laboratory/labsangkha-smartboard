@@ -290,7 +290,7 @@ Deno.serve(async (req) => {
       } else {
         // ALL Tasks Accepted!
         const assignments = batchData.map(t => {
-          const recName = usersMap[t.receiver_id] || t.receiver_id || "ไม่ระบุชื่อ";
+          const recName = usersMap[t.receiver_id] || t.receiver_line_name || t.receiver_id || "ไม่ระบุชื่อ";
           const isNew = acceptedTaskIds.includes(t.id);
           const channel = isNew ? (payload.channel === "WEB" ? "เว็บ" : "LINE") : "LINE";
           return {

@@ -1828,7 +1828,7 @@ export default function AdminPortal({
                             <td className="px-5 py-4">
                               {item.status === 'Accepted' ? (
                                 <div>
-                                  <p className="text-[13px] font-[900] text-green-600 dark:text-green-400 leading-snug">{item.receiver?.full_name || 'ไม่ระบุ'}</p>
+                                  <p className="text-[13px] font-[900] text-green-600 dark:text-green-400 leading-snug">{item.receiver?.full_name || item.receiver_line_name || 'ไม่ระบุ'}</p>
                                   <span className="text-[11px] font-bold text-green-500 uppercase tracking-widest mt-0.5 block">Accepted Staff</span>
                                 </div>
                               ) : (
@@ -2638,7 +2638,7 @@ export default function AdminPortal({
                     </div>
                     <div>
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">เจ้าหน้าที่ผู้รับส่งเวร</span>
-                      <p className="text-xs font-black text-green-600 dark:text-green-400 mt-0.5">{selectedHandover.receiver?.full_name || 'ยังไม่มีการยืนยันการรับเวร'}</p>
+                      <p className="text-xs font-black text-green-600 dark:text-green-400 mt-0.5">{selectedHandover.receiver?.full_name || selectedHandover.receiver_line_name || 'ยังไม่มีการยืนยันการรับเวร'}</p>
                     </div>
                   </div>
                 </div>
