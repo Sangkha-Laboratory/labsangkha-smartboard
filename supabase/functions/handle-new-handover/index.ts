@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
 
       if (pendingCount > 0) {
         // Still has pending tasks
-        const liffId = Deno.env.get("LINE_LIFF_ID") || "2009228308-D2WbO3o1";
+        const liffId = Deno.env.get("LINE_LIFF_ID") || "2010256621-suCeCNrD";
         const liffUrl = `https://liff.line.me/${liffId}?handover_id=${handoverId}`;
 
         flexMessage = {
@@ -839,12 +839,12 @@ Deno.serve(async (req) => {
             {
               type: "button",
               style: "link",
-              color: "#16A34A",
+              color: "#2B8BE8",
               height: "md",
               action: {
-                type: "postback",
+                type: "uri",
                 label: "เลือกรับงาน",
-                data: `action=select&handoverId=${handoverId}`
+                uri: `https://liff.line.me/${Deno.env.get("LINE_LIFF_ID") || "2010256621-suCeCNrD"}?handover_id=${handoverId}`
               }
             }
           ]

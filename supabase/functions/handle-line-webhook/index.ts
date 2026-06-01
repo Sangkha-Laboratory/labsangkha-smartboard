@@ -182,29 +182,52 @@ Deno.serve(async (req) => {
           // Get user details
           const { displayName } = await getLineUserProfile(userId, groupId, lineAccessToken);
           
-          // Accept the entire handover in database
-          const { error: dbErr } = await supabase.rpc("accept_handover_from_line", {
-            p_handover_id: handoverId,
-            p_line_display_name: displayName,
-            p_line_user_id: userId
-          });
+          // 1. Fetch reference task
+          const { data: refTask, error: refError } = await supabase
+            .from('handovers')
+            .select('*')
+            .eq('id', handoverId)
+            .single();
 
-          if (dbErr) {
-            console.error("Database accept_handover_from_line RPC failed:", dbErr);
+          if (refError || !refTask) {
+            console.error("Reference task not found for accept_all:", refError);
             continue;
           }
 
-          // Fetch the total task number
-          const { data: taskCount, error: countErr } = await supabase.rpc("get_task_number", {
-            p_handover_id: handoverId
-          });
+          // 2. Identify all tasks in same batch (+/- 5 seconds)
+          const targetTime = new Date(refTask.created_at).getTime();
+          const lowerBound = new Date(targetTime - 5000).toISOString();
+          const upperBound = new Date(targetTime + 5000).toISOString();
 
-          if (countErr) {
-            console.error("Database get_task_number RPC failed:", countErr);
+          // 3. Update all pending items in this batch to Accepted
+          const { data: updatedBatch, error: updateError } = await supabase
+            .from('handovers')
+            .update({
+              status: 'Accepted',
+              receiver_id: displayName,
+              accepted_at: new Date().toISOString()
+            })
+            .eq('sender_id', refTask.sender_id)
+            .eq('division', refTask.division)
+            .gte('created_at', lowerBound)
+            .lte('created_at', upperBound)
+            .eq('status', 'Pending')
+            .select();
+
+          if (updateError) {
+            console.error("Failed to update batch handovers in accept_all:", updateError);
           }
 
+          // Also execute legacy RPC just in case they have legacy column
+          await supabase.rpc("accept_handover_from_line", {
+            p_handover_id: handoverId,
+            p_line_display_name: displayName,
+            p_line_user_id: userId
+          }).catch((e: any) => console.warn("Legacy RPC error:", e));
+
           // Post success text response to group
-          const responseText = `${displayName} รับงานแล้ว\n${taskCount || 0} รายการ\nรับงานครบทุกรายการแล้ว`;
+          const taskCount = updatedBatch ? updatedBatch.length : 1;
+          const responseText = `🏥 ${displayName} ได้กด "รับงานทั้งหมด" สำเร็จ\nจำนวน ${taskCount} รายการเรียบร้อยแล้ว`;
           await pushLineMessage(groupId || userId, responseText, lineAccessToken);
         }
 
@@ -216,150 +239,58 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          console.log(`Action select (carousel) triggered for handover ID: ${handoverId}`);
+          console.log(`Action select (carousel fallback to LIFF) triggered for handover ID: ${handoverId}`);
 
-          // Fetch the tasks for this handover
-          const { data: handover, error: dbErr } = await supabase
-            .from("handovers")
-            .select("tasks")
-            .eq("id", handoverId)
-            .single();
+          const liffId = Deno.env.get("LINE_LIFF_ID") || "2010256621-suCeCNrD";
+          const liffUrl = `https://liff.line.me/${liffId}?handover_id=${handoverId}`;
 
-          if (dbErr || !handover) {
-            console.error("Failed to load tasks from DB for carousel:", dbErr);
-            continue;
-          }
-
-          const tasks = handover.tasks || [];
-          if (!Array.isArray(tasks) || tasks.length === 0) {
-            await pushLineMessage(groupId || userId, "ไม่พบรายการงานค้างในระบบสำหรับเวรนี้", lineAccessToken);
-            continue;
-          }
-
-          // Build Flex Message type: carousel
-          const bubbles = tasks.map((task: any, index: number) => {
-            const isUnread = String(task.status).toLowerCase() === "pending";
-            
-            return {
+          const helpFlexMessage = {
+            type: "flex",
+            altText: "เลือกรองรับงานผ่านระบบ LIFF",
+            contents: {
               type: "bubble",
-              size: "micro",
+              size: "mega",
               body: {
                 type: "box",
                 layout: "vertical",
                 paddingAll: "lg",
                 backgroundColor: "#ffffff",
                 contents: [
-                  // Circular index badge
-                  {
-                    type: "box",
-                    layout: "vertical",
-                    width: "24px",
-                    height: "24px",
-                    backgroundColor: isUnread ? "#ecfdf5" : "#f1f5f9",
-                    cornerRadius: "12px",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    contents: [
-                      {
-                        type: "text",
-                        text: String(index + 1),
-                        color: isUnread ? "#10b981" : "#94a3b8",
-                        size: "xs",
-                        weight: "bold",
-                        align: "center",
-                        gravity: "center"
-                      }
-                    ]
-                  },
-                  // Task Title
                   {
                     type: "text",
-                    text: task.title || "ไม่มีหัวข้อ",
+                    text: "📋 เลือกรับรายการงาน",
                     weight: "bold",
-                    size: "sm",
-                    color: "#0f172a",
-                    margin: "md",
-                    wrap: true
+                    size: "md",
+                    color: "#1A1A2E"
                   },
-                  // Category Badge or label
                   {
                     type: "text",
-                    text: task.category || "General",
-                    size: "xxs",
-                    color: "#64748b",
-                    margin: "xs",
-                    weight: "semibold"
-                  },
-                  // Description
-                  {
-                    type: "text",
-                    text: task.detail || "ไม่มีรายละเอียดเพิ่มเติม",
+                    text: "กรุณากดปุ่มด้านล่างเพื่อระบุชื่อผู้รับงาน และกดยืนยันเลือกรับรายการย่อยทางแพลตฟอร์ม LIFF ได้อย่างสะดวกปลอดภัยครับ",
                     size: "xs",
-                    color: "#94a3b8",
+                    color: "#6B7280",
                     margin: "md",
                     wrap: true
-                  },
-                  // Styled action boxes for premium look
-                  isUnread ? {
-                    type: "box",
-                    layout: "vertical",
-                    backgroundColor: "#22c55e",
-                    cornerRadius: "6px",
-                    paddingTop: "xs",
-                    paddingBottom: "xs",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "md",
+                  }
+                ]
+              },
+              footer: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "md",
+                contents: [
+                  {
+                    type: "button",
+                    style: "primary",
+                    color: "#2B8BE8",
+                    height: "sm",
                     action: {
-                      type: "postback",
-                      label: "รับงานนี้",
-                      data: `action=accept_one&handoverId=${handoverId}&index=${index}`
-                    },
-                    contents: [
-                      {
-                        type: "text",
-                        text: "รับงานนี้",
-                        color: "#ffffff",
-                        weight: "bold",
-                        size: "xs",
-                        align: "center",
-                        gravity: "center"
-                      }
-                    ]
-                  } : {
-                    type: "box",
-                    layout: "vertical",
-                    backgroundColor: "#f1f5f9",
-                    cornerRadius: "6px",
-                    paddingTop: "xs",
-                    paddingBottom: "xs",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "md",
-                    contents: [
-                      {
-                        type: "text",
-                        text: "รับแล้ว",
-                        color: "#94a3b8",
-                        weight: "bold",
-                        size: "xs",
-                        align: "center",
-                        gravity: "center"
-                      }
-                    ]
+                      type: "uri",
+                      label: "เปิดหน้าต่างรับงาน (LIFF)",
+                      uri: liffUrl
+                    }
                   }
                 ]
               }
-            };
-          });
-
-          // Build individual tasks list carousel message
-          const carouselMessage = {
-            type: "flex",
-            altText: "📋 รายงานรายการย่อยสไลด์แผงงานค้าง",
-            contents: {
-              type: "carousel",
-              contents: bubbles.slice(0, 10) // LINE supports max 10 cards in carousel
             }
           };
 
@@ -372,10 +303,10 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({
               to: groupId || userId,
-              messages: [carouselMessage]
+              messages: [helpFlexMessage]
             })
           });
-          console.log(`Carousel post response: ${res.status}`);
+          console.log(`Select LIFF fallback push response: ${res.status}`);
         }
 
         // D) action = accept_one
