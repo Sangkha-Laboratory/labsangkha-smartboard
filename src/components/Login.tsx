@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogIn, User, Lock, ArrowRight, ShieldCheck, Database, ChevronLeft, ChevronDown, Search, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { writeLog } from '../lib/logger';
 import MedtechIllustration from './MedtechIllustration';
 
 interface LoginProps {
@@ -195,7 +196,11 @@ export default function LoginPage({ onLoginSuccess, onBack, onAdminClick }: Logi
           password: password
         });
         
-        if (authError) throw authError;
+        if (authError) {
+          writeLog('WARN', 'AUTH', `เข้าสู่ระบบผิดพลาด (รหัสผ่านไม่ถูกต้อง): ${userRecord.full_name}`, { userId, error: authError.message });
+          throw authError;
+        }
+        await writeLog('INFO', 'AUTH', `ผู้ใช้เข้าระบบสำเร็จ: ${userRecord.full_name}`, { userId, method: 'Supabase Auth' }, { id: userRecord.id, name: userRecord.full_name });
         onLoginSuccess(userRecord);
         return;
       }
@@ -212,20 +217,25 @@ export default function LoginPage({ onLoginSuccess, onBack, onAdminClick }: Logi
            console.error('RPC Error:', rpcError);
            // If RPC fails, maybe it's still a direct match? (unlikely but fallback)
            if (userRecord.sender_pass !== password) {
+             writeLog('WARN', 'AUTH', `เข้าสู่ระบบผิดพลาด (RPC Error & รหัสผ่านผิด): ${userRecord.full_name}`, { userId });
              throw new Error('รหัสผ่านไม่ถูกต้อง');
            }
         } else if (!isValid) {
+          writeLog('WARN', 'AUTH', `เข้าสู่ระบบผิดพลาด (รหัสผ่านไม่ถูกต้อง): ${userRecord.full_name}`, { userId });
           throw new Error('รหัสผ่านไม่ถูกต้อง');
         }
       } else {
         // Plain text check
         if (userRecord.sender_pass !== password) {
+          writeLog('WARN', 'AUTH', `เข้าสู่ระบบผิดพลาด (รหัสผ่านธรรมดาผิด): ${userRecord.full_name}`, { userId });
           throw new Error('รหัสผ่านไม่ถูกต้อง');
         }
       }
 
+      await writeLog('INFO', 'AUTH', `ผู้ใช้เข้าระบบสำเร็จ: ${userRecord.full_name}`, { userId, method: 'Direct Match' }, { id: userRecord.id, name: userRecord.full_name });
       onLoginSuccess(userRecord);
     } catch (err: any) {
+      writeLog('WARN', 'AUTH', `ความพยายามในการเข้าสู่ระบบล้มเหลว`, { userId, errorOnCatch: err.message || err });
       setError(err.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
     } finally {
       setIsLoading(false);

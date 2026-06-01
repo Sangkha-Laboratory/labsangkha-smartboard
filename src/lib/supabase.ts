@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { getActiveConfig } from '../config';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const activeConfig = getActiveConfig();
+const supabaseUrl = activeConfig.supabaseUrl;
+const supabaseAnonKey = activeConfig.supabaseAnonKey;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Missing Supabase environment variables. Please check your .env file or project settings.');
+if ((!supabaseUrl || supabaseUrl.includes('your-project-url')) && import.meta.env.DEV) {
+  console.warn('Missing or placeholder Supabase credentials detected. Please edit src/config.ts or configure environment variables.');
 }
 
 export const supabase = createClient(

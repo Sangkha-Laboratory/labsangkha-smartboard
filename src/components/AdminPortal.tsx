@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getAnnouncements, saveAnnouncement, deleteAnnouncement, Announcement } from '../lib/announcements';
+import AdminLogViewer from './AdminLogViewer';
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -58,6 +59,7 @@ import {
   Legend
 } from 'recharts';
 import { supabase } from '../lib/supabase';
+import { getActiveConfig } from '../config';
 import { toPng } from 'html-to-image';
 
 interface AdminPortalProps {
@@ -257,8 +259,9 @@ export default function AdminPortal({
     
     setTestNotificationStatus({ status: 'loading' });
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+      const activeConfig = getActiveConfig();
+      const supabaseUrl = activeConfig.supabaseUrl;
+      const supabaseAnonKey = activeConfig.supabaseAnonKey;
       const functionUrl = `${supabaseUrl}/functions/v1/handle-new-handover`;
       
       const payload = {
@@ -1007,6 +1010,7 @@ export default function AdminPortal({
           <MobileNavItem icon={<Users size={18} />} label="Users" active={activeTab === 'Users'} onClick={() => setActiveTab('Users')} />
           <MobileNavItem icon={<Megaphone size={18} />} label="News" active={activeTab === 'Announcements'} onClick={() => setActiveTab('Announcements')} />
           <MobileNavItem icon={<Settings size={18} />} label="Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} />
+          <MobileNavItem icon={<Activity size={18} />} label="Logs" active={activeTab === 'Logs'} onClick={() => setActiveTab('Logs')} />
           <MobileNavItem icon={<LogOut size={18} />} label="Exit" active={false} onClick={onLogout} color="text-red-500" />
         </div>
       </nav>
@@ -1057,6 +1061,7 @@ export default function AdminPortal({
             {isSidebarOpen && <p className="text-[12px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2 mb-2 p-1">Content</p>}
             <NavItem icon={<Megaphone size={18} />} label="Announcements" active={activeTab === 'Announcements'} onClick={() => setActiveTab('Announcements')} collapsed={!isSidebarOpen} />
             <NavItem icon={<Settings size={18} />} label="LINE Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} collapsed={!isSidebarOpen} />
+            <NavItem icon={<Activity size={18} />} label="System Logs" active={activeTab === 'Logs'} onClick={() => setActiveTab('Logs')} collapsed={!isSidebarOpen} />
           </div>
         </nav>
 
@@ -2533,6 +2538,8 @@ export default function AdminPortal({
               </div>
             )}
           </div>
+        ) : activeTab === 'Logs' ? (
+          <AdminLogViewer />
         ) : (
           <div className="p-8 md:p-12 flex flex-col items-center justify-center min-h-[400px] animate-fadeIn">
             <div className="w-16 h-16 rounded-full bg-brand-blue/10 dark:bg-brand-blue/20 flex items-center justify-center text-brand-blue mb-4">

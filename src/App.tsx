@@ -13,6 +13,7 @@ import UserPortal from './components/UserPortal';
 import HandoverManual from './components/HandoverManual';
 import ContactTeam from './components/ContactTeam';
 import SafetyPolicy from './components/SafetyPolicy';
+import LineLiffAccept from './components/LineLiffAccept';
 import { supabase } from './lib/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -161,6 +162,12 @@ export default function App() {
     setIsUserPortal(false);
     setIsAdmin(false);
   };
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const currentView = urlParams.get('view') || window.location.pathname.replace(/^\/|\/$/g, '');
+  if (currentView === 'liff' || window.location.pathname === '/liff') {
+    return <LineLiffAccept isDarkMode={isDarkMode} onToggleDarkMode={() => setIsDarkMode(!isDarkMode)} />;
+  }
 
   if (error) {
     return (

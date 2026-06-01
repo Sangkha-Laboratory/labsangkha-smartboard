@@ -27,7 +27,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
+import { getActiveConfig } from '../config';
 import { maskSensitiveData } from '../lib/maskUtils';
+import { writeLog } from '../lib/logger';
 
 interface TaskItem {
   id: string;
@@ -384,7 +386,19 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
         }
       }
 
-      if (handoverError) throw new Error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+      if (handoverError) {
+        writeLog('ERROR', 'HANDOVER', `เกิดข้อผิดพลาดในการบันทึกใบส่งมอบเวร: แผนก ${formData.dept} เวร ${formData.shift}`, {
+          error: handoverError.message || handoverError,
+          formData
+        });
+        throw new Error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+      }
+
+      await writeLog('INFO', 'HANDOVER', `สร้างรายการส่งเวรสำเร็จ: แผนก ${formData.dept} เวร ${formData.shift}`, {
+        department: formData.dept,
+        shift: formData.shift,
+        tasksCount: tasks.filter(t => t.title.trim() !== '').length
+      }, { id: userRecord.id, name: userRecord.full_name });
 
       // 1. Prepare data for LINE Edge Function
       const firstRecord = (handoverData && handoverData.length > 0) ? handoverData[0] : null;
@@ -408,8 +422,9 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
       // Start fetching the LINE notification in the background
       setLineNotifyStatus({ status: 'loading', message: 'กำลังส่งแจ้งเตือนผ่าน Line...' });
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+      const activeConfig = getActiveConfig();
+      const supabaseUrl = activeConfig.supabaseUrl;
+      const supabaseAnonKey = activeConfig.supabaseAnonKey;
       const functionUrl = `${supabaseUrl}/functions/v1/handle-new-handover`;
 
       // Background self-executing promise
@@ -438,6 +453,10 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
 
           if (!response.ok) {
             console.error(`❌ LINE notification Edge Function error status: ${response.status}`);
+            writeLog('ERROR', 'LINE_NOTIFY', `ไม่สามารถส่งไลน์สไตล์กลุ่มเวร (HTTP Error): แผนก ${payload.department}`, { 
+              status: response.status, 
+              responseText 
+            });
             setLineNotifyStatus({ 
               status: 'error', 
               message: responseJson?.error || `HTTP ${response.status}: ${responseText || 'เกิดข้อผิดพลาดในการรันแอปพลิเคชัน'}`,
@@ -445,6 +464,7 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
             });
           } else if (responseJson && (responseJson.error || !responseJson.success)) {
             console.error("❌ LINE Edge Function returned business-level error in background:", responseJson);
+            writeLog('ERROR', 'LINE_NOTIFY', `เกิดข้อขัดข้องทางเซิร์ฟเวอร์ LINE Notify: แผนก ${payload.department}`, responseJson);
             setLineNotifyStatus({ 
               status: 'error', 
               message: responseJson.error || 'Server Edge function business error',
@@ -452,10 +472,16 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
             });
           } else {
             console.log('✅ LINE notification triggered in background successfully!');
+            writeLog('INFO', 'LINE_NOTIFY', `ส่งการแจ้งเตือน LINE สำหรับการข้ามของเวรสำเร็จ: แผนก ${payload.department} ทั้งหมด ${payload.tasks.length} ใบงาน`, {
+              id: payload.id,
+              department: payload.department,
+              shift: payload.shift
+            });
             setLineNotifyStatus({ status: 'success', message: 'ส่งไลน์แจ้งกลุ่มเวรสำเร็จ!' });
           }
         } catch (funcErr: any) {
           console.error('❌ Expected failure during background execution of LINE trigger step:', funcErr);
+          writeLog('ERROR', 'LINE_NOTIFY', `ไม่สามารถเรียกใช้บริการ Edge Function ของ LINE ได้ในขณะนี้`, { error: funcErr.message || funcErr });
           setLineNotifyStatus({ 
             status: 'error', 
             message: funcErr.message || 'เกิดข้อผิดพลาดขณะส่งข้อความ',

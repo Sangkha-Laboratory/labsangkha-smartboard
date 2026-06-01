@@ -40,7 +40,7 @@ function SupportCard({ icon, title, desc, link, bgColor, onClick }: { icon: Reac
     >
       <div className="flex gap-3 mb-3">
         <div className={`w-10 h-10 ${bgColor} rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
-          {React.cloneElement(icon as React.ReactElement, { size: 18 })}
+          {React.cloneElement(icon as React.ReactElement<any>, { size: 18 })}
         </div>
         <div>
           <h4 className="font-bold text-gray-900 dark:text-white mb-1 leading-tight text-xs sm:text-sm">{title}</h4>

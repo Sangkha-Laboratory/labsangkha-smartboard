@@ -62,6 +62,387 @@ Deno.serve(async (req) => {
 
     console.log("Received payload for handle-new-handover:", JSON.stringify(payload));
 
+    // Handle interactive LIFF task updates
+    if (payload.action === "task_accepted") {
+      console.log("Processing task_accepted update notification...");
+      const handoverId = payload.handover_id;
+      const acceptedBy = payload.accepted_by || "เจ้าหน้าที่";
+      const channelLabel = payload.channel === "WEB" ? "ผ่านเว็บไซต์" : "ผ่าน LINE";
+      const channelColor = payload.channel === "WEB" ? "#1D4ED8" : "#4B5563";
+      const channelBg = payload.channel === "WEB" ? "#EFF6FF" : "#F3F4F6";
+      const acceptedTaskIds = payload.accepted_task_ids || [];
+
+      // Lazy load Supabase
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || Deno.env.get("VITE_SUPABASE_URL");
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("VITE_SUPABASE_ANON_KEY");
+      
+      if (!supabaseUrl || !supabaseServiceKey) {
+        return new Response(JSON.stringify({ success: false, error: "Missing Supabase configuration." }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const supabaseClientForLIFF = createClient(supabaseUrl, supabaseServiceKey, {
+        db: { schema: "handover_sys" }
+      });
+
+      // Fetch active LINE group ID
+      let targetGroupId = null;
+      try {
+        const { data: rpcData } = await supabaseClientForLIFF.rpc("get_active_line_group");
+        if (rpcData) {
+          targetGroupId = rpcData;
+        } else {
+          const { data: selectData } = await supabaseClientForLIFF
+            .from("line_groups")
+            .select("group_id")
+            .eq("is_active", true)
+            .order("joined_at", { ascending: false })
+            .limit(1);
+          if (selectData && selectData.length > 0) {
+            targetGroupId = selectData[0].group_id;
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching group ID for LIFF notification:", e);
+      }
+
+      if (!targetGroupId) {
+        return new Response(JSON.stringify({ success: false, error: "No active LINE group for update." }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Fetch target handover
+      const { data: targetTask, error: targetErr } = await supabaseClientForLIFF
+        .from('handovers')
+        .select('*')
+        .eq('id', handoverId)
+        .single();
+      
+      if (targetErr || !targetTask) {
+        return new Response(JSON.stringify({ success: false, error: "Target task not found." }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Fetch batch of tasks in same created_at window
+      const targetTime = new Date(targetTask.created_at).getTime();
+      const lowerBound = new Date(targetTime - 5000).toISOString();
+      const upperBound = new Date(targetTime + 5000).toISOString();
+
+      const { data: batchData, error: batchErr } = await supabaseClientForLIFF
+        .from('handovers')
+        .select('*')
+        .eq('sender_id', targetTask.sender_id)
+        .eq('division', targetTask.division)
+        .gte('created_at', lowerBound)
+        .lte('created_at', upperBound)
+        .order('created_at', { ascending: true });
+
+      if (batchErr || !batchData) {
+        return new Response(JSON.stringify({ success: false, error: "Batch tasks not found." }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Fetch users map to display real names
+      const { data: usersData } = await supabaseClientForLIFF.from('users').select('id, full_name');
+      const usersMap: Record<string, string> = {};
+      if (usersData) {
+        usersData.forEach((u: any) => { usersMap[u.id] = u.full_name; });
+      }
+
+      const totalCount = batchData.length;
+      const pendingCount = batchData.filter(t => t.status === 'Pending').length;
+      const shortId = targetTask.task_number || `LAB-${handoverId.substring(0, 4).toUpperCase()}`;
+
+      // Build listing of newly accepted tasks
+      const newlyAcceptedTasks = batchData.filter(t => acceptedTaskIds.includes(t.id));
+
+      let flexMessage: any = null;
+
+      if (pendingCount > 0) {
+        // Still has pending tasks
+        const liffId = Deno.env.get("LINE_LIFF_ID") || "2009228308-D2WbO3o1";
+        const liffUrl = `https://liff.line.me/${liffId}?handover_id=${handoverId}`;
+
+        flexMessage = {
+          type: "flex",
+          altText: `อัปเดต: ${acceptedBy} รับงานแล้ว (${shortId})`,
+          contents: {
+            type: "bubble",
+            size: "mega",
+            header: {
+              type: "box",
+              layout: "horizontal",
+              backgroundColor: "#DCFCE7",
+              paddingAll: "md",
+              contents: [
+                {
+                  type: "text",
+                  text: `${shortId} อัปเดต`,
+                  weight: "bold",
+                  size: "sm",
+                  color: "#16A34A"
+                },
+                {
+                  type: "text",
+                  text: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + " น.",
+                  size: "xs",
+                  color: "#6B7280",
+                  align: "end"
+                }
+              ]
+            },
+            body: {
+              type: "box",
+              layout: "vertical",
+              paddingAll: "lg",
+              contents: [
+                {
+                  type: "text",
+                  text: `${acceptedBy} รับงานแล้ว`,
+                  weight: "bold",
+                  size: "md",
+                  color: "#18181B"
+                },
+                {
+                  type: "box",
+                  layout: "horizontal",
+                  margin: "sm",
+                  contents: [
+                    {
+                      type: "box",
+                      layout: "vertical",
+                      backgroundColor: channelBg,
+                      cornerRadius: "4px",
+                      paddingStart: "xs",
+                      paddingEnd: "xs",
+                      contents: [
+                        {
+                          type: "text",
+                          text: channelLabel,
+                          size: "xxs",
+                          color: channelColor,
+                          weight: "bold"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  type: "box",
+                  layout: "vertical",
+                  margin: "md",
+                  spacing: "xs",
+                  contents: newlyAcceptedTasks.map((t) => ({
+                    type: "text",
+                    text: `✓ ${maskSensitiveData(t.title)}`,
+                    size: "xs",
+                    color: "#4B5563",
+                    wrap: true
+                  }))
+                },
+                {
+                  type: "box",
+                  layout: "horizontal",
+                  margin: "lg",
+                  backgroundColor: "#FEF3C7",
+                  paddingAll: "sm",
+                  cornerRadius: "6px",
+                  contents: [
+                    {
+                      type: "text",
+                      text: `⏳ ยังรอรับอีก ${pendingCount} งาน`,
+                      size: "xs",
+                      weight: "bold",
+                      color: "#D97706"
+                    }
+                  ]
+                }
+              ]
+            },
+            footer: {
+              type: "box",
+              layout: "vertical",
+              paddingAll: "md",
+              contents: [
+                {
+                  type: "button",
+                  style: "primary",
+                  color: "#2B8BE8",
+                  height: "sm",
+                  action: {
+                    type: "uri",
+                    label: "เลือกรับงานที่เหลือ",
+                    uri: liffUrl
+                  }
+                }
+              ]
+            }
+          }
+        };
+      } else {
+        // ALL Tasks Accepted!
+        const assignments = batchData.map(t => {
+          const recName = usersMap[t.receiver_id] || t.receiver_id || "ไม่ระบุชื่อ";
+          const isNew = acceptedTaskIds.includes(t.id);
+          const channel = isNew ? (payload.channel === "WEB" ? "เว็บ" : "LINE") : "LINE";
+          return {
+            name: recName,
+            title: t.title,
+            channel
+          };
+        });
+
+        flexMessage = {
+          type: "flex",
+          altText: `✓ ${shortId} รับงานครบกำหนดแล้ว`,
+          contents: {
+            type: "bubble",
+            size: "mega",
+            body: {
+              type: "box",
+              layout: "vertical",
+              paddingAll: "lg",
+              backgroundColor: "#ffffff",
+              contents: [
+                {
+                  type: "box",
+                  layout: "horizontal",
+                  contents: [
+                    {
+                      type: "box",
+                      layout: "vertical",
+                      width: "16px",
+                      height: "16px",
+                      backgroundColor: "#DCFCE7",
+                      cornerRadius: "8px",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      contents: [
+                        {
+                          type: "text",
+                          text: "✓",
+                          color: "#16A34A",
+                          size: "xxs",
+                          weight: "bold",
+                          align: "center"
+                        }
+                      ]
+                    },
+                    {
+                      type: "text",
+                      text: `${shortId} รับงานครบแล้ว`,
+                      weight: "bold",
+                      size: "sm",
+                      color: "#16A34A",
+                      margin: "sm"
+                    }
+                  ]
+                },
+                {
+                  type: "separator",
+                  margin: "md",
+                  color: "#E5E7EB"
+                },
+                {
+                  type: "box",
+                  layout: "vertical",
+                  margin: "md",
+                  spacing: "sm",
+                  contents: assignments.map((a) => ({
+                    type: "box",
+                    layout: "horizontal",
+                    contents: [
+                      {
+                        type: "text",
+                        text: a.name,
+                        weight: "bold",
+                        size: "xs",
+                        color: "#1A1A2E",
+                        flex: 2,
+                        wrap: true
+                      },
+                      {
+                        type: "text",
+                        text: maskSensitiveData(a.title),
+                        size: "xs",
+                        color: "#6B7280",
+                        flex: 3,
+                        wrap: true
+                      },
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        backgroundColor: a.channel === "เว็บ" ? "#EFF6FF" : "#F3F4F6",
+                        cornerRadius: "4px",
+                        paddingStart: "xs",
+                        paddingEnd: "xs",
+                        justifyContent: "center",
+                        contents: [
+                          {
+                            type: "text",
+                            text: a.channel,
+                            size: "xxs",
+                            color: a.channel === "เว็บ" ? "#1D4ED8" : "#6B7280",
+                            weight: "bold",
+                            align: "center"
+                          }
+                        ],
+                        width: "36px"
+                      }
+                    ]
+                  }))
+                },
+                {
+                  type: "text",
+                  text: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + " น.",
+                  size: "xxs",
+                  color: "#9CA3AF",
+                  margin: "md"
+                }
+              ]
+            }
+          }
+        };
+      }
+
+      // Send push message to LINE Group
+      const lineAccessToken = Deno.env.get("LINE_CHANNEL_ACCESS_TOKEN");
+      if (!lineAccessToken) {
+        return new Response(JSON.stringify({ success: false, error: "Missing LINE access token for update notification." }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const lineResponse = await fetch("https://api.line.me/v2/bot/message/push", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${lineAccessToken}`
+        },
+        body: JSON.stringify({
+          to: targetGroupId,
+          messages: [flexMessage]
+        })
+      });
+
+      const lineData = await lineResponse.text();
+      console.log("LINE update push outcome:", lineResponse.status, lineData);
+
+      return new Response(JSON.stringify({ success: true, lineResult: lineData }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     const record = payload.record || payload;
     if (!record || !record.id) {
       return new Response(JSON.stringify({ success: false, error: "Missing handover record or ID in payload." }), {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ShieldCheck, Lock, Mail, ArrowRight, ChevronLeft, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { writeLog } from '../lib/logger';
 
 interface AdminLoginProps {
   onLoginSuccess: (user: any) => void;
@@ -25,7 +26,10 @@ export default function AdminLogin({ onLoginSuccess, onBack }: AdminLoginProps) 
         password,
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        writeLog('WARN', 'AUTH', `ความพยายามเข้าระบบแอดมินล้มเหลว (Auth Error): ${email}`, { error: authError.message });
+        throw authError;
+      }
 
       // Verify if the user is actually an admin in our users table
       const { data: userRecord, error: dbError } = await supabase
@@ -38,11 +42,14 @@ export default function AdminLogin({ onLoginSuccess, onBack }: AdminLoginProps) 
       if (dbError || !userRecord) {
         // If not found in users table or not admin, sign out to be safe
         await supabase.auth.signOut();
+        writeLog('WARN', 'AUTH', `ปฏิเสธสิทธิ์การเข้าระบบแอดมิน (ไม่มีสิทธิ์หรือไม่มีใน DB): ${email}`);
         throw new Error('คุณไม่มีสิทธิ์เข้าถึงส่วนผู้ดูแลระบบ');
       }
 
+      await writeLog('INFO', 'AUTH', `แอดมินเข้าระบบสำเร็จ: ${userRecord.full_name}`, { email }, { id: userRecord.id, name: userRecord.full_name });
       onLoginSuccess(userRecord);
     } catch (err: any) {
+      writeLog('WARN', 'AUTH', `การเข้าสู่ระบบแอดมินล้มเหลว`, { email, errorMsg: err.message || err });
       setError(err.message || 'การเข้าสู่ระบบล้มเหลว');
     } finally {
       setIsLoading(false);

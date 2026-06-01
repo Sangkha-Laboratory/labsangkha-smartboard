@@ -79,7 +79,7 @@ export default function UserPortal({
   isDarkMode = false,
   onToggleDarkMode
 }: UserPortalProps) {
-  const [activeTab, setActiveTab] = useState<'AllHandovers' | 'MyHandovers' | 'Announcements' | 'Settings'>('AllHandovers');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'AllHandovers' | 'MyHandovers' | 'Announcements' | 'Settings'>('AllHandovers');
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
