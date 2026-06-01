@@ -283,17 +283,14 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
       const nowStr = new Date().toISOString();
       const updatedList: BatchTask[] = [];
 
-      // Update in Supabase
+      // Update in Supabase via secure RPC to bypass RLS permission denied issues on clients
       for (const id of Array.from(selectedTaskIds)) {
         const { error: updateErr } = await supabase
-          .from('handovers')
-          .update({
-            status: 'Accepted',
-            receiver_id: receiverId,
-            receiver_line_name: currentUserName,
-            accepted_at: nowStr
-          })
-          .eq('id', id);
+          .rpc('accept_handover_from_liff', {
+            p_handover_id: id,
+            p_receiver_id: receiverId,
+            p_receiver_line_name: currentUserName
+          });
 
         if (updateErr) throw updateErr;
 

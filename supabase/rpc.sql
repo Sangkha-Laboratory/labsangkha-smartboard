@@ -48,7 +48,7 @@ GRANT EXECUTE ON FUNCTION handover_sys.get_active_line_group() TO anon, authenti
 
 
 -- 3. accept_handover_from_line(p_handover_id uuid, p_line_display_name text, p_line_user_id text)
--- → UPDATE handovers SET status='ACCEPTED', accepted_by_line_name, accepted_by_line_user_id
+-- → UPDATE handovers SET status='ACCEPTED', receiver_line_name, receiver_id
 CREATE OR REPLACE FUNCTION handover_sys.accept_handover_from_line(
     p_handover_id uuid, 
     p_line_display_name text, 
@@ -63,7 +63,14 @@ DECLARE
     v_tasks jsonb;
     v_updated_tasks jsonb := '[]'::jsonb;
     v_task jsonb;
+    v_receiver_id uuid := null;
 BEGIN
+    -- Match registered user if name exists
+    SELECT id INTO v_receiver_id
+    FROM handover_sys.users
+    WHERE full_name = p_line_display_name
+    LIMIT 1;
+
     -- Get current tasks
     SELECT tasks INTO v_tasks
     FROM handover_sys.handovers
@@ -74,7 +81,6 @@ BEGIN
         FOR v_task IN SELECT * FROM jsonb_array_elements(v_tasks) LOOP
             v_task := jsonb_set(v_task, '{status}', '"ACCEPTED"'::jsonb);
             v_task := jsonb_set(v_task, '{accepted_by_name}', to_jsonb(p_line_display_name));
-            v_task := jsonb_set(v_task, '{accepted_by_user_id}', to_jsonb(p_line_user_id));
             v_updated_tasks := v_updated_tasks || v_task;
         END LOOP;
     ELSE
@@ -83,8 +89,8 @@ BEGIN
 
     UPDATE handover_sys.handovers
     SET status = 'ACCEPTED',
-        accepted_by_line_name = p_line_display_name,
-        accepted_by_line_user_id = p_line_user_id,
+        receiver_id = v_receiver_id,
+        receiver_line_name = p_line_display_name,
         tasks = v_updated_tasks,
         accepted_at = now()
     WHERE id = p_handover_id;
@@ -96,17 +102,6 @@ GRANT EXECUTE ON FUNCTION handover_sys.accept_handover_from_line(uuid, text, tex
 
 -- 4. get_task_number(p_handover_id uuid)
 -- → returns int: jsonb_array_length(tasks)
-CREATE OR REPLACE FUNCTION handover_sys.get_task_number(p_handover_id uuid)
-RETURNS int
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = handover_sys
-AS $$
-DECLARE
-    v_length int;
-END;
-$$; -- Stub corrected below in actual function body...
--- Let's define it correctly
 CREATE OR REPLACE FUNCTION handover_sys.get_task_number(p_handover_id uuid)
 RETURNS int
 LANGUAGE plpgsql
@@ -149,7 +144,14 @@ DECLARE
     v_total_count int := 0;
     v_item jsonb;
     v_all_done boolean := false;
+    v_receiver_id uuid := null;
 BEGIN
+    -- Match registered user if name exists
+    SELECT id INTO v_receiver_id
+    FROM handover_sys.users
+    WHERE full_name = p_line_display_name
+    LIMIT 1;
+
     -- 1. Get current tasks
     SELECT tasks INTO v_tasks
     FROM handover_sys.handovers
@@ -172,7 +174,6 @@ BEGIN
     -- Update the specific task status
     v_tasks := jsonb_set(v_tasks, array[p_task_index::text, 'status'], '"ACCEPTED"'::jsonb);
     v_tasks := jsonb_set(v_tasks, array[p_task_index::text, 'accepted_by_name'], to_jsonb(p_line_display_name));
-    v_tasks := jsonb_set(v_tasks, array[p_task_index::text, 'accepted_by_user_id'], to_jsonb(p_line_user_id));
 
     -- Count remaining pending tasks (ignoring case for comparison)
     FOR v_item IN SELECT * FROM jsonb_array_elements(v_tasks) LOOP
@@ -186,8 +187,8 @@ BEGIN
         v_all_done := true;
         UPDATE handover_sys.handovers
         SET status = 'ACCEPTED',
-            accepted_by_line_name = p_line_display_name,
-            accepted_by_line_user_id = p_line_user_id,
+            receiver_id = v_receiver_id,
+            receiver_line_name = p_line_display_name,
             tasks = v_tasks,
             accepted_at = now()
         WHERE id = p_handover_id;
@@ -206,3 +207,28 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION handover_sys.accept_one_task(uuid, int, text, text) TO anon, authenticated;
+
+
+-- 6. accept_handover_from_liff(p_handover_id uuid, p_receiver_id uuid, p_receiver_line_name text)
+-- → Securely update handover from the client LIFF application, bypassing direct table write RLS boundaries
+CREATE OR REPLACE FUNCTION handover_sys.accept_handover_from_liff(
+    p_handover_id uuid,
+    p_receiver_id uuid,
+    p_receiver_line_name text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = handover_sys
+AS $$
+BEGIN
+    UPDATE handover_sys.handovers
+    SET status = 'Accepted',
+        receiver_id = p_receiver_id,
+        receiver_line_name = p_receiver_line_name,
+        accepted_at = now()
+    WHERE id = p_handover_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION handover_sys.accept_handover_from_liff(uuid, uuid, text) TO anon, authenticated;
