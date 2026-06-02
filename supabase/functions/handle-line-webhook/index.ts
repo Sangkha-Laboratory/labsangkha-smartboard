@@ -91,6 +91,27 @@ async function pushLineMessage(to: string, text: string, accessToken: string) {
   console.log(`Push text response: ${res.status}`);
 }
 
+// Utility to reply to message or postback using replyToken
+async function replyLineMessage(replyToken: string, messages: any[], accessToken: string) {
+  if (!replyToken) return;
+  try {
+    const res = await fetch("https://api.line.me/v2/bot/message/reply", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        replyToken,
+        messages: messages
+      })
+    });
+    console.log(`Reply response: ${res.status}`);
+  } catch (err) {
+    console.error("Failed to send replyLineMessage:", err);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("OK", { headers: { "Access-Control-Allow-Origin": "*" } });
@@ -154,11 +175,16 @@ Deno.serve(async (req) => {
           console.error("RPC save_line_group failed:", error);
         } else {
           // Greeting text when joining the channel
-          await pushLineMessage(
-            groupId, 
-            "สวัสดีครับ! 🏥🤖 ระบบรับ-ส่งมอบเวร กลุ่มงานเทคนิคการแพทย์ ยินดีให้บริการบันทึกพิกัดและประสานงานร่วมกับกลุ่มนี้อย่างถูกต้องเรียบร้อยแล้ว", 
-            lineAccessToken
-          );
+          const welcomeMsg = "สวัสดีครับ! 🏥🤖 ระบบรับ-ส่งมอบเวร กลุ่มงานเทคนิคการแพทย์ ยินดีให้บริการบันทึกพิกัดและประสานงานร่วมกับกลุ่มนี้อย่างถูกต้องเรียบร้อยแล้ว";
+          if (event.replyToken) {
+            await replyLineMessage(
+              event.replyToken,
+              [{ type: "text", text: welcomeMsg }],
+              lineAccessToken
+            );
+          } else {
+            await pushLineMessage(groupId, welcomeMsg, lineAccessToken);
+          }
         }
       }
 
@@ -244,7 +270,11 @@ Deno.serve(async (req) => {
           // Post success text response to group
           const taskCount = updatedBatch ? updatedBatch.length : 1;
           const responseText = `🏥 ${displayName} ได้กด "รับงานทั้งหมด" สำเร็จ\nจำนวน ${taskCount} รายการเรียบร้อยแล้ว`;
-          await pushLineMessage(groupId || userId, responseText, lineAccessToken);
+          if (event.replyToken) {
+            await replyLineMessage(event.replyToken, [{ type: "text", text: responseText }], lineAccessToken);
+          } else {
+            await pushLineMessage(groupId || userId, responseText, lineAccessToken);
+          }
         }
 
         // C) action = select
@@ -310,19 +340,23 @@ Deno.serve(async (req) => {
             }
           };
 
-          // Post Flex Message response
-          const res = await fetch("https://api.line.me/v2/bot/message/push", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${lineAccessToken}`
-            },
-            body: JSON.stringify({
-              to: groupId || userId,
-              messages: [helpFlexMessage]
-            })
-          });
-          console.log(`Select LIFF fallback push response: ${res.status}`);
+          // Post Flex Message response using reply token if available
+          if (event.replyToken) {
+            await replyLineMessage(event.replyToken, [helpFlexMessage], lineAccessToken);
+          } else {
+            const res = await fetch("https://api.line.me/v2/bot/message/push", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${lineAccessToken}`
+              },
+              body: JSON.stringify({
+                to: groupId || userId,
+                messages: [helpFlexMessage]
+              })
+            });
+            console.log(`Select LIFF fallback push response: ${res.status}`);
+          }
         }
 
         // D) action = accept_one
@@ -364,7 +398,11 @@ Deno.serve(async (req) => {
             responseText = `${displayName} รับงานแล้ว\n${task_title}\nรับงานครบทุกรายการแล้ว`;
           }
 
-          await pushLineMessage(groupId || userId, responseText, lineAccessToken);
+          if (event.replyToken) {
+            await replyLineMessage(event.replyToken, [{ type: "text", text: responseText }], lineAccessToken);
+          } else {
+            await pushLineMessage(groupId || userId, responseText, lineAccessToken);
+          }
         }
       }
     }
