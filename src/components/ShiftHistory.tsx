@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { maskSensitiveData } from '../lib/maskUtils';
+import { getActiveConfig } from '../config';
 
 // Create an unauthenticated client to fetch supplemental full names of all practitioners, 
 // bypassing any RLS restrictions that might filter records for currently logged-in users.
@@ -418,6 +419,39 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
       }
       
       setModalNotifySuccess(true);
+
+      // Trigger background LINE notification update via Supabase Edge Function
+      try {
+        const activeConfig = getActiveConfig();
+        const supabaseUrl = activeConfig.supabaseUrl;
+        const supabaseAnonKey = activeConfig.supabaseAnonKey;
+        const functionUrl = `${supabaseUrl}/functions/v1/handle-new-handover`;
+
+        const displayUser = users.find(u => u.id === receiverName)?.full_name || "เจ้าหน้าที่";
+        const notificationPayload = {
+          action: 'task_accepted',
+          handover_id: selectedId,
+          accepted_by: displayUser,
+          channel: 'WEB', // Accepts through web platform
+          accepted_task_ids: [selectedId]
+        };
+
+        fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+            'apikey': supabaseAnonKey
+          },
+          body: JSON.stringify(notificationPayload)
+        })
+        .then(res => res.json())
+        .then(resJson => console.log('✅ Web Accept Update: LINE notification triggered:', resJson))
+        .catch(notifyErr => console.warn('❌ Web Accept Update: Failed to trigger LINE notification:', notifyErr));
+      } catch (triggerErr) {
+        console.warn('❌ Web Accept Update: Exception during trigger:', triggerErr);
+      }
+
       await fetchHistory();
       
       setTimeout(() => {
