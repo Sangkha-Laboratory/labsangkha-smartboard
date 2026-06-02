@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Book, MessageSquare, Shield, ArrowRight } from 'lucide-react';
+import { Phone, Mail, MapPin, Book, MessageSquare, Shield, ArrowRight, Microscope } from 'lucide-react';
 
 interface FooterProps {
   onPrivacyClick?: () => void;
@@ -15,7 +15,9 @@ export default function Footer({ onPrivacyClick, onTermsClick }: FooterProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 items-start">
           <div className="text-center md:text-left col-span-1">
             <div className="flex items-center justify-center md:justify-start gap-3 mb-4">
-              <div className="w-12 h-12 bg-brand-blue rounded-2xl flex items-center justify-center text-white font-black shrink-0 shadow-lg shadow-brand-blue/20">SK</div>
+              <div className="w-12 h-12 bg-brand-blue rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-brand-blue/20">
+                <Microscope className="w-6 h-6 text-white" />
+              </div>
               <div className="text-left">
                 <h3 className="text-base font-black text-white leading-tight">กลุ่มงานเทคนิคการแพทย์</h3>
                 <p className="text-[11px] text-gray-500 font-bold uppercase tracking-tight">โรงพยาบาลสังขะ</p>

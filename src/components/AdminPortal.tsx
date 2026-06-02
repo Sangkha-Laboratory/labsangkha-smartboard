@@ -33,6 +33,7 @@ import {
   Calendar,
   X,
   FileDown,
+  Microscope,
   UserPlus,
   Edit2,
   Check,
@@ -77,10 +78,16 @@ export default function AdminPortal({
   isDarkMode = false,
   onToggleDarkMode
 }: AdminPortalProps) {
-  const [activeTab, setActiveTab] = useState('Overview');
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('admin_portal_active_tab') || 'Overview';
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>('');
+
+  useEffect(() => {
+    localStorage.setItem('admin_portal_active_tab', activeTab);
+  }, [activeTab]);
 
   // Live Data States
   const [stats, setStats] = useState({
@@ -1024,8 +1031,9 @@ export default function AdminPortal({
       >
         <div className={`p-4 flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center border-b border-slate-50 dark:border-slate-800 pb-4'}`}>
           <AnimatePresence mode="wait">
-            {isSidebarOpen && (
+            {isSidebarOpen ? (
               <motion.div 
+                key="brand-expanded"
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
@@ -1033,12 +1041,23 @@ export default function AdminPortal({
                 className="flex items-center gap-3 overflow-hidden"
               >
                 <div className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-brand-blue/20">
-                  <ShieldAlert size={20} />
+                  <Microscope size={20} />
                 </div>
                 <div>
                   <h1 className="font-[900] text-[#0f2d52] dark:text-white leading-none">Handover</h1>
                   <span className="text-[12px] font-black text-brand-blue bg-brand-blue/10 px-1.5 py-0.5 rounded-md mt-1 inline-block uppercase tracking-wider">BETA</span>
                 </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="brand-collapsed"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-brand-blue/20 cursor-pointer"
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <Microscope size={20} />
               </motion.div>
             )}
           </AnimatePresence>

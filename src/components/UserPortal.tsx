@@ -26,7 +26,8 @@ import {
   Download,
   Key,
   Settings,
-  Menu
+  Menu,
+  Microscope
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -79,9 +80,25 @@ export default function UserPortal({
   isDarkMode = false,
   onToggleDarkMode
 }: UserPortalProps) {
-  const [activeTab, setActiveTab] = useState<'Overview' | 'AllHandovers' | 'MyHandovers' | 'Announcements' | 'Settings'>('AllHandovers');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'AllHandovers' | 'MyHandovers' | 'Announcements' | 'Settings'>(() => {
+    return (localStorage.getItem('user_portal_active_tab') as any) || 'AllHandovers';
+  });
   const [isLoading, setIsLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('user_portal_sidebar_open');
+    if (saved !== null) {
+      return saved === 'true';
+    }
+    return typeof window !== 'undefined' ? window.innerWidth >= 768 : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('user_portal_active_tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('user_portal_sidebar_open', String(isSidebarOpen));
+  }, [isSidebarOpen]);
   const [lastUpdated, setLastUpdated] = useState<string>('');
   
   // Stats
@@ -336,7 +353,14 @@ export default function UserPortal({
   });
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-thai flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-thai flex flex-col md:flex-row flex-1">
+      {/* Sidebar mobile backdrop */}
+      {isSidebarOpen && (
+        <div 
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-40 md:hidden animate-fade-in"
+        />
+      )}
       
       {/* Bottom Navigation (Mobile Only) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] overflow-x-auto no-scrollbar gap-2 scroll-smooth">
@@ -376,26 +400,26 @@ export default function UserPortal({
         </div>
       </nav>
 
-      {/* Sidebar navigation (Desktop Only) */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-72 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex flex-col justify-between transform ${
+      {/* Mobile Sidebar (Mobile Only) */}
+      <aside className={`md:hidden fixed inset-y-0 left-0 z-40 w-72 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex flex-col justify-between transform ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } md:translate-x-0 transition-transform duration-300 ease-in-out hidden md:flex`}>
+      } transition-transform duration-300 ease-in-out`}>
         
         <div>
           {/* Logo Brand */}
           <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center text-white font-black text-sm">
-                <span>SK</span>
+              <div className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-blue/20">
+                <Microscope size={20} />
               </div>
               <div className="min-w-0">
-                <h1 className="text-[13px] font-black tracking-tight text-slate-900 dark:text-white leading-tight truncate">กลุ่มงานเทคนิคการแพทย์</h1>
+                <h1 className="text-[13px] font-[900] tracking-tight text-slate-900 dark:text-white leading-tight truncate">กลุ่มงานเทคนิคการแพทย์</h1>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 truncate">โรงพยาบาลสังขะ</p>
               </div>
             </div>
             <button 
               onClick={() => setIsSidebarOpen(false)}
-              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               <X size={18} />
             </button>
@@ -488,15 +512,118 @@ export default function UserPortal({
         </div>
       </aside>
 
+      {/* Desktop Sidebar (Desktop Only) */}
+      <motion.aside 
+        initial={false}
+        animate={{ width: isSidebarOpen ? 260 : 80 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="hidden md:flex bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col z-50 sticky top-0 h-screen overflow-hidden whitespace-nowrap"
+      >
+        <div className={`p-4 flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center border-b border-slate-50 dark:border-slate-800 pb-4'}`}>
+          <AnimatePresence mode="wait">
+            {isSidebarOpen ? (
+              <motion.div 
+                key="brand-expanded"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                className="flex items-center gap-3 overflow-hidden"
+              >
+                <div className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-brand-blue/20">
+                  <Microscope size={20} />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-[13px] font-[900] tracking-tight text-slate-900 dark:text-white leading-tight truncate">กลุ่มงานเทคนิคการแพทย์</h1>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 truncate">โรงพยาบาลสังขะ</p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="brand-collapsed"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-brand-blue/20"
+              >
+                <Microscope size={20} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Logged in User Information */}
+        <div className={`p-4 border-b border-slate-100 dark:border-slate-800 ${isSidebarOpen ? '' : 'flex justify-center'}`}>
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-brand-light dark:bg-brand-blue/10 border border-brand-blue/20 flex items-center justify-center text-brand-blue text-sm font-black flex-shrink-0">
+              {user?.full_name ? cleanName(user.full_name).substring(0, 2) : 'ST'}
+            </div>
+            {isSidebarOpen && (
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-black text-[#0f2d52] dark:text-white truncate leading-snug">{cleanName(user?.full_name) || 'เจ้าหน้าที่ห้องปฏิบัติการ'}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50 animate-pulse" />
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{user?.role || 'Staff Profile'}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop Menus */}
+        <nav className="flex-1 p-4 space-y-1.5">
+          <UserSidebarNavItem
+            icon={<RefreshCw size={15} />}
+            label="รับเวร / ส่งเวร"
+            active={activeTab === 'AllHandovers'}
+            onClick={() => setActiveTab('AllHandovers')}
+            collapsed={!isSidebarOpen}
+          />
+          <UserSidebarNavItem
+            icon={<ClipboardList size={15} />}
+            label="งานส่งเวรของฉัน"
+            active={activeTab === 'MyHandovers'}
+            onClick={() => setActiveTab('MyHandovers')}
+            collapsed={!isSidebarOpen}
+          />
+          <UserSidebarNavItem
+            icon={<Megaphone size={15} />}
+            label="ข่าวสารและประกาศ"
+            active={activeTab === 'Announcements'}
+            onClick={() => setActiveTab('Announcements')}
+            badge={unreadAnnouncements.length}
+            collapsed={!isSidebarOpen}
+          />
+          <UserSidebarNavItem
+            icon={<Key size={15} />}
+            label="เปลี่ยนรหัสผ่าน"
+            active={activeTab === 'Settings'}
+            onClick={() => setActiveTab('Settings')}
+            collapsed={!isSidebarOpen}
+          />
+        </nav>
+
+        {/* Desktop Bottom Menu Area */}
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+          <button
+            onClick={onLogout}
+            className={`w-full h-10 flex items-center gap-3 px-3.5 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/45 rounded-xl transition-all font-black text-xs uppercase tracking-wider ${!isSidebarOpen ? 'justify-center' : ''}`}
+          >
+            <LogOut size={14} className="flex-shrink-0" />
+            {isSidebarOpen && <span className="truncate">ลงชื่อออก</span>}
+          </button>
+        </div>
+      </motion.aside>
+
       {/* Main Container Area */}
-      <div className="flex-1 md:pl-72 flex flex-col min-h-screen pb-20 md:pb-0">
+      <div className="flex-1 flex flex-col min-h-screen pb-20 md:pb-0">
         
         {/* Top bar */}
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-4">
             <button 
-              onClick={() => setIsSidebarOpen(true)}
-              className="md:hidden p-2 rounded-xl text-[#0f2d52] dark:text-white bg-slate-50 dark:bg-slate-800"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 rounded-xl text-[#0f2d52] dark:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             >
               <Menu size={18} />
             </button>
@@ -1537,3 +1664,49 @@ function StatCard({
     </div>
   );
 }
+
+function UserSidebarNavItem({
+  icon,
+  label,
+  active,
+  onClick,
+  badge,
+  collapsed
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  badge?: number;
+  collapsed?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full h-11 flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all font-black text-[13px] relative group ${
+        active
+          ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/15'
+          : 'text-slate-500 hover:text-brand-blue hover:bg-slate-50 dark:hover:bg-slate-800/60'
+      }`}
+    >
+      <div className={`${active ? 'text-white' : 'text-slate-400 group-hover:text-brand-blue transition-colors'} flex-shrink-0`}>
+        {icon}
+      </div>
+      {!collapsed && <span className="flex-1 text-left truncate">{label}</span>}
+      {!collapsed && badge !== undefined && badge > 0 && (
+        <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${active ? 'bg-white/20 text-white' : 'bg-red-500 text-white'}`}>
+          {badge}
+        </span>
+      )}
+      {collapsed && badge !== undefined && badge > 0 && (
+        <span className="absolute top-1 right-1 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-slate-900">
+          {badge}
+        </span>
+      )}
+      {collapsed && active && (
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-brand-blue dark:bg-white rounded-l-full" />
+      )}
+    </button>
+  );
+}
+

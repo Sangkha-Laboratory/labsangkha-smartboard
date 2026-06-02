@@ -25,12 +25,24 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [isAdminPortal, setIsAdminPortal] = useState(false);
-  const [isUserPortal, setIsUserPortal] = useState(false);
-  const [showManual, setShowManual] = useState(false);
-  const [showContact, setShowContact] = useState(false);
-  const [showSafety, setShowSafety] = useState(false);
-  const [safetyTab, setSafetyTab] = useState<'public_privacy' | 'public_terms'>('public_privacy');
+  const [isAdminPortal, setIsAdminPortal] = useState(() => {
+    return localStorage.getItem('sangkha_view_isAdminPortal') === 'true';
+  });
+  const [isUserPortal, setIsUserPortal] = useState(() => {
+    return localStorage.getItem('sangkha_view_isUserPortal') === 'true';
+  });
+  const [showManual, setShowManual] = useState(() => {
+    return localStorage.getItem('sangkha_view_showManual') === 'true';
+  });
+  const [showContact, setShowContact] = useState(() => {
+    return localStorage.getItem('sangkha_view_showContact') === 'true';
+  });
+  const [showSafety, setShowSafety] = useState(() => {
+    return localStorage.getItem('sangkha_view_showSafety') === 'true';
+  });
+  const [safetyTab, setSafetyTab] = useState<'public_privacy' | 'public_terms'>(() => {
+    return (localStorage.getItem('sangkha_view_safetyTab') as any) || 'public_privacy';
+  });
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -151,7 +163,25 @@ export default function App() {
         setUserProfile(data);
         if (data.role === 'admin') {
           setIsAdmin(true);
-          setIsAdminPortal(true);
+          const hasStored = 
+            localStorage.getItem('sangkha_view_isAdminPortal') !== null ||
+            localStorage.getItem('sangkha_view_isUserPortal') !== null ||
+            localStorage.getItem('sangkha_view_showManual') !== null ||
+            localStorage.getItem('sangkha_view_showContact') !== null ||
+            localStorage.getItem('sangkha_view_showSafety') !== null;
+          if (!hasStored) {
+            setIsAdminPortal(true);
+          }
+        } else {
+          const hasStored = 
+            localStorage.getItem('sangkha_view_isAdminPortal') !== null ||
+            localStorage.getItem('sangkha_view_isUserPortal') !== null ||
+            localStorage.getItem('sangkha_view_showManual') !== null ||
+            localStorage.getItem('sangkha_view_showContact') !== null ||
+            localStorage.getItem('sangkha_view_showSafety') !== null;
+          if (!hasStored) {
+            setIsUserPortal(true);
+          }
         }
       }
     } catch (e) {
@@ -171,14 +201,37 @@ export default function App() {
     }
   }, [isDarkMode]);
 
+  useEffect(() => {
+    localStorage.setItem('sangkha_view_isAdminPortal', String(isAdminPortal));
+    localStorage.setItem('sangkha_view_isUserPortal', String(isUserPortal));
+    localStorage.setItem('sangkha_view_showManual', String(showManual));
+    localStorage.setItem('sangkha_view_showContact', String(showContact));
+    localStorage.setItem('sangkha_view_showSafety', String(showSafety));
+    localStorage.setItem('sangkha_view_safetyTab', safetyTab);
+  }, [isAdminPortal, isUserPortal, showManual, showContact, showSafety, safetyTab]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setUserProfile(null);
     setLocalUserProfile(null);
     localStorage.removeItem('sangkha_handover_local_user');
+    
+    // Clear persistent views on logout
+    localStorage.removeItem('sangkha_view_isAdminPortal');
+    localStorage.removeItem('sangkha_view_isUserPortal');
+    localStorage.removeItem('sangkha_view_showManual');
+    localStorage.removeItem('sangkha_view_showContact');
+    localStorage.removeItem('sangkha_view_showSafety');
+    localStorage.removeItem('sangkha_view_safetyTab');
+    localStorage.removeItem('user_portal_active_tab');
+    localStorage.removeItem('admin_portal_active_tab');
+
     setIsAdminPortal(false);
     setIsUserPortal(false);
+    setShowManual(false);
+    setShowContact(false);
+    setShowSafety(false);
     setIsAdmin(false);
   };
 

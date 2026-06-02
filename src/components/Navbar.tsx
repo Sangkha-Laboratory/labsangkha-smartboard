@@ -17,7 +17,8 @@ import {
   MessageSquare,
   Shield,
   Menu,
-  X
+  X,
+  Microscope
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
@@ -91,8 +92,8 @@ export default function Navbar({
           <div className="flex justify-between h-14 sm:h-16 items-center">
             <div className="flex items-center gap-6 sm:gap-8">
               <div onClick={onHomeClick} className="flex items-center gap-2 sm:gap-2.5 cursor-pointer">
-                <div className="w-7 h-7 sm:w-9 sm:h-9 flex-shrink-0 bg-brand-blue rounded-xl flex items-center justify-center text-white">
-                  <span className="text-[10px] sm:text-xs font-bold">SK</span>
+                <div className="w-7 h-7 sm:w-9 sm:h-9 flex-shrink-0 bg-brand-blue rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-blue/20">
+                  <Microscope className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div>
                   <h1 className="text-xs sm:text-sm font-black text-gray-900 dark:text-white leading-tight whitespace-nowrap">กลุ่มงานเทคนิคการแพทย์</h1>
