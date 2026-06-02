@@ -1030,16 +1030,9 @@ export default function AdminPortal({
         className="hidden md:flex bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col z-50 sticky top-0 h-screen overflow-hidden whitespace-nowrap"
       >
         <div className={`p-4 flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center border-b border-slate-50 dark:border-slate-800 pb-4'}`}>
-          <AnimatePresence mode="wait">
-            {isSidebarOpen ? (
-              <motion.div 
-                key="brand-expanded"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center gap-3 overflow-hidden"
-              >
+          {isSidebarOpen ? (
+            <>
+              <div className="flex items-center gap-3 overflow-hidden">
                 <div className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-brand-blue/20">
                   <Microscope size={20} />
                 </div>
@@ -1047,27 +1040,24 @@ export default function AdminPortal({
                   <h1 className="font-[900] text-[#0f2d52] dark:text-white leading-none">Handover</h1>
                   <span className="text-[12px] font-black text-brand-blue bg-brand-blue/10 px-1.5 py-0.5 rounded-md mt-1 inline-block uppercase tracking-wider">BETA</span>
                 </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="brand-collapsed"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-brand-blue/20 cursor-pointer"
-                onClick={() => setIsSidebarOpen(true)}
+              </div>
+              <button 
+                onClick={() => setIsSidebarOpen(false)}
+                className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+                title="หุบเมนู / Collapse Sidebar"
               >
-                <Microscope size={20} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-          
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all"
-          >
-            <Menu size={20} />
-          </button>
+                <Menu size={20} />
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+              title="ขยายเมนู / Expand Sidebar"
+            >
+              <Menu size={20} />
+            </button>
+          )}
         </div>
 
         <nav className="flex-1 px-4 mt-4 space-y-1">
@@ -1116,23 +1106,6 @@ export default function AdminPortal({
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Kaggle-style Responsive Search Bar */}
-              <div className="relative hidden sm:flex items-center bg-slate-50 dark:bg-slate-950 px-4 h-10 border border-slate-200 dark:border-slate-800 rounded-full w-48 focus-within:w-64 focus-within:bg-white focus-within:border-brand-blue/30 transition-all group">
-                <Search size={14} className="text-slate-400 group-focus-within:text-brand-blue transition-colors mr-2.5" />
-                <input 
-                  type="text" 
-                  placeholder="Search" 
-                  className="bg-transparent border-none outline-none text-[13px] font-[900] text-slate-600 dark:text-slate-200 placeholder:text-slate-400 w-full"
-                  disabled
-                />
-              </div>
-
-              <div className="sm:hidden">
-                <button className="w-10 h-10 flex items-center justify-center text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full transition-all relative">
-                  <Search size={18} />
-                </button>
-              </div>
-
               <div className="relative">
                 <button 
                   type="button"
@@ -1222,15 +1195,13 @@ export default function AdminPortal({
               
               <div className="w-px h-6 bg-slate-200 dark:bg-slate-800" />
 
-              <div className="flex items-center gap-3 cursor-pointer group">
+              <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-[900] text-[#0f2d52] dark:text-slate-200 leading-none">{user?.email?.split('@')[0] || 'Admin User'}</p>
-                  <p className="text-[11px] font-bold text-brand-blue uppercase tracking-widest mt-1">Super Admin</p>
                 </div>
-                <div className="w-10 h-10 bg-brand-blue rounded-xl flex items-center justify-center text-white font-black text-sm shadow-md group-hover:scale-105 transition-all">
+                <div className="w-10 h-10 bg-brand-blue rounded-xl flex items-center justify-center text-white font-black text-sm shadow-md">
                   AD
                 </div>
-                <ChevronDown size={14} className="text-slate-400" />
               </div>
             </div>
           </div>
@@ -1238,36 +1209,35 @@ export default function AdminPortal({
 
         {/* Conditionally Render Content Based on Active Tab */}
         {activeTab === 'Overview' ? (
-          <div className="animate-fadeIn flex flex-col">
-            {/* Export Dashboard Bar (Outside the Captured Area) */}
-            <div className="px-6 pt-6 flex justify-end">
-              <button 
-                type="button"
-                onClick={handleExportImage}
-                disabled={isExporting}
-                className="w-full sm:w-auto h-10 px-5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-700/60 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black shadow-lg shadow-emerald-655/15 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-transparent"
-                title="ส่งออกรายงานแผงควบคุมหลักเป็นรูปภาพ"
-              >
-                {isExporting ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <Download size={14} />
-                )}
-                <span>{isExporting ? 'กำลังส่งออกรูปภาพ...' : 'ส่งออกรูปภาพแดชบอร์ด / Export Dashboard'}</span>
-              </button>
-            </div>
+          <div className="animate-fadeIn flex flex-col font-thai">
 
-            <div id="dashboard-capture-area" className="p-6 pt-2 space-y-8">
+            <div id="dashboard-capture-area" className="p-6 pt-6 space-y-8">
             {/* Kaggle welcome card */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-[2rem] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm relative overflow-hidden">
               {/* Background minimal graphic effect */}
               <div className="absolute right-0 top-0 w-64 h-64 bg-slate-50/50 dark:bg-slate-950/20 rounded-full pointer-events-none -translate-y-12 translate-x-12" />
               
-              <div className="space-y-4 relative z-10 max-w-xl text-center md:text-left">
+              <div className="space-y-4 relative z-10 max-w-xl text-center md:text-left flex-1 w-full">
                 <div className="space-y-2">
-                  <h1 className="text-3xl md:text-4xl font-[900] text-slate-900 dark:text-white tracking-tight leading-tight">
-                    Welcome back, {user?.full_name || 'SAMITA SINGSARD'}.
-                  </h1>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-[900] text-slate-900 dark:text-white tracking-tight leading-tight">
+                      Welcome back, {user?.full_name || 'SAMITA SINGSARD'}.
+                    </h1>
+                    <button 
+                      type="button"
+                      onClick={handleExportImage}
+                      disabled={isExporting}
+                      className="inline-flex self-center md:self-auto h-9 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-700/60 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/10 transition-all items-center gap-1.5 cursor-pointer flex-shrink-0 border border-transparent"
+                      title="ส่งออกรายงานแผงควบคุมหลักเป็นรูปภาพ"
+                    >
+                      {isExporting ? (
+                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <Download size={14} />
+                      )}
+                      <span>{isExporting ? 'กำลังส่งออก...' : 'ส่งออกภาพ'}</span>
+                    </button>
+                  </div>
                   <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-bold leading-relaxed">
                     Everything is under your control. Let's keep the lab running.
                   </p>
@@ -1926,7 +1896,7 @@ export default function AdminPortal({
             </div>
           </div>
         ) : activeTab === 'Users' ? (
-          <div className="space-y-6 animate-fadeIn font-thai">
+          <div className="p-6 space-y-6 animate-fadeIn font-thai">
             {/* Header section with summary stats */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
               <div className="space-y-1">
@@ -2504,7 +2474,7 @@ export default function AdminPortal({
                             >
                               <div className="min-w-0 flex-1 space-y-1">
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className="text-slate-850 dark:text-slate-200 font-mono font-bold text-xs truncate max-w-[120px] xs:max-w-[150px] sm:max-w-[180px] md:max-w-none block" title={group.group_id}>
+                                  <span className="text-slate-850 dark:text-slate-200 font-mono font-bold text-xs truncate max-w-[110px] xs:max-w-[170px] sm:max-w-[220px] md:max-w-[130px] lg:max-w-[110px] xl:max-w-[180px] block" title={group.group_id}>
                                     {group.group_id}
                                   </span>
                                   {isActive && (
@@ -2704,7 +2674,7 @@ export default function AdminPortal({
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900 dark:text-white leading-none">ยืนยันการลบตัวส่งมอบเวร</h3>
-                  <p className="text-[10px] text-slate-400 font-bold mt-1.5 leading-tight">สิทธิ์ขั้นสูง Super Admin เป็นผู้ควบคุมการลบเท่านั้น</p>
+                  <p className="text-[10px] text-slate-400 font-bold mt-1.5 leading-tight">สิทธิ์ขั้นสูง (ผู้ดูแลระบบ) เท่านั้นที่มีสิทธิ์ลบข้อมูล</p>
                 </div>
               </div>
 

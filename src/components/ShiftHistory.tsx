@@ -882,30 +882,48 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                  </button>
                  
                  <div className="flex items-center gap-1">
-                   {Array.from({ length: Math.min(5, Math.ceil(totalCount / ITEMS_PER_PAGE)) }).map((_, i) => {
-                     let pageNum = i + 1;
-                     const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
-                     if (totalPages > 5) {
-                        if (currentPage > 3) pageNum = currentPage - 2 + i;
-                        if (pageNum > totalPages) pageNum = totalPages - (4 - i);
-                        if (pageNum < 1) pageNum = i + 1;
-                     }
+                    {(() => {
+                      const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+                      const maxDisplayedPages = 5;
+                      let startPage = 1;
+                      let endPage = totalPages;
 
-                     return (
-                       <button
-                         key={pageNum}
-                         onClick={() => setCurrentPage(pageNum)}
-                         className={`w-7 h-7 rounded-xl text-[10px] font-bold transition-all ${
-                           currentPage === pageNum 
-                           ? 'bg-blue-600 text-white shadow-md shadow-blue-100 dark:shadow-none' 
-                           : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800'
-                         }`}
-                       >
-                         {pageNum}
-                       </button>
-                     );
-                   })}
-                 </div>
+                      if (totalPages > maxDisplayedPages) {
+                        const half = Math.floor(maxDisplayedPages / 2);
+                        startPage = currentPage - half;
+                        endPage = currentPage + half;
+
+                        if (startPage < 1) {
+                          startPage = 1;
+                          endPage = maxDisplayedPages;
+                        } else if (endPage > totalPages) {
+                          endPage = totalPages;
+                          startPage = totalPages - maxDisplayedPages + 1;
+                        }
+                      }
+
+                      const pages = [];
+                      for (let p = startPage; p <= endPage; p++) {
+                        pages.push(p);
+                      }
+
+                      return pages.map((pageNum) => {
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`w-7 h-7 rounded-xl text-[10px] font-bold transition-all ${
+                              currentPage === pageNum 
+                              ? 'bg-blue-600 text-white shadow-md shadow-blue-100 dark:shadow-none' 
+                              : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      });
+                    })()}
+                  </div>
 
                  <button 
                    onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / ITEMS_PER_PAGE), prev + 1))}

@@ -89,7 +89,7 @@ export default function UserPortal({
     if (saved !== null) {
       return saved === 'true';
     }
-    return typeof window !== 'undefined' ? window.innerWidth >= 768 : true;
+    return false;
   });
 
   useEffect(() => {
@@ -520,16 +520,9 @@ export default function UserPortal({
         className="hidden md:flex bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col z-50 sticky top-0 h-screen overflow-hidden whitespace-nowrap"
       >
         <div className={`p-4 flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center border-b border-slate-50 dark:border-slate-800 pb-4'}`}>
-          <AnimatePresence mode="wait">
-            {isSidebarOpen ? (
-              <motion.div 
-                key="brand-expanded"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center gap-3 overflow-hidden"
-              >
+          {isSidebarOpen ? (
+            <>
+              <div className="flex items-center gap-3 overflow-hidden">
                 <div className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-brand-blue/20">
                   <Microscope size={20} />
                 </div>
@@ -537,19 +530,24 @@ export default function UserPortal({
                   <h1 className="text-[13px] font-[900] tracking-tight text-slate-900 dark:text-white leading-tight truncate">กลุ่มงานเทคนิคการแพทย์</h1>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 truncate">โรงพยาบาลสังขะ</p>
                 </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="brand-collapsed"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="w-9 h-9 bg-brand-blue rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-brand-blue/20"
+              </div>
+              <button 
+                onClick={() => setIsSidebarOpen(false)}
+                className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+                title="หุบเมนู / Collapse Sidebar"
               >
-                <Microscope size={20} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+                <Menu size={20} />
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+              title="ขยายเมนู / Expand Sidebar"
+            >
+              <Menu size={20} />
+            </button>
+          )}
         </div>
 
         {/* Logged in User Information */}
@@ -638,23 +636,6 @@ export default function UserPortal({
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Kaggle Search Bar inside UserPortal - fully functional with real search state */}
-            <div className="relative hidden sm:flex items-center bg-slate-50 dark:bg-slate-900/80 px-4 h-10 border border-slate-200 dark:border-slate-800 rounded-full w-48 focus-within:w-64 focus-within:bg-white focus-within:dark:bg-slate-800 focus-within:border-brand-blue/30 transition-all group">
-              <Search size={14} className="text-slate-400 group-focus-within:text-brand-blue transition-colors mr-2.5" />
-              <input 
-                type="text" 
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  if (activeTab !== 'MyHandovers' && activeTab !== 'AllHandovers') {
-                    setActiveTab('MyHandovers');
-                  }
-                }}
-                placeholder="Search" 
-                className="bg-transparent border-none outline-none text-[13px] font-[900] text-slate-600 dark:text-slate-200 placeholder:text-slate-400 w-full font-thai"
-              />
-            </div>
-
             <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/80 px-3.5 py-2 rounded-2xl border border-slate-100 dark:border-slate-800">
               <div className="w-2.5 h-2.5 bg-green-500 rounded-full shadow-sm shadow-green-500/50 animate-pulse" />
               <span className="text-[12px] font-black text-[#0f2d52] dark:text-slate-200 uppercase tracking-wider">เชื่อมต่อสำเร็จ</span>
