@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
 
         // B) action = accept_all
         if (action === "accept_all") {
-          const handoverId = params.get("handoverId") || params.get("taskId");
+          const handoverId = params.get("handoverId") || params.get("handover_id") || params.get("taskId");
           if (!handoverId) {
             console.warn("Missing handoverId or taskId in accept_all request");
             continue;
@@ -209,77 +209,156 @@ Deno.serve(async (req) => {
 
           console.log(`Action accept_all triggered for handover ID: ${handoverId}`);
           
-          // Get user details
-          const { displayName } = await getLineUserProfile(userId, groupId, lineAccessToken);
-          
-          // 1. Fetch reference task
-          const { data: refTask, error: refError } = await supabase
-            .from('handovers')
-            .select('*')
-            .eq('id', handoverId)
-            .single();
-
-          if (refError || !refTask) {
-            console.error("Reference task not found for accept_all:", refError);
-            continue;
-          }
-
-          // 2. Identify all tasks in same batch (+/- 5 seconds)
-          const targetTime = new Date(refTask.created_at).getTime();
-          const lowerBound = new Date(targetTime - 5000).toISOString();
-          const upperBound = new Date(targetTime + 5000).toISOString();
-
-          // Try to look up a registered user by name to match their UUID
-          let registeredUserId: string | null = null;
           try {
-            const { data: matchedUsers } = await supabase
-              .from('users')
-              .select('id')
-              .eq('full_name', displayName)
-              .limit(1);
-            if (matchedUsers && matchedUsers.length > 0) {
-              registeredUserId = matchedUsers[0].id;
+            // Get user details
+            const { displayName } = await getLineUserProfile(userId, groupId, lineAccessToken);
+            
+            // 1. Fetch reference task
+            const { data: refTask, error: refError } = await supabase
+              .from('handovers')
+              .select('*')
+              .eq('id', handoverId)
+              .single();
+
+            if (refError || !refTask) {
+              console.error("Reference task not found for accept_all:", refError);
+              const errorMsg = `🏥 เกิดข้อผิดพลาด: ไม่พบรายละเอียดหลักของใบส่งเวรในระบบ (ID: ${handoverId})\nรายละเอียด: ${refError?.message || "ไม่พบแถวข้อมูล"}`;
+              let replied = false;
+              if (event.replyToken) {
+                replied = await replyLineMessage(event.replyToken, [{ type: "text", text: errorMsg }], lineAccessToken);
+              }
+              if (!replied) {
+                await pushLineMessage(groupId || userId, errorMsg, lineAccessToken);
+              }
+              continue;
             }
-          } catch (err) {
-            console.warn("Failed to lookup registering user ID in webhook:", err);
-          }
 
-          // 3. Update all pending items in this batch to Accepted
-          const { data: updatedBatch, error: updateError } = await supabase
-            .from('handovers')
-            .update({
-              status: 'Accepted',
-              receiver_id: registeredUserId,
-              receiver_line_name: displayName,
-              accepted_at: new Date().toISOString()
-            })
-            .eq('sender_id', refTask.sender_id)
-            .eq('division', refTask.division)
-            .gte('created_at', lowerBound)
-            .lte('created_at', upperBound)
-            .eq('status', 'Pending')
-            .select();
+            // Try to look up a registered user by name to match their UUID
+            let registeredUserId: string | null = null;
+            try {
+              const { data: matchedUsers } = await supabase
+                .from('users')
+                .select('id')
+                .eq('full_name', displayName)
+                .limit(1);
+              if (matchedUsers && matchedUsers.length > 0) {
+                registeredUserId = matchedUsers[0].id;
+              }
+            } catch (err) {
+              console.warn("Failed to lookup registering user ID in webhook:", err);
+            }
 
-          if (updateError) {
-            console.error("Failed to update batch handovers in accept_all:", updateError);
-          }
+            // Direct update of the single reference task ID first to guarantee success for the clicked item
+            try {
+              await supabase
+                .from('handovers')
+                .update({
+                  status: 'Accepted',
+                  receiver_id: registeredUserId,
+                  receiver_line_name: displayName,
+                  accepted_at: new Date().toISOString()
+                })
+                .eq('id', handoverId);
+            } catch (err: any) {
+              console.warn("Direct update of reference task fell back:", err);
+            }
 
-          // Also execute legacy RPC just in case they have legacy column
-          await supabase.rpc("accept_handover_from_line", {
-            p_handover_id: handoverId,
-            p_line_display_name: displayName,
-            p_line_user_id: userId
-          }).catch((e: any) => console.warn("Legacy RPC error:", e));
+            // 2. Identify all tasks in same batch (+/- 5 seconds)
+            let targetTime = new Date().getTime();
+            if (refTask.created_at) {
+              const parsedTime = new Date(refTask.created_at).getTime();
+              if (!isNaN(parsedTime)) {
+                targetTime = parsedTime;
+              }
+            }
+            const lowerBound = new Date(targetTime - 5000).toISOString();
+            const upperBound = new Date(targetTime + 5000).toISOString();
 
-          // Post success text response to group
-          const taskCount = updatedBatch ? updatedBatch.length : 1;
-          const responseText = `🏥 ${displayName} ได้กด "รับงานทั้งหมด" สำเร็จ\nจำนวน ${taskCount} รายการเรียบร้อยแล้ว`;
-          let replied = false;
-          if (event.replyToken) {
-            replied = await replyLineMessage(event.replyToken, [{ type: "text", text: responseText }], lineAccessToken);
-          }
-          if (!replied) {
-            await pushLineMessage(groupId || userId, responseText, lineAccessToken);
+            let updatedBatchCount = 0;
+
+            // 3. Update all pending items in this batch to Accepted
+            try {
+              let updateQuery = supabase
+                .from('handovers')
+                .update({
+                  status: 'Accepted',
+                  receiver_id: registeredUserId,
+                  receiver_line_name: displayName,
+                  accepted_at: new Date().toISOString()
+                })
+                .eq('sender_id', refTask.sender_id)
+                .gte('created_at', lowerBound)
+                .lte('created_at', upperBound)
+                .eq('status', 'Pending');
+
+              if (refTask.division) {
+                updateQuery = updateQuery.eq('division', refTask.division);
+              }
+
+              const { data: updatedBatch, error: updateError } = await updateQuery.select();
+
+              if (updateError) {
+                console.error("Failed to update batch handovers in accept_all:", updateError);
+              } else if (updatedBatch) {
+                updatedBatchCount = updatedBatch.length;
+              }
+            } catch (err) {
+              console.error("Exception during batch update in accept_all:", err);
+            }
+
+            // Also execute legacy RPC just in case they have legacy column/schema
+            try {
+              await supabase.rpc("accept_handover_from_line", {
+                p_handover_id: handoverId,
+                p_line_display_name: displayName,
+                p_line_user_id: userId
+              });
+            } catch (e: any) {
+              console.warn("Legacy RPC error:", e);
+            }
+
+            // Fetch the current batch items to see the total number of items accepted if count was 0
+            if (updatedBatchCount === 0) {
+              try {
+                let countQuery = supabase
+                  .from('handovers')
+                  .select('id')
+                  .eq('sender_id', refTask.sender_id)
+                  .gte('created_at', lowerBound)
+                  .lte('created_at', upperBound);
+
+                if (refTask.division) {
+                  countQuery = countQuery.eq('division', refTask.division);
+                }
+
+                const { data: batchTasks } = await countQuery;
+                if (batchTasks) {
+                  updatedBatchCount = batchTasks.length;
+                }
+              } catch (err) {
+                console.warn("Failed to count batch tasks as fallback:", err);
+              }
+            }
+
+            const taskCount = updatedBatchCount > 0 ? updatedBatchCount : 1;
+            const responseText = `🏥 ${displayName} ได้กด "รับงานทั้งหมด" สำเร็จ\nจำนวน ${taskCount} รายการเรียบร้อยแล้ว`;
+            let replied = false;
+            if (event.replyToken) {
+              replied = await replyLineMessage(event.replyToken, [{ type: "text", text: responseText }], lineAccessToken);
+            }
+            if (!replied) {
+              await pushLineMessage(groupId || userId, responseText, lineAccessToken);
+            }
+          } catch (err: any) {
+            console.error("Uncaught exception in accept_all handler:", err);
+            const errMsg = `🏥 เกิดข้อผิดพลาดทางเทคนิคขณะบันทึกรับงานทั้งหมด: ${err.message || err}`;
+            let replied = false;
+            if (event.replyToken) {
+              replied = await replyLineMessage(event.replyToken, [{ type: "text", text: errMsg }], lineAccessToken);
+            }
+            if (!replied) {
+              await pushLineMessage(groupId || userId, errMsg, lineAccessToken);
+            }
           }
         }
 
