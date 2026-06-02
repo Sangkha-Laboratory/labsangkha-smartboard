@@ -1,5 +1,39 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
+function maskSensitiveData(text: string): string {
+  if (!text) return "";
+  let masked = text;
+
+  // 1. Match typical HN patterns, e.g. HN followed by numbers or symbols and alphanumeric code.
+  masked = masked.replace(/(HN|H\.N\.)\s*[:\-\s]*\s*([a-zA-Z0-9\-\/]+)/gi, (match, prefix, val) => {
+    return "HN: ****";
+  });
+
+  // 2. Match typical LN patterns, e.g. LN: 12345, LN 4567-89, etc.
+  masked = masked.replace(/(LN|L\.N\.)\s*[:\-\s]*\s*([a-zA-Z0-9\-\/]+)/gi, (match, prefix, val) => {
+    return "LN: ****";
+  });
+
+  // 3. Match Patient Name starting with prefix (นาย, นาง, นางสาว, น.ส., นส., ด.ช., ด.ญ., ดช., ดญ., เด็กชาย, เด็กหญิง) and Thai alphabet
+  masked = masked.replace(/(นาย|นาง|นางสาว|น\.ส\.|นส\.|ด\.ช\.|ด\.ญ\.|ดช\.|ดญ\.|เด็กชาย|เด็กหญิง)\s*([ก-๙]+)(?:\s+([ก-๙]+))?/g, (match, prefix, firstName, lastName) => {
+    if (lastName) {
+      return `${prefix} **** ****`;
+    }
+    return `${prefix} ****`;
+  });
+
+  // 4. Match "คนไข้ชื่อ", "ชื่อคนไข้", "ชื่อผู้ป่วย" followed by Thai alphabet (optional prefix, first name, last name)
+  masked = masked.replace(/(คนไข้ชื่อ|ชื่อคนไข้|ชื่อผู้ป่วย|ชื่อ)\s*(นาย|นาง|นางสาว|น\.ส\.|นส\.|ด\.ช\.|ด\.ญ\.|ดช\.|ดญ\.|เด็กชาย|เด็กหญิง)?\s*([ก-๙]+)(?:\s+([ก-๙]+))?/g, (match, label, prefix, firstName, lastName) => {
+    const pref = prefix || "";
+    if (lastName) {
+      return `${label} ${pref} **** ****`.replace(/\s+/g, " ");
+    }
+    return `${label} ${pref} ****`.replace(/\s+/g, " ");
+  });
+
+  return masked;
+}
+
 // HMAC-SHA256 signature verification helper
 async function verifyLineSignature(bodyText: string, signature: string, channelSecret: string): Promise<boolean> {
   if (!signature || !channelSecret) return false;
@@ -233,6 +267,106 @@ Deno.serve(async (req) => {
               continue;
             }
 
+            // A. Check if already accepted to prevent duplicate button clicks/overwrites
+            if (refTask.status !== "Pending") {
+              const alreadyReceiver = refTask.receiver_line_name || "เจ้าหน้าที่";
+              const alreadyShortId = refTask.task_number || `LAB-${handoverId.substring(0, 4).toUpperCase()}`;
+
+              const alreadyAcceptedFlex = {
+                type: "flex",
+                altText: `⚠️ ${alreadyShortId} มีผู้รับงานแล้ว`,
+                contents: {
+                  type: "bubble",
+                  size: "mega",
+                  body: {
+                    type: "box",
+                    layout: "vertical",
+                    paddingAll: "lg",
+                    backgroundColor: "#ffffff",
+                    contents: [
+                      {
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                          {
+                            type: "box",
+                            layout: "vertical",
+                            width: "16px",
+                            height: "16px",
+                            backgroundColor: "#FEE2E2",
+                            cornerRadius: "8px",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            contents: [
+                              {
+                                type: "text",
+                                text: "!",
+                                color: "#EF4444",
+                                size: "xxs",
+                                weight: "bold",
+                                align: "center"
+                              }
+                            ]
+                          },
+                          {
+                            type: "text",
+                            text: `${alreadyShortId} ถูกรับงานไปแล้ว`,
+                            weight: "bold",
+                            size: "sm",
+                            color: "#EF4444",
+                            margin: "sm"
+                          }
+                        ]
+                      },
+                      {
+                        type: "separator",
+                        margin: "md",
+                        color: "#E5E7EB"
+                      },
+                      {
+                        type: "text",
+                        text: `รายการแจ้งยอดงานกลุ่มนี้ได้รับการตอบรับครบถ้วนแล้ว โดยคุณ ${alreadyReceiver} เพื่อป้องกันความซ้ำซ้อนในระบบ`,
+                        size: "xs",
+                        color: "#4B5563",
+                        margin: "md",
+                        wrap: true
+                      },
+                      {
+                        type: "text",
+                        text: `ระบบล็อกปุ่มตอบรับป้องกันความสับสนในการส่งมอบเวรของทีม`,
+                        size: "xxs",
+                        color: "#9CA3AF",
+                        margin: "sm",
+                        wrap: true
+                      }
+                    ]
+                  }
+                }
+              };
+
+              let replied = false;
+              if (event.replyToken) {
+                replied = await replyLineMessage(event.replyToken, [alreadyAcceptedFlex], lineAccessToken);
+              }
+              if (!replied) {
+                const pushTarget = groupId || userId;
+                if (pushTarget) {
+                  await fetch("https://api.line.me/v2/bot/message/push", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "Authorization": `Bearer ${lineAccessToken}`
+                    },
+                    body: JSON.stringify({
+                      to: pushTarget,
+                      messages: [alreadyAcceptedFlex]
+                    })
+                  });
+                }
+              }
+              continue;
+            }
+
             // Try to look up a registered user by name to match their UUID
             let registeredUserId: string | null = null;
             try {
@@ -248,22 +382,7 @@ Deno.serve(async (req) => {
               console.warn("Failed to lookup registering user ID in webhook:", err);
             }
 
-            // Direct update of the single reference task ID first to guarantee success for the clicked item
-            try {
-              await supabase
-                .from('handovers')
-                .update({
-                  status: 'Accepted',
-                  receiver_id: registeredUserId,
-                  receiver_line_name: displayName,
-                  accepted_at: new Date().toISOString()
-                })
-                .eq('id', handoverId);
-            } catch (err: any) {
-              console.warn("Direct update of reference task fell back:", err);
-            }
-
-            // 2. Identify all tasks in same batch (+/- 5 seconds)
+            // Identify all tasks in same batch (+/- 5 seconds)
             let targetTime = new Date().getTime();
             if (refTask.created_at) {
               const parsedTime = new Date(refTask.created_at).getTime();
@@ -274,7 +393,21 @@ Deno.serve(async (req) => {
             const lowerBound = new Date(targetTime - 5000).toISOString();
             const upperBound = new Date(targetTime + 5000).toISOString();
 
-            let updatedBatchCount = 0;
+            // Direct update of the single reference task ID first to guarantee success for the clicked item
+            try {
+              await supabase
+                .from('handovers')
+                .update({
+                  status: 'Accepted',
+                  receiver_id: registeredUserId,
+                  receiver_line_name: displayName,
+                  accepted_at: new Date().toISOString()
+                })
+                .eq('id', handoverId)
+                .eq('status', 'Pending');
+            } catch (err: any) {
+              console.warn("Direct update of reference task fell back:", err);
+            }
 
             // 3. Update all pending items in this batch to Accepted
             try {
@@ -295,13 +428,7 @@ Deno.serve(async (req) => {
                 updateQuery = updateQuery.eq('division', refTask.division);
               }
 
-              const { data: updatedBatch, error: updateError } = await updateQuery.select();
-
-              if (updateError) {
-                console.error("Failed to update batch handovers in accept_all:", updateError);
-              } else if (updatedBatch) {
-                updatedBatchCount = updatedBatch.length;
-              }
+              await updateQuery;
             } catch (err) {
               console.error("Exception during batch update in accept_all:", err);
             }
@@ -317,37 +444,175 @@ Deno.serve(async (req) => {
               console.warn("Legacy RPC error:", e);
             }
 
-            // Fetch the current batch items to see the total number of items accepted if count was 0
-            if (updatedBatchCount === 0) {
-              try {
-                let countQuery = supabase
-                  .from('handovers')
-                  .select('id')
-                  .eq('sender_id', refTask.sender_id)
-                  .gte('created_at', lowerBound)
-                  .lte('created_at', upperBound);
+            // Fetch the final batch tasks to build the Flex Message
+            let batchTasks: any[] = [];
+            try {
+              let query = supabase
+                .from('handovers')
+                .select('*')
+                .eq('sender_id', refTask.sender_id)
+                .gte('created_at', lowerBound)
+                .lte('created_at', upperBound);
 
-                if (refTask.division) {
-                  countQuery = countQuery.eq('division', refTask.division);
-                }
-
-                const { data: batchTasks } = await countQuery;
-                if (batchTasks) {
-                  updatedBatchCount = batchTasks.length;
-                }
-              } catch (err) {
-                console.warn("Failed to count batch tasks as fallback:", err);
+              if (refTask.division) {
+                query = query.eq('division', refTask.division);
               }
+
+              const { data: fetchedBatch } = await query.order('created_at', { ascending: true });
+              if (fetchedBatch && fetchedBatch.length > 0) {
+                batchTasks = fetchedBatch;
+              }
+            } catch (err) {
+              console.warn("Failed to fetch final batch tasks for Flex Message:", err);
             }
 
-            const taskCount = updatedBatchCount > 0 ? updatedBatchCount : 1;
-            const responseText = `🏥 ${displayName} ได้กด "รับงานทั้งหมด" สำเร็จ\nจำนวน ${taskCount} รายการเรียบร้อยแล้ว`;
+            if (batchTasks.length === 0) {
+              batchTasks = [refTask];
+            }
+
+            const shortId = refTask.task_number || `LAB-${handoverId.substring(0, 4).toUpperCase()}`;
+            const assignments = batchTasks.map((t) => {
+              const recName = t.receiver_line_name || (t.id === handoverId ? displayName : "ไม่ระบุชื่อ");
+              return {
+                name: recName,
+                title: t.title || "ไม่มีหัวข้อ",
+                channel: "LINE"
+              };
+            });
+
+            // Build beautifully designed Success Flex Message, same as LIFF
+            const flexSuccessCard = {
+              type: "flex",
+              altText: `✓ ${shortId} รับงานครบกำหนดแล้ว`,
+              contents: {
+                type: "bubble",
+                size: "mega",
+                body: {
+                  type: "box",
+                  layout: "vertical",
+                  paddingAll: "lg",
+                  backgroundColor: "#ffffff",
+                  contents: [
+                    {
+                      type: "box",
+                      layout: "horizontal",
+                      contents: [
+                        {
+                          type: "box",
+                          layout: "vertical",
+                          width: "16px",
+                          height: "16px",
+                          backgroundColor: "#DCFCE7",
+                          cornerRadius: "8px",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          contents: [
+                            {
+                              type: "text",
+                              text: "✓",
+                              color: "#16A34A",
+                              size: "xxs",
+                              weight: "bold",
+                              align: "center"
+                            }
+                          ]
+                        },
+                        {
+                          type: "text",
+                          text: `${shortId} รับงานครบแล้ว`,
+                          weight: "bold",
+                          size: "sm",
+                          color: "#16A34A",
+                          margin: "sm"
+                        }
+                      ]
+                    },
+                    {
+                      type: "separator",
+                      margin: "md",
+                      color: "#E5E7EB"
+                    },
+                    {
+                      type: "box",
+                      layout: "vertical",
+                      margin: "md",
+                      spacing: "sm",
+                      contents: assignments.map((a) => ({
+                        type: "box",
+                        layout: "horizontal",
+                        contents: [
+                          {
+                            type: "text",
+                            text: a.name,
+                            weight: "bold",
+                            size: "xs",
+                            color: "#1A1A2E",
+                            flex: 2,
+                            wrap: true
+                          },
+                          {
+                            type: "text",
+                            text: maskSensitiveData(a.title),
+                            size: "xs",
+                            color: "#6B7280",
+                            flex: 3,
+                            wrap: true
+                          },
+                          {
+                            type: "box",
+                            layout: "vertical",
+                            backgroundColor: "#F3F4F6",
+                            cornerRadius: "4px",
+                            paddingStart: "xs",
+                            paddingEnd: "xs",
+                            justifyContent: "center",
+                            contents: [
+                              {
+                                type: "text",
+                                text: a.channel,
+                                size: "xxs",
+                                color: "#6B7280",
+                                weight: "bold",
+                                align: "center"
+                              }
+                            ],
+                            width: "36px"
+                          }
+                        ]
+                      }))
+                    },
+                    {
+                      type: "text",
+                      text: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + " น.",
+                      size: "xxs",
+                      color: "#9CA3AF",
+                      margin: "md"
+                    }
+                  ]
+                }
+              }
+            };
+
+            // Post Success Card to group
             let replied = false;
             if (event.replyToken) {
-              replied = await replyLineMessage(event.replyToken, [{ type: "text", text: responseText }], lineAccessToken);
+              replied = await replyLineMessage(event.replyToken, [flexSuccessCard], lineAccessToken);
             }
             if (!replied) {
-              await pushLineMessage(groupId || userId, responseText, lineAccessToken);
+              const pushTarget = groupId || userId;
+              if (pushTarget) {
+                await fetch("https://api.line.me/v2/bot/message/push", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${lineAccessToken}`
+                  },
+                  body: JSON.stringify({
+                    to: pushTarget,
+                    messages: [flexSuccessCard]
+                  })
+                });
+              }
             }
           } catch (err: any) {
             console.error("Uncaught exception in accept_all handler:", err);
@@ -477,20 +742,118 @@ Deno.serve(async (req) => {
 
           const { all_done, remaining, task_title } = rpcResult;
 
-          // Compile reply response message depending on task completeness status
-          let responseText = "";
-          if (remaining > 0) {
-            responseText = `${displayName} รับงานแล้ว\n${task_title}\nเหลืออีก ${remaining} งาน รอการรับ`;
-          } else {
-            responseText = `${displayName} รับงานแล้ว\n${task_title}\nรับงานครบทุกรายการแล้ว`;
-          }
+          // Build individual task accepted Flex Card response instead of raw text!
+          const flexOneSuccessCard = {
+            type: "flex",
+            altText: `✓ รับงานแล้ว: ${displayName}`,
+            contents: {
+              type: "bubble",
+              size: "mega",
+              body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "lg",
+                backgroundColor: "#ffffff",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    contents: [
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        width: "16px",
+                        height: "16px",
+                        backgroundColor: "#DCFCE7",
+                        cornerRadius: "8px",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        contents: [
+                          {
+                            type: "text",
+                            text: "✓",
+                            color: "#16A34A",
+                            size: "xxs",
+                            weight: "bold",
+                            align: "center"
+                          }
+                        ]
+                      },
+                      {
+                        type: "text",
+                        text: remaining > 0 ? "รับงานแบ่งส่วนสำเร็จ" : "รับเวรมอบหมายครบเรียบร้อย",
+                        weight: "bold",
+                        size: "sm",
+                        color: "#16A34A",
+                        margin: "sm"
+                      }
+                    ]
+                  },
+                  {
+                    type: "separator",
+                    margin: "md",
+                    color: "#E5E7EB"
+                  },
+                  {
+                    type: "box",
+                    layout: "vertical",
+                    margin: "md",
+                    spacing: "xs",
+                    contents: [
+                      {
+                        type: "text",
+                        text: `ผู้ตอบรับ: ${displayName}`,
+                        weight: "bold",
+                        size: "xs",
+                        color: "#1A1A2E"
+                      },
+                      {
+                        type: "text",
+                        text: `งานย่อย: ${maskSensitiveData(task_title)}`,
+                        size: "xs",
+                        color: "#4B5563",
+                        wrap: true
+                      },
+                      {
+                        type: "text",
+                        text: remaining > 0 ? `⏳ เหลือเวรรอยืนยันอีก ${remaining} รายการ` : "✅ รับงานทุกรายการครบหมดถ้วนร้อยเปอร์เซ็นต์",
+                        size: "xs",
+                        weight: "bold",
+                        color: remaining > 0 ? "#D97706" : "#16A34A",
+                        margin: "sm"
+                      }
+                    ]
+                  },
+                  {
+                    type: "text",
+                    text: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + " น.",
+                    size: "xxs",
+                    color: "#9CA3AF"
+                  }
+                ]
+              }
+            }
+          };
 
           let replied = false;
           if (event.replyToken) {
-            replied = await replyLineMessage(event.replyToken, [{ type: "text", text: responseText }], lineAccessToken);
+            replied = await replyLineMessage(event.replyToken, [flexOneSuccessCard], lineAccessToken);
           }
           if (!replied) {
-            await pushLineMessage(groupId || userId, responseText, lineAccessToken);
+            const pushTarget = groupId || userId;
+            if (pushTarget) {
+              await fetch("https://api.line.me/v2/bot/message/push", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${lineAccessToken}`
+                },
+                body: JSON.stringify({
+                  to: pushTarget,
+                  messages: [flexOneSuccessCard]
+                })
+              });
+            }
           }
         }
       }

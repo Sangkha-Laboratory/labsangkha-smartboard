@@ -294,6 +294,8 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
   };
 
   const handleConfirmAccept = async () => {
+    if (isSubmitting) return;
+
     const currentUserName = liffProfile?.displayName || mockProfileName;
     if (!currentUserName.trim()) {
       alert("กรุณาระบุชื่อผู้รับงานก่อนทำรายการ");
@@ -307,6 +309,27 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
 
     setIsSubmitting(true);
     try {
+      // Re-verify task status to prevent double-acceptance/overwrite
+      const { data: latestTasks, error: checkErr } = await supabase
+        .from('handovers')
+        .select('id, status, receiver_line_name, title')
+        .in('id', Array.from(selectedTaskIds));
+
+      if (checkErr) {
+        throw new Error("ไม่สามารถเชื่อมต่อฐานข้อมูลเพื่อตรวจสอบสถานะล่าสุดได้");
+      }
+
+      const alreadyAcceptedList = latestTasks?.filter(t => t.status !== 'Pending') || [];
+      if (alreadyAcceptedList.length > 0) {
+        const descriptions = alreadyAcceptedList.map(t => {
+          const original = batchTasks.find(bt => bt.id === t.id);
+          const tTitle = original ? original.title : t.title;
+          const acceptor = t.receiver_line_name || 'เจ้าหน้าที่ท่านอื่น';
+          return `- "${maskSensitiveData(tTitle, false)}" ถูกรับไปแล้วโดยคุณ ${acceptor}`;
+        }).join('\n');
+        throw new Error(`ขออภัย งานที่คุณเลือกบางรายการได้รับการตอบรับไปแล้วก่อนหน้านี้:\n${descriptions}\n\nกรุณารีเฟรชโปรแกรมเพื่ออัปเดตข้อมูล`);
+      }
+
       // Find matching user UUID if name is registered
       let receiverId: string | null = null;
       const matchedUserId = Object.keys(usersMap).find(key => usersMap[key] === currentUserName);
