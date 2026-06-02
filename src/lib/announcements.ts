@@ -80,6 +80,25 @@ const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4
  * handling both serialized JSON content and plain text seamlessly.
  */
 function parseAnnouncementRow(item: any): Announcement {
+  // If the database has proper individual columns (ideal state after running SQL)
+  if (item.title !== undefined && item.title !== null) {
+    return {
+      id: item.id.toString(),
+      title: item.title,
+      category: item.category || 'general',
+      content: item.content || '',
+      date: item.date || new Date(item.created_at || Date.now()).toLocaleDateString('th-TH', { 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric' 
+      }),
+      author: item.author || 'ระบบ',
+      pinned: !!item.pinned,
+      created_at: item.created_at
+    };
+  }
+
+  // Graceful fallback for old serialized JSON records stored in 'content' column
   let parsedContent = {
     title: 'ประกาศ',
     category: 'general' as const,
@@ -213,18 +232,13 @@ export async function saveAnnouncement(ann: Omit<Announcement, 'id'> & { id?: st
     console.warn('Error reading local user for author_id:', e);
   }
 
-  // Under the real table schema, pack the custom attributes into the JSON in 'content' column
-  const jsonContent = JSON.stringify({
+  const dbValue: any = {
     title: completeAnn.title,
     category: completeAnn.category,
     content: completeAnn.content,
     date: completeAnn.date,
     author: completeAnn.author,
-    pinned: completeAnn.pinned
-  });
-
-  const dbValue: any = {
-    content: jsonContent,
+    pinned: completeAnn.pinned,
     is_active: true,
     updated_at: now.toISOString()
   };
