@@ -1114,85 +1114,59 @@ export default function UserPortal({
               </div>
 
               {/* List of announcements */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Announcements list - 2 Cols */}
-                <div className="lg:col-span-2 space-y-4">
-                  {announcements.length === 0 ? (
-                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 text-center text-slate-400 font-bold text-xs uppercase tracking-wider">
-                      ไม่มีข่าวสารประชาสัมพันธ์ในขณะนี้
-                    </div>
-                  ) : (
-                    announcements.map((ann) => (
-                      <div 
-                        key={ann.id}
-                        onClick={() => setViewedAnnouncement(ann)}
-                        className={`bg-white dark:bg-slate-900 border ${
-                          ann.pinned 
-                            ? 'border-brand-blue/20 bg-brand-blue/[0.01]' 
-                            : 'border-slate-100 dark:border-slate-800'
-                        } hover:border-brand-blue/30 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3 relative overflow-hidden group`}
-                      >
-                        {ann.pinned && (
-                          <div className="absolute right-0 top-0 bg-brand-blue text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1 rounded-bl-xl shadow-sm">
-                            PINNED
-                          </div>
-                        )}
-
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                             <span className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${
-                              ann.category === 'critical' 
-                                ? 'bg-red-50 text-red-500 border border-red-100' 
-                                : ann.category === 'important'
-                                ? 'bg-yellow-50 text-yellow-600 border border-yellow-100'
-                                : 'bg-blue-50 text-brand-blue border border-blue-100'
-                            }`}>
-                              {ann.category === 'critical' ? 'ด่วนที่สุด' : ann.category === 'important' ? 'สำคัญ' : 'ทั่วไป'}
-                            </span>
-                            <span className="text-[12px] text-slate-400 font-bold">{ann.date}</span>
-                          </div>
-
-                          <h3 className="text-sm font-black text-[#0f2d52] dark:text-white group-hover:text-brand-blue transition-colors leading-tight truncate">
-                            {ann.title}
-                          </h3>
-                          <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                            {ann.content}
-                          </p>
+              <div className="max-w-4xl space-y-4">
+                {announcements.length === 0 ? (
+                  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 text-center text-slate-400 font-bold text-xs uppercase tracking-wider">
+                    ไม่มีข่าวสารประชาสัมพันธ์ในขณะนี้
+                  </div>
+                ) : (
+                  announcements.map((ann) => (
+                    <div 
+                      key={ann.id}
+                      onClick={() => setViewedAnnouncement(ann)}
+                      className={`bg-white dark:bg-slate-900 border ${
+                        ann.pinned 
+                          ? 'border-brand-blue/20 bg-brand-blue/[0.01]' 
+                          : 'border-slate-100 dark:border-slate-800'
+                      } hover:border-brand-blue/30 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3 relative overflow-hidden group`}
+                    >
+                      {ann.pinned && (
+                        <div className="absolute right-0 top-0 bg-brand-blue text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1 rounded-bl-xl shadow-sm">
+                          PINNED
                         </div>
+                      )}
 
-                        <div className="flex items-center justify-between border-t border-slate-50 dark:border-slate-800/80 pt-3 text-[12px] font-bold text-slate-400">
-                          <span>ผู้ประกาศ: {ann.author}</span>
-                          <span className="text-brand-blue group-hover:translate-x-0.5 transition-transform flex items-center gap-1 font-black text-[11px] uppercase tracking-wider">
-                            อ่านต่อ <ArrowRight size={11} />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                           <span className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${
+                            ann.category === 'critical' 
+                              ? 'bg-red-50 text-red-500 border border-red-100' 
+                              : ann.category === 'important'
+                              ? 'bg-yellow-50 text-yellow-600 border border-yellow-100'
+                              : 'bg-blue-50 text-brand-blue border border-blue-100'
+                          }`}>
+                            {ann.category === 'critical' ? 'ด่วนที่สุด' : ann.category === 'important' ? 'สำคัญ' : 'ทั่วไป'}
                           </span>
+                          <span className="text-[12px] text-slate-400 font-bold">{ann.date}</span>
                         </div>
+
+                        <h3 className="text-sm font-black text-[#0f2d52] dark:text-white group-hover:text-brand-blue transition-colors leading-tight truncate">
+                          {ann.title}
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                          {ann.content}
+                        </p>
                       </div>
-                    ))
-                  )}
-                </div>
 
-                {/* Info and Quality policy card */}
-                <div className="bg-gradient-to-b from-[#0f2d52] to-blue-900 rounded-3xl p-6 text-white space-y-4 shadow-xl shadow-[#0c2340]/10 flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center text-white">
-                      <ShieldCheck size={20} />
+                      <div className="flex items-center justify-between border-t border-slate-50 dark:border-slate-800/80 pt-3 text-[12px] font-bold text-slate-400">
+                        <span>ผู้ประกาศ: {ann.author}</span>
+                        <span className="text-brand-blue group-hover:translate-x-0.5 transition-transform flex items-center gap-1 font-black text-[11px] uppercase tracking-wider">
+                          อ่านต่อ <ArrowRight size={11} />
+                        </span>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-black tracking-wider uppercase">นโยบายคุณภาพกลุ่มงาน</h3>
-                      <p className="text-[8px] text-blue-200/80 font-bold uppercase tracking-widest leading-none">Quality and Accuracy Policy</p>
-                    </div>
-                    <p className="text-xs text-blue-100/90 leading-relaxed font-thai">
-                      "กลุ่มงานเทคนิคการแพทย์ มุ่งมั่นบริการวิเคราะห์ผลทดสอบทางรังสี วิทยาศาสตร์การแพทย์ เคมีคลินิก เม็ดเลือด และธนาคารเลือด ด้วยความถูกต้อง รวดเร็ว ปลอดภัย ได้มาตรฐานสากล เพื่อสุขภาวะสูงสุดของผู้ป่วยโรงพยาบาลสังคม"
-                    </p>
-                  </div>
-
-                  <div className="border-t border-white/10 pt-4 flex items-center justify-between text-[12px] text-blue-100/80 font-bold">
-                    <span>มาตรฐาน ISO 15189:2022</span>
-                    <span className="underline cursor-pointer">อ่านคู่มือปฏิบัติงาน</span>
-                  </div>
-                </div>
-
+                  ))
+                )}
               </div>
             </motion.div>
           )}

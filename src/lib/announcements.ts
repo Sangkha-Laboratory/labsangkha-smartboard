@@ -71,6 +71,70 @@ function saveLocalAnnouncements(list: Announcement[]) {
 }
 
 /**
+ * Check if a string is a valid UUID
+ */
+const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+/**
+ * Parses a database announcement row into our rich Announcement type,
+ * handling both serialized JSON content and plain text seamlessly.
+ */
+function parseAnnouncementRow(item: any): Announcement {
+  let parsedContent = {
+    title: 'ประกาศ',
+    category: 'general' as const,
+    content: item.content || '',
+    date: '',
+    author: 'ระบบ',
+    pinned: false
+  };
+
+  const rawContent = (item.content || '').trim();
+
+  if (rawContent.startsWith('{') && rawContent.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(rawContent);
+      parsedContent = {
+        title: parsed.title || 'ประกาศ',
+        category: parsed.category || 'general',
+        content: parsed.content || '',
+        date: parsed.date || '',
+        author: parsed.author || 'ระบบ',
+        pinned: !!parsed.pinned
+      };
+    } catch (e) {
+      // Parsing failed, fallback to plain text treatment below
+    }
+  }
+
+  // Fallback for plain text or if parsing failed
+  if (!parsedContent.content) {
+    const lines = rawContent.split('\n').filter((l: string) => l.trim().length > 0);
+    const firstLine = lines[0] || 'ประกาศแจ้งเตือนกลุ่มงาน';
+    parsedContent.title = firstLine.substring(0, 60) + (firstLine.length > 60 ? '...' : '');
+    parsedContent.content = rawContent;
+  }
+
+  // Construct formatted date
+  const thDate = new Date(item.created_at || Date.now()).toLocaleDateString('th-TH', { 
+    day: 'numeric', 
+    month: 'short', 
+    year: 'numeric' 
+  });
+
+  return {
+    id: item.id.toString(),
+    title: parsedContent.title,
+    category: parsedContent.category,
+    content: parsedContent.content,
+    date: parsedContent.date || thDate,
+    author: parsedContent.author,
+    pinned: parsedContent.pinned,
+    created_at: item.created_at
+  };
+}
+
+/**
  * Fetch announcements asynchronously.
  * Tries Supabase first, falls back to local storage.
  */
@@ -79,7 +143,6 @@ export async function getAnnouncements(): Promise<Announcement[]> {
     const { data, error } = await supabase
       .from('announcements')
       .select('*')
-      .order('pinned', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -88,17 +151,20 @@ export async function getAnnouncements(): Promise<Announcement[]> {
     }
 
     if (data) {
-      // Map database schema to App schema
-      const mapped = data.map((item: any) => ({
-        id: item.id.toString(),
-        title: item.title,
-        category: item.category || 'general',
-        content: item.content || '',
-        date: item.date || new Date(item.created_at || Date.now()).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }),
-        author: item.author || 'ระบบ',
-        pinned: !!item.pinned,
-        created_at: item.created_at
-      }));
+      // Map database schema to App schema & filter out deactivated rows
+      const activeRows = data.filter((item: any) => item.is_active !== false);
+      const mapped = activeRows.map(parseAnnouncementRow);
+
+      // Sort with pinned announcements taking absolute priority at the top, sorted by created_at desc
+      mapped.sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dateB - dateA;
+      });
+
       saveLocalAnnouncements(mapped);
       return mapped;
     }
@@ -113,8 +179,7 @@ export async function getAnnouncements(): Promise<Announcement[]> {
  * Save / Create / Edit an announcement
  */
 export async function saveAnnouncement(ann: Omit<Announcement, 'id'> & { id?: string }): Promise<Announcement> {
-  const isEdit = !!ann.id;
-  const newId = ann.id || 'ann-' + Math.random().toString(36).substr(2, 9);
+  const isEdit = !!ann.id && isUUID(ann.id);
   const now = new Date();
   
   const formattedDate = now.toLocaleDateString('th-TH', { 
@@ -124,7 +189,7 @@ export async function saveAnnouncement(ann: Omit<Announcement, 'id'> & { id?: st
   });
 
   const completeAnn: Announcement = {
-    id: newId,
+    id: ann.id || 'ann-' + Math.random().toString(36).substr(2, 9),
     title: ann.title,
     category: ann.category,
     content: ann.content,
@@ -134,31 +199,59 @@ export async function saveAnnouncement(ann: Omit<Announcement, 'id'> & { id?: st
     created_at: ann.created_at || now.toISOString()
   };
 
+  // Get author_id from local storage if available
+  let authorId: string | null = null;
+  try {
+    const localUserStr = localStorage.getItem('sangkha_handover_local_user');
+    if (localUserStr) {
+      const localUser = JSON.parse(localUserStr);
+      if (localUser && localUser.id && isUUID(localUser.id)) {
+        authorId = localUser.id;
+      }
+    }
+  } catch (e) {
+    console.warn('Error reading local user for author_id:', e);
+  }
+
+  // Under the real table schema, pack the custom attributes into the JSON in 'content' column
+  const jsonContent = JSON.stringify({
+    title: completeAnn.title,
+    category: completeAnn.category,
+    content: completeAnn.content,
+    date: completeAnn.date,
+    author: completeAnn.author,
+    pinned: completeAnn.pinned
+  });
+
+  const dbValue: any = {
+    content: jsonContent,
+    is_active: true,
+    updated_at: now.toISOString()
+  };
+
+  if (authorId) {
+    dbValue.author_id = authorId;
+  }
+
   // 1. Try to sync with Supabase
   try {
-    const dbValue = {
-      title: completeAnn.title,
-      category: completeAnn.category,
-      content: completeAnn.content,
-      date: completeAnn.date,
-      author: completeAnn.author,
-      pinned: completeAnn.pinned,
-      created_at: completeAnn.created_at,
-    };
-
     if (isEdit) {
-      // Check if numeric or string key for ID in database
-      const idToUse = isNaN(Number(completeAnn.id)) ? completeAnn.id : Number(completeAnn.id);
       const { error } = await supabase
         .from('announcements')
         .update(dbValue)
-        .eq('id', idToUse);
+        .eq('id', completeAnn.id);
       if (error) throw error;
     } else {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('announcements')
-        .insert([dbValue]);
+        .insert([dbValue])
+        .select();
+
       if (error) throw error;
+      if (data && data[0]) {
+        completeAnn.id = data[0].id.toString();
+        completeAnn.created_at = data[0].created_at;
+      }
     }
   } catch (err: any) {
     console.warn('Could not sync announcement with Supabase database:', err.message || err);
@@ -167,10 +260,15 @@ export async function saveAnnouncement(ann: Omit<Announcement, 'id'> & { id?: st
   // 2. Always persist details in local storage for instant fallback
   const locals = getLocalAnnouncements();
   let updatedLocals: Announcement[];
-  if (isEdit) {
-    updatedLocals = locals.map(item => item.id === completeAnn.id ? completeAnn : item);
+  
+  const targetId = isEdit ? completeAnn.id : ann.id;
+  const exists = locals.some(item => item.id === targetId);
+
+  if (exists) {
+    updatedLocals = locals.map(item => item.id === targetId ? completeAnn : item);
   } else {
-    updatedLocals = [completeAnn, ...locals];
+    const customFiltered = locals.filter(item => item.id !== ann.id);
+    updatedLocals = [completeAnn, ...customFiltered];
   }
 
   saveLocalAnnouncements(updatedLocals);
@@ -181,16 +279,24 @@ export async function saveAnnouncement(ann: Omit<Announcement, 'id'> & { id?: st
  * Delete an announcement
  */
 export async function deleteAnnouncement(id: string): Promise<boolean> {
-  // 1. Try deleted from Supabase
-  try {
-    const idToUse = isNaN(Number(id)) ? id : Number(id);
-    const { error } = await supabase
-      .from('announcements')
-      .delete()
-      .eq('id', idToUse);
-    if (error) throw error;
-  } catch (err: any) {
-    console.warn('Could not sync deletion with Supabase:', err.message || err);
+  // 1. Try deleting from Supabase
+  if (isUUID(id)) {
+    try {
+      const { error: delError } = await supabase
+        .from('announcements')
+        .delete()
+        .eq('id', id);
+        
+      if (delError) {
+        // If hard delete gets rejected/fails, fall back to soft-deactivating
+        await supabase
+          .from('announcements')
+          .update({ is_active: false })
+          .eq('id', id);
+      }
+    } catch (err: any) {
+      console.warn('Could not sync deletion with Supabase:', err.message || err);
+    }
   }
 
   // 2. Always apply to local storage

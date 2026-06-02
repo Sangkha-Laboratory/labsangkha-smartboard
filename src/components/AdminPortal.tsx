@@ -1083,7 +1083,6 @@ export default function AdminPortal({
           <div className="flex items-center gap-4">
             <div>
               <h2 className="text-xl font-[900] text-[#0f2d52] dark:text-white tracking-tight">{activeTab}</h2>
-              <p className="text-[12px] font-bold text-slate-400 mt-0.5">System-wide summary — refreshes every 30s</p>
             </div>
           </div>
 
