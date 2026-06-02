@@ -83,3 +83,18 @@
   }
 }
  
+/* Override standard native option dropdown elements for high-contrast readability in both modes */
+select {
+  color-scheme: light dark;
+}
+
+option {
+  background-color: #ffffff;
+  color: #1e293b;
+}
+
+.dark option {
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+

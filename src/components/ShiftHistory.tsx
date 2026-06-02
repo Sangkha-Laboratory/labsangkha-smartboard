@@ -525,12 +525,12 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                         <select 
                           value={filterShift}
                           onChange={(e) => setFilterShift(e.target.value)}
-                          className="w-full h-9 text-xs p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                          className="w-full h-9 text-xs p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
                         >
-                          <option value="">ทั้งหมด</option>
-                          <option value="เช้า">เช้า</option>
-                          <option value="บ่าย">บ่าย</option>
-                          <option value="ดึก">ดึก</option>
+                          <option value="" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">ทั้งหมด</option>
+                          <option value="เช้า" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">เช้า</option>
+                          <option value="บ่าย" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">บ่าย</option>
+                          <option value="ดึก" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">ดึก</option>
                         </select>
                       </div>
                       <div>
@@ -538,11 +538,11 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                         <select 
                           value={filterDepartment}
                           onChange={(e) => setFilterDepartment(e.target.value)}
-                          className="w-full h-9 text-xs p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                          className="w-full h-9 text-xs p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
                         >
-                          <option value="">ทั้งหมด</option>
-                          <option value="Central Lab">Central Lab</option>
-                          <option value="Blood Bank">Blood Bank</option>
+                          <option value="" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">ทั้งหมด</option>
+                          <option value="Central Lab" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">Central Lab</option>
+                          <option value="Blood Bank" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">Blood Bank</option>
                         </select>
                       </div>
                       <div>
@@ -550,11 +550,11 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                         <select 
                           value={filterStatus}
                           onChange={(e) => setFilterStatus(e.target.value)}
-                          className="w-full h-9 text-xs p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                          className="w-full h-9 text-xs p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
                         >
-                          <option value="">ทั้งหมด</option>
-                          <option value="รอรับงาน">รอรับงาน</option>
-                          <option value="รับงานแล้ว">รับงานแล้ว</option>
+                          <option value="" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">ทั้งหมด</option>
+                          <option value="รอรับงาน" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">รอรับงาน</option>
+                          <option value="รับงานแล้ว" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">รับงานแล้ว</option>
                         </select>
                       </div>
                    </div>
@@ -600,9 +600,9 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
               onChange={(e) => setFilterDepartment(e.target.value)}
               className="w-full h-10 pl-3 pr-6 bg-[#f3f7fa] dark:bg-slate-950/40 text-slate-600 dark:text-slate-350 font-bold text-[11px] rounded-xl border border-transparent outline-none appearance-none"
             >
-              <option value="">ทุกแผนก</option>
-              <option value="Central Lab">Central Lab</option>
-              <option value="Blood Bank">Blood Bank</option>
+              <option value="" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">ทุกแผนก</option>
+              <option value="Central Lab" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">Central Lab</option>
+              <option value="Blood Bank" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">Blood Bank</option>
             </select>
             <ChevronDown size={10} className="absolute right-2 top-[52%] -translate-y-1/2 text-slate-500 pointer-events-none" />
           </div>
@@ -613,10 +613,10 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
               onChange={(e) => setFilterShift(e.target.value)}
               className="w-full h-10 pl-3 pr-6 bg-[#f3f7fa] dark:bg-slate-950/40 text-slate-600 dark:text-slate-350 font-bold text-[11px] rounded-xl border border-transparent outline-none appearance-none"
             >
-              <option value="">ทุกเวร</option>
-              <option value="เช้า">เช้า</option>
-              <option value="บ่าย">บ่าย</option>
-              <option value="ดึก">ดึก</option>
+              <option value="" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">ทุกเวร</option>
+              <option value="เช้า" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">เช้า</option>
+              <option value="บ่าย" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">บ่าย</option>
+              <option value="ดึก" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">ดึก</option>
             </select>
             <ChevronDown size={10} className="absolute right-2 top-[52%] -translate-y-1/2 text-slate-500 pointer-events-none" />
           </div>
@@ -627,9 +627,9 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
               onChange={(e) => setFilterStatus(e.target.value)}
               className="w-full h-10 pl-3 pr-6 bg-[#f3f7fa] dark:bg-slate-950/40 text-slate-600 dark:text-slate-350 font-bold text-[11px] rounded-xl border border-transparent outline-none appearance-none"
             >
-              <option value="">ทุกสถานะ</option>
-              <option value="รอรับงาน">รอรับงาน</option>
-              <option value="รับงานแล้ว">รับงานแล้ว</option>
+              <option value="" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">ทุกสถานะ</option>
+              <option value="รอรับงาน" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">รอรับงาน</option>
+              <option value="รับงานแล้ว" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">รับงานแล้ว</option>
             </select>
             <ChevronDown size={10} className="absolute right-2 top-[52%] -translate-y-1/2 text-slate-500 pointer-events-none" />
           </div>

@@ -83,12 +83,32 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
       let val = searchParams.get(key);
       if (val) return val;
 
+      // 1.2 Check "liff.state" in URL search params (very common for LINE redirect)
+      const liffState = searchParams.get('liff.state');
+      if (liffState) {
+        // liffState can pack the query string, e.g. "/liff?handover_id=xxxx" or "/?handover_id=xxxx"
+        const queryIndex = liffState.indexOf('?');
+        const queryStr = queryIndex !== -1 ? liffState.substring(queryIndex + 1) : liffState;
+        const stateParams = new URLSearchParams(queryStr);
+        const stateVal = stateParams.get(key);
+        if (stateVal) return stateVal;
+      }
+
       // 2. Try window hash parsing (common for SPAs inside LIFF Webviews)
       if (window.location.hash) {
         const hashPart = window.location.hash.split('?')[1] || window.location.hash.split('#')[1] || '';
         const hashParams = new URLSearchParams(hashPart);
         val = hashParams.get(key);
         if (val) return val;
+
+        const hashState = hashParams.get('liff.state');
+        if (hashState) {
+          const queryIndex = hashState.indexOf('?');
+          const queryStr = queryIndex !== -1 ? hashState.substring(queryIndex + 1) : hashState;
+          const hashStateParams = new URLSearchParams(queryStr);
+          const hashStateVal = hashStateParams.get(key);
+          if (hashStateVal) return hashStateVal;
+        }
       }
 
       // 3. Try LINE LIFF getSearch helper (if loaded)
@@ -100,6 +120,15 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             const liffParams = new URLSearchParams(liffSearch);
             val = liffParams.get(key);
             if (val) return val;
+
+            const liffSearchState = liffParams.get('liff.state');
+            if (liffSearchState) {
+              const queryIndex = liffSearchState.indexOf('?');
+              const queryStr = queryIndex !== -1 ? liffSearchState.substring(queryIndex + 1) : liffSearchState;
+              const liffStateParams = new URLSearchParams(queryStr);
+              const liffStateVal = liffStateParams.get(key);
+              if (liffStateVal) return liffStateVal;
+            }
           }
         }
       } catch (e) {}
@@ -107,8 +136,13 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
       return null;
     };
 
+    console.log("[LIFF_Accept] Current href:", window.location.href);
+    console.log("[LIFF_Accept] Current search:", window.location.search);
+    console.log("[LIFF_Accept] Current hash:", window.location.hash);
+
     // 1. Get handover ID from URL params/hash/LIFF
     const id = getLiffParam('handover_id') || getLiffParam('id');
+    console.log("[LIFF_Accept] Extracted handover ID:", id);
     setTargetId(id);
 
     // 2. Initialize LIFF SDK (Load dynamically based on active platform - Google AI Studio vs Git Page vs Cloudflare)

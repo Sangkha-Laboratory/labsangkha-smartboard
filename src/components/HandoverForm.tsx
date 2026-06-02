@@ -539,24 +539,24 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
             </InputGroup>
             <InputGroup label="หน่วยงาน" icon={<Building2 size={14} />} required>
               <select 
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-[12px] sm:text-[13px] appearance-none cursor-pointer dark:text-white font-normal"
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-[12px] sm:text-[13px] appearance-none cursor-pointer dark:text-white font-normal text-gray-900"
                 value={formData.dept}
                 onChange={(e) => handleInputChange('dept', e.target.value)}
               >
-                <option className="text-black" value="Central Lab">Central Lab</option>
-                <option className="text-black" value="Blood Bank">Blood Bank</option>
+                <option className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100" value="Central Lab">Central Lab</option>
+                <option className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100" value="Blood Bank">Blood Bank</option>
               </select>
             </InputGroup>
             <InputGroup label="ส่งต่อเวร" icon={<Timer size={14} />} required className="sm:col-span-2">
               <select 
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-[12px] sm:text-[13px] appearance-none cursor-pointer dark:text-white font-normal"
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-[12px] sm:text-[13px] appearance-none cursor-pointer dark:text-white font-normal text-gray-900"
                 value={formData.shift}
                 onChange={(e) => handleInputChange('shift', e.target.value)}
               >
-                <option value="" className="text-black">-- เลือกเวรที่ส่งต่อ --</option>
-                <option className="text-black">เช้า</option>
-                <option className="text-black">บ่าย</option>
-                <option className="text-black">ดึก</option>
+                <option value="" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">-- เลือกเวรที่ส่งต่อ --</option>
+                <option className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">เช้า</option>
+                <option className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">บ่าย</option>
+                <option className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">ดึก</option>
               </select>
             </InputGroup>
           </div>
@@ -632,11 +632,11 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
                           value={tasks[currentTaskIndex].category}
                           onChange={(e) => updateTask(tasks[currentTaskIndex].id, 'category', e.target.value)}
                         >
-                           <option value="">เลือกประเภท..</option>
-                           <option>น้ำยา</option>
-                           <option>เครื่องมือ</option>
-                           <option>งานค้าง</option>
-                           <option>อื่น ๆ</option>
+                           <option value="" className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">เลือกประเภท..</option>
+                           <option className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">น้ำยา</option>
+                           <option className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">เครื่องมือ</option>
+                           <option className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">งานค้าง</option>
+                           <option className="bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100">อื่น ๆ</option>
                         </select>
                       </div>
                     </div>
