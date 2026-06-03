@@ -1,16 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <!-- Rounded blue background to match the website branding -->
-  <rect width="24" height="24" rx="6.5" fill="#00A3FF"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Rounded brand blue background -->
+  <rect x="2" y="2" width="28" height="28" rx="8" fill="#00A3FF"/>
   
-  <!-- White Microscope symbol, centered and perfectly matched with website Navbar logo -->
-  <g stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(4, 4) scale(0.667)">
-    <path d="M6 18h8" />
-    <path d="M3 22h18" />
-    <path d="M14 22a7 7 0 1 0-14 0" />
-    <path d="M9 14h2" />
-    <path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3" />
-    <path d="m12 6-4 4" />
-    <path d="m8 14-4 4" />
-    <path d="M16 11a4 4 0 0 1-1.5 3" />
+  <!-- Exact Lucide Microscope paths, centered and scaled for high legibility -->
+  <g stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" transform="translate(4, 4)">
+    <path d="M6 18h8"/>
+    <path d="M3 22h18"/>
+    <path d="m14 22-4-4"/>
+    <path d="m15 14-4.5 4.5"/>
+    <path d="m19 13-4-4"/>
+    <path d="m20 5-8 8"/>
+    <path d="m21 6-1-1-6.5 6.5-.5-1.5-1.5-.5h-1v1.5l1.5.5Z"/>
+    <path d="M12 21a7 7 0 0 0 0-14H8"/>
+    <path d="m5 14 3-3"/>
   </g>
 </svg>
