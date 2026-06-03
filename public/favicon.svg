@@ -1,17 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <!-- Rounded brand blue background -->
-  <rect x="2" y="2" width="28" height="28" rx="8" fill="#00A3FF"/>
+  <!-- Rounded brand blue background matching the website's branding (#00A3FF) -->
+  <rect width="32" height="32" rx="8" fill="#00A3FF"/>
   
-  <!-- Exact Lucide Microscope paths, centered and scaled for high legibility -->
-  <g stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" transform="translate(4, 4)">
-    <path d="M6 18h8"/>
-    <path d="M3 22h18"/>
-    <path d="m14 22-4-4"/>
-    <path d="m15 14-4.5 4.5"/>
-    <path d="m19 13-4-4"/>
-    <path d="m20 5-8 8"/>
-    <path d="m21 6-1-1-6.5 6.5-.5-1.5-1.5-.5h-1v1.5l1.5.5Z"/>
-    <path d="M12 21a7 7 0 0 0 0-14H8"/>
-    <path d="m5 14 3-3"/>
-  </g>
+  <!-- Clean, bold, and highly-legible "SK" letters centered -->
+  <text x="50%" y="55%" 
+        dominant-baseline="middle" 
+        text-anchor="middle" 
+        fill="#FFFFFF" 
+        font-family="system-ui, -apple-system, sans-serif" 
+        font-weight="900" 
+        font-size="14" 
+        letter-spacing="-0.5px">SK</text>
 </svg>
