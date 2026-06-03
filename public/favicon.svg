@@ -1,16 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <!-- Background: Bright Brand Blue matching website logo (#00A3FF) -->
-  <rect width="32" height="32" rx="9" fill="#00A3FF"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Rounded blue background to match the website branding -->
+  <rect width="24" height="24" rx="6.5" fill="#00A3FF"/>
   
-  <!-- Microscope symbol icon overlay - matching Lucide exactly -->
-  <g stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(4, 4)">
+  <!-- White Microscope symbol, centered and perfectly matched with website Navbar logo -->
+  <g stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(4, 4) scale(0.667)">
     <path d="M6 18h8" />
-    <path d="M3 21h18" />
-    <path d="M14 21a7 7 0 1 0-14 0" />
+    <path d="M3 22h18" />
+    <path d="M14 22a7 7 0 1 0-14 0" />
     <path d="M9 14h2" />
     <path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3" />
     <path d="m12 6-4 4" />
     <path d="m8 14-4 4" />
-    <path d="M16 11a4 4 0 0 1-4 4h-1" />
+    <path d="M16 11a4 4 0 0 1-1.5 3" />
   </g>
 </svg>
