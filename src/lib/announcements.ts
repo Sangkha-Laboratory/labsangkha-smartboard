@@ -11,39 +11,6 @@ export interface Announcement {
   created_at?: string;
 }
 
-const PRESET_ANNOUNCEMENTS: Announcement[] = [
-  {
-    id: 'ann-1',
-    title: 'ประกาศปรับปรุงเกณฑ์รายงานค่าวิกฤต (Critical Value) ปี 2569',
-    category: 'critical',
-    content: 'เรียน เจ้าหน้าที่กลุ่มงานเทคนิคการแพทย์ทุกท่าน ทางคณะกรรมการปรับปรุงเกณฑ์มาตรฐานงานห้องปฏิบัติการ ได้มีการเสนอปรับเกณฑ์รายงานค่าวิกฤต (Critical Value) สำหรับกลุ่มงานตรวจวิเคราะห์ทั่วไป (Central Lab) เช่น ค่า Potassium, Hemoglobin และ Platelet Count โดยจะมีรายงานเกณฑ์ละเอียดแจ้งตามบอร์ดหลักและเริ่มปฏิบัติตามมาตรฐานใหม่ในวันที่ 1 มิถุนายน 2569 นี้เป็นต้นไป ขอความกรุณาทุกท่านทวนสอบข้อมูลเวรก่อนการส่งต่ออย่างละเอียด',
-    date: '18 พ.ค. 2569',
-    author: 'หัวหน้ากลุ่มงานเทคนิคการแพทย์',
-    pinned: true,
-    created_at: new Date('2026-05-18T08:00:00Z').toISOString()
-  },
-  {
-    id: 'ann-2',
-    title: 'ความสำคัญของช่องข้อมูลงานค้างคงค้าง (Pending Cases) เพื่อความปลอดภัยของผู้ป่วย',
-    category: 'important',
-    content: 'ขอเน้นย้ำถึงเจ้าหน้าที่ทุกคนที่รับและส่งปฏิบัติงานในเวรเช้า บ่าย และดึก กรุณากรอกรายละเอียดของสิ่งส่งตรวจที่ล่าช้า ค้างส่ง หรือเคสสำคัญที่ต้องประสานงานต่อในหน้าฟอร์มส่งเวรอย่างละเอียด หากไม่มีความคืบหน้าแจ้งให้ลงบันทึก "ปกติ" พร้อมรายละเอียด เพื่อหลีกเลี่ยงข้อผิดพลาดทางอายุรกรรมและป้องกันปัญหาผลตรวจล่าช้า',
-    date: '15 พ.ค. 2569',
-    author: 'งานคุณภาพทางห้องปฏิบัติการ',
-    pinned: true,
-    created_at: new Date('2026-05-15T09:00:00Z').toISOString()
-  },
-  {
-    id: 'ann-3',
-    title: 'เพิ่มช่องทางระบุเลขเอกสารและจัดส่งตัวอย่างสิ่งส่งตรวจเคสเร่งด่วนภายนอก',
-    category: 'general',
-    content: 'ระบบส่งเวรแบบใหม่สำหรับสิ่งส่งตรวจพิเศษที่ต้องส่งวิเคราะห์ต่อยังห้องปฏิบัติการภายนอก (Reference Lab) บัดนี้รองรับการอ้างอิงเลขตั๋วหรือรหัสดำเนินงานแล้วในหมวดหมู่การส่งมอบงาน เจ้าหน้าที่ที่สนใจวิธีการใช้สามารถปรึกษาที่เจ้าหน้าที่ประสานงานระบบสารสนเทศได้ตลอดเวลา',
-    date: '10 พ.ค. 2569',
-    author: 'งานบริการลูกค้าและประสานงาน',
-    pinned: false,
-    created_at: new Date('2026-05-10T11:00:00Z').toISOString()
-  }
-];
-
 const LOCAL_STORAGE_KEY = 'sangkha_handover_announcements';
 
 // Helper to load fallback local announcements
@@ -56,9 +23,7 @@ function getLocalAnnouncements(): Announcement[] {
   } catch (e) {
     console.error('Error loading announcements from local storage:', e);
   }
-  // Initialize local storage with presets if empty
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(PRESET_ANNOUNCEMENTS));
-  return PRESET_ANNOUNCEMENTS;
+  return [];
 }
 
 // Helper to save to local storage
