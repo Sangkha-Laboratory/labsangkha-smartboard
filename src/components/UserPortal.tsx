@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { CustomSelect } from './CustomSelect';
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -623,10 +624,10 @@ export default function UserPortal({
       </motion.aside>
 
       {/* Main Container Area */}
-      <div className="flex-1 flex flex-col min-h-screen pb-20 md:pb-0">
+      <div className="flex-1 flex flex-col min-h-screen pb-20 md:pb-0 min-w-0 w-full overflow-x-hidden">
         
         {/* Top bar */}
-        <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 flex items-center justify-between sticky top-0 z-30">
+        <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -684,7 +685,7 @@ export default function UserPortal({
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 mt-2 w-84 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden font-thai"
+                      className="fixed top-16 left-4 right-4 sm:absolute sm:top-auto sm:left-auto sm:right-0 sm:w-84 mt-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden font-thai"
                     >
                       <div className="px-4 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-1.5 border-none">
                         <div className="flex items-center justify-between">
@@ -772,7 +773,7 @@ export default function UserPortal({
         </header>
 
         {/* Dashboard Content */}
-        <main className="p-6 md:p-8 flex-1 space-y-8 bg-slate-50 dark:bg-slate-950">
+        <main className="p-4 sm:p-6 md:p-8 flex-1 space-y-6 md:space-y-8 bg-slate-50 dark:bg-slate-950 min-w-0 w-full overflow-x-hidden md:overflow-x-visible">
           
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'Overview' && (
@@ -782,7 +783,7 @@ export default function UserPortal({
               className="space-y-6"
             >
               {/* Kaggle welcome card */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-[2rem] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm relative overflow-hidden">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 shadow-sm relative overflow-hidden">
                 {/* Background minimal graphic effect */}
                 <div className="absolute right-0 top-0 w-64 h-64 bg-slate-50/50 dark:bg-slate-950/20 rounded-full pointer-events-none -translate-y-12 translate-x-12" />
                 
@@ -875,10 +876,10 @@ export default function UserPortal({
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* Chart Box */}
-                <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
+                <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
                   <div>
                     <h3 className="text-base font-black text-[#0f2d52] dark:text-white tracking-widest uppercase mb-1">สถิติการส่งเวรรายวัน / Personal Activity</h3>
-                    <p className="text-[15px] text-slate-400 font-bold">แสดงปริมาณงานเวรที่คุณกรอกรายงานย้อนหลังในรอบ 7 วันล่าสุด</p>
+                    <p className="text-[15px] text-slate-400 font-bold font-thai">แสดงปริมาณงานเวรที่คุณกรอกรายงานย้อนหลังในรอบ 7 วันล่าสุด</p>
                   </div>
 
                   <div className="h-64 pr-2">
@@ -901,7 +902,7 @@ export default function UserPortal({
                 </div>
 
                 {/* Recent Activities List */}
-                <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
                   <div className="space-y-4">
                     <div>
                       <h3 className="text-base font-black text-[#0f2d52] dark:text-white tracking-widest uppercase mb-1">ประวัติการกระทำล่าสุดของฉัน</h3>
@@ -1043,32 +1044,28 @@ export default function UserPortal({
                   </div>
 
                   {/* Division Select */}
-                  <div className="relative">
-                    <select
-                      value={divisionFilter}
-                      onChange={e => setDivisionFilter(e.target.value as any)}
-                      className="appearance-none h-10 pl-4 pr-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-[#0f2d52] dark:text-white cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 outline-none transition-all font-thai md:text-base"
-                    >
-                      <option value="All">ทุกหน่วยงาน (All Divisions)</option>
-                      <option value="Central Lab">Central Lab</option>
-                      <option value="Blood Bank">Blood Bank</option>
-                    </select>
-                    <ChevronDown size={13} className="text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
+                  <CustomSelect
+                    value={divisionFilter}
+                    onChange={(val) => setDivisionFilter(val as any)}
+                    options={[
+                      { value: 'All', label: 'ทุกหน่วยงาน' },
+                      { value: 'Central Lab', label: 'Central Lab' },
+                      { value: 'Blood Bank', label: 'Blood Bank' }
+                    ]}
+                    className="w-full sm:w-auto sm:min-w-48"
+                  />
 
                   {/* Status Select */}
-                  <div className="relative">
-                    <select
-                      value={statusFilter}
-                      onChange={e => setStatusFilter(e.target.value as any)}
-                      className="appearance-none h-10 pl-4 pr-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-[#0f2d52] dark:text-white cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 outline-none transition-all font-thai md:text-base"
-                    >
-                      <option value="All">ทุกสถานะ (All Status)</option>
-                      <option value="Pending">รอรับส่ง (Pending)</option>
-                      <option value="Accepted">รับเวรแล้ว (Accepted)</option>
-                    </select>
-                    <ChevronDown size={13} className="text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
+                  <CustomSelect
+                    value={statusFilter}
+                    onChange={(val) => setStatusFilter(val as any)}
+                    options={[
+                      { value: 'All', label: 'ทุกสถานะ' },
+                      { value: 'Pending', label: 'รอรับส่ง' },
+                      { value: 'Accepted', label: 'รับเวรแล้ว' }
+                    ]}
+                    className="w-full sm:w-auto sm:min-w-40"
+                  />
                 </div>
 
               {/* Handovers Records Grid / Table */}
@@ -1303,7 +1300,7 @@ export default function UserPortal({
                 <p className="text-xs text-slate-400 font-bold mt-1">อัปเดตและรักษาความปลอดภัยบัญชีปฏิบัติการ กลุ่มงานเทคนิคการแพทย์</p>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-6">
                 
                 {/* User info status */}
                 <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-950/45 border border-slate-100 dark:border-slate-850 rounded-2xl">
@@ -1315,7 +1312,7 @@ export default function UserPortal({
                       {cleanName(user?.full_name) || 'เจ้าหน้าที่ห้องปฏิบัติการ'}
                     </h3>
                     <p className="text-xs text-slate-400 font-bold mt-0.5">
-                      อีเมลหรือรหัสพนักงาน: <span className="font-mono text-brand-blue">{user?.id || user?.email || '-'}</span>
+                      อีเมลหรือรหัสเจ้าหน้าที่: <span className="font-mono text-brand-blue">{user?.id || user?.email || '-'}</span>
                     </p>
                   </div>
                 </div>

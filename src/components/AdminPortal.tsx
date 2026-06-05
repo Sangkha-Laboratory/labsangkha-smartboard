@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { CustomSelect } from './CustomSelect';
 import { getAnnouncements, saveAnnouncement, deleteAnnouncement, Announcement, subscribeToAnnouncements } from '../lib/announcements';
 import AdminLogViewer from './AdminLogViewer';
 import { 
@@ -42,7 +43,8 @@ import {
   Eye,
   EyeOff,
   AlertTriangle,
-  Pin
+  Pin,
+  Copy
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -96,7 +98,11 @@ export default function AdminPortal({
     pending: 0,
     acceptedToday: 0,
     avgAcceptTime: '--',
-    activeSenders: 0
+    activeSenders: 0,
+    viaLine: 0,
+    viaLinePercent: 0,
+    viaWeb: 0,
+    viaWebPercent: 0
   });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [handovers, setHandovers] = useState<any[]>([]);
@@ -222,6 +228,16 @@ export default function AdminPortal({
     status: 'idle' | 'loading' | 'success' | 'error';
     message?: string;
   }>({ status: 'idle' });
+  const [copiedGroupId, setCopiedGroupId] = useState<string | null>(null);
+
+  const handleCopyGroupId = useCallback((groupId: string) => {
+    if (!groupId) return;
+    navigator.clipboard.writeText(groupId);
+    setCopiedGroupId(groupId);
+    setTimeout(() => {
+      setCopiedGroupId(null);
+    }, 2000);
+  }, []);
 
   const fetchLineSettings = useCallback(async () => {
     setIsLoadingLineSettings(true);
@@ -505,7 +521,7 @@ export default function AdminPortal({
     const trimmedEmail = userEmailInput.trim();
 
     if (!trimmedId) {
-      setUserFormError('กรุณากรอกรหัสผู้ใช้งาน/พนักงาน');
+      setUserFormError('กรุณากรอกรหัสผู้ใช้งาน/เจ้าหน้าที่');
       return;
     }
     if (!trimmedName) {
@@ -795,15 +811,27 @@ export default function AdminPortal({
       avgTimeStr = avgMins > 60 ? `${Math.floor(avgMins/60)}h ${avgMins%60}m` : `${avgMins}m`;
     }
 
+    // Web vs LINE Reception
+    const acceptedHandoversList = filteredData.filter(h => h.status === 'Accepted');
+    const viaLineCount = acceptedHandoversList.filter(h => h.receiver_line_name && h.receiver_line_name.trim() !== '').length;
+    const viaWebCount = acceptedHandoversList.length - viaLineCount;
+    const totalAcceptedCount = acceptedHandoversList.length;
+    const viaLinePercent = totalAcceptedCount > 0 ? Math.round((viaLineCount / totalAcceptedCount) * 100) : 0;
+    const viaWebPercent = totalAcceptedCount > 0 ? (100 - viaLinePercent) : 0;
+
     setStats({
       pending: pendingCount,
       acceptedToday: acceptedToday,
       avgAcceptTime: avgTimeStr,
-      activeSenders: uniqueSenders
+      activeSenders: uniqueSenders,
+      viaLine: viaLineCount,
+      viaLinePercent: viaLinePercent,
+      viaWeb: viaWebCount,
+      viaWebPercent: viaWebPercent
     });
 
     // Recent Activity
-    setRecentActivity(filteredData.slice(0, 5).map(h => {
+    setRecentActivity(filteredData.slice(0, 15).map(h => {
       const createdDate = new Date(h.created_at);
       const diffMs = new Date().getTime() - createdDate.getTime();
       const mins = Math.floor(diffMs / 60000);
@@ -1097,7 +1125,7 @@ export default function AdminPortal({
                   <Microscope size={20} />
                 </div>
                 <div>
-                  <h1 className="font-[900] text-[#0f2d52] dark:text-white leading-none">Handover</h1>
+                  <h1 className="font-[900] text-[#0f2d52] dark:text-white leading-none">SmartBoard</h1>
                   <span className="text-[12px] font-black text-brand-blue bg-brand-blue/10 px-1.5 py-0.5 rounded-md mt-1 inline-block uppercase tracking-wider">BETA</span>
                 </div>
               </div>
@@ -1146,13 +1174,10 @@ export default function AdminPortal({
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto pb-20 md:pb-0">
+      <main className="flex-1 flex flex-col min-h-screen md:h-screen overflow-y-visible md:overflow-y-auto overflow-x-hidden pb-24 md:pb-12 min-w-0 w-full">
         {/* Header */}
-        <header className="h-[70px] bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 sticky top-0 z-40">
+        <header className="h-[70px] bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-40">
           <div className="flex items-center gap-4">
-            <div>
-              <h2 className="text-xl font-[900] text-[#0f2d52] dark:text-white tracking-tight">{activeTab}</h2>
-            </div>
           </div>
 
           <div className="flex items-center gap-6">
@@ -1191,7 +1216,7 @@ export default function AdminPortal({
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden font-thai font-sans"
+                        className="fixed top-16 left-4 right-4 sm:absolute sm:top-auto sm:left-auto sm:right-0 sm:w-80 mt-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden font-thai font-sans"
                       >
                         <div className="px-4 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                           <span className="text-xs font-black text-[#0f2d52] dark:text-white">ประกาศข่าวสารหลังบ้าน ({announcements.length})</span>
@@ -1271,9 +1296,9 @@ export default function AdminPortal({
         {activeTab === 'Overview' ? (
           <div className="animate-fadeIn flex flex-col font-thai">
 
-            <div id="dashboard-capture-area" className="p-6 pt-6 space-y-8">
+            <div id="dashboard-capture-area" className="p-4 sm:p-6 space-y-6 sm:space-y-8">
             {/* Kaggle welcome card */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-[2rem] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm relative overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm relative overflow-hidden">
               {/* Background minimal graphic effect */}
               <div className="absolute right-0 top-0 w-64 h-64 bg-slate-50/50 dark:bg-slate-950/20 rounded-full pointer-events-none -translate-y-12 translate-x-12" />
               
@@ -1283,20 +1308,6 @@ export default function AdminPortal({
                     <h1 className="text-2xl md:text-3xl lg:text-4xl font-[900] text-slate-900 dark:text-white tracking-tight leading-tight">
                       Welcome back, {user?.full_name || 'SAMITA SINGSARD'}.
                     </h1>
-                    <button 
-                      type="button"
-                      onClick={handleExportImage}
-                      disabled={isExporting}
-                      className="inline-flex self-center md:self-auto h-9 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-700/60 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/10 transition-all items-center gap-1.5 cursor-pointer flex-shrink-0 border border-transparent"
-                      title="ส่งออกรายงานแผงควบคุมหลักเป็นรูปภาพ"
-                    >
-                      {isExporting ? (
-                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <Download size={14} />
-                      )}
-                      <span>{isExporting ? 'กำลังส่งออก...' : 'ส่งออกภาพ'}</span>
-                    </button>
                   </div>
                   <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-bold leading-relaxed">
                     Everything is under your control. Let's keep the lab running.
@@ -1304,20 +1315,22 @@ export default function AdminPortal({
                 </div>
 
                 {/* Action shortcuts */}
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 pt-1">
+                <div className="grid grid-cols-2 gap-2.5 pt-1 w-full md:flex md:w-auto">
                   <button 
+                    type="button"
                     onClick={() => setActiveTab('Handovers')}
-                    className="h-10 px-5 bg-brand-blue text-white rounded-xl text-xs font-black shadow-lg shadow-brand-blue/15 hover:bg-brand-dark transition-all flex items-center gap-1.5"
+                    className="w-full md:w-auto h-11 px-2.5 sm:px-5 bg-brand-blue text-white rounded-xl text-[10px] min-xs:text-[11.5px] sm:text-xs font-black shadow-lg shadow-brand-blue/15 hover:bg-brand-dark transition-all flex items-center justify-center gap-1 cursor-pointer"
                   >
-                    <ClipboardList size={14} />
-                    <span>จัดการข้อมูลส่งเวร / View Handovers</span>
+                    <ClipboardList size={13} className="shrink-0" />
+                    <span>จัดการข้อมูลส่งเวร</span>
                   </button>
                   <button 
+                    type="button"
                     onClick={() => setActiveTab('Announcements')}
-                    className="h-10 px-5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-705 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-black border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1.5"
+                    className="w-full md:w-auto h-11 px-2.5 sm:px-5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-705 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] min-xs:text-[11.5px] sm:text-xs font-black border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center gap-1 cursor-pointer"
                   >
-                    <Megaphone size={14} />
-                    <span>ดูข่าวสาร / Announcements</span>
+                    <Megaphone size={13} className="shrink-0" />
+                    <span>ดูข่าวสาร</span>
                   </button>
                 </div>
               </div>
@@ -1325,17 +1338,12 @@ export default function AdminPortal({
               {/* Custom SVG Illustration for beautiful UI representation */}
               <div className="hidden md:block shrink-0 relative z-10 w-40 h-40">
                 <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-md">
-                  {/* Floating graphic shapes representing Laboratory and Kaggle data items */}
                   <rect x="30" y="40" width="100" height="90" rx="16" fill="#00A3FF" fillOpacity="0.05" stroke="#00A3FF" strokeWidth="2" strokeDasharray="4 4" />
                   <rect x="45" y="55" width="70" height="12" rx="6" fill="#22C55E" fillOpacity="0.15" />
                   <circle cx="53" cy="61" r="3" fill="#22C55E" />
-                  
-                  {/* Kaggle styled statistics / chart mock */}
                   <path d="M45 105 L70 90 L95 100 L115 80" stroke="#00A3FF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                   <circle cx="115" cy="80" r="5" fill="#00A3FF" />
                   <circle cx="70" cy="90" r="4" fill="#EAB308" />
-                  
-                  {/* Small abstract decorations */}
                   <g filter="blur(1px)">
                     <circle cx="130" cy="35" r="8" fill="#EAB308" fillOpacity="0.2" />
                     <circle cx="25" cy="115" r="12" fill="#22C55E" fillOpacity="0.1" />
@@ -1343,6 +1351,79 @@ export default function AdminPortal({
                   <circle cx="130" cy="35" r="3" fill="#EAB308" />
                   <circle cx="25" cy="115" r="4" fill="#22C55E" />
                 </svg>
+              </div>
+            </div>
+
+            {/* Filter & Export Bar */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 p-4 rounded-3xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-sm font-thai">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-6 flex-1">
+                {/* Division Filter Tabs */}
+                <div className="space-y-1.5 flex-shrink-0">
+                  <p className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">หน่วยงาน / Division</p>
+                  <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex gap-1">
+                    {[
+                      { key: 'All', label: 'ทั้งหมด (All)' },
+                      { key: 'Central Lab', label: 'Central Lab' },
+                      { key: 'Blood Bank', label: 'Blood Bank' }
+                    ].map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setDivisionFilter(tab.key)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-black min-w-[70px] transition-all cursor-pointer ${
+                          divisionFilter === tab.key
+                            ? 'bg-white dark:bg-slate-900 text-brand-blue shadow-sm'
+                            : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 bg-transparent'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Status Filter Tabs */}
+                <div className="space-y-1.5 flex-shrink-0">
+                  <p className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">สถานะการรับเวร / Status</p>
+                  <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex gap-1">
+                    {[
+                      { key: 'All', label: 'ทั้งหมด (All)' },
+                      { key: 'Pending', label: 'รอรับงาน' },
+                      { key: 'Accepted', label: 'รับงานแล้ว' }
+                    ].map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setStatusFilter(tab.key)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-black min-w-[70px] transition-all cursor-pointer ${
+                          statusFilter === tab.key
+                            ? 'bg-white dark:bg-slate-900 text-brand-blue shadow-sm'
+                            : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 bg-transparent'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Moved Export Button */}
+              <div className="w-full lg:w-auto lg:self-center">
+                <button 
+                  type="button"
+                  onClick={handleExportImage}
+                  disabled={isExporting}
+                  className="w-full lg:w-auto h-11 px-5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-700/60 disabled:cursor-not-allowed text-white rounded-2xl text-xs font-black shadow-md shadow-emerald-500/10 transition-all flex items-center justify-center gap-2 cursor-pointer border border-transparent"
+                  title="Export Dashboard Image"
+                >
+                  {isExporting ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Download size={14} />
+                  )}
+                  <span>{isExporting ? 'Exporting...' : 'Export Dashboard Image'}</span>
+                </button>
               </div>
             </div>
 
@@ -1362,7 +1443,8 @@ export default function AdminPortal({
                   <button onClick={() => setActiveTab('Handovers')} className="text-[10px] font-black text-brand-blue bg-brand-blue/5 px-2.5 py-1 rounded-lg hover:bg-brand-blue/10 transition-all uppercase tracking-wider">View all</button>
                 </div>
                 
-                <div className="flex-1 overflow-x-auto">
+                {/* Desktop View: Table */}
+                <div className="hidden md:block flex-1 overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-slate-50 dark:bg-slate-850 text-left border-b border-slate-100 dark:border-slate-800">
@@ -1403,6 +1485,39 @@ export default function AdminPortal({
                       )}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Mobile View: Flexible Cards Layout for Recent Activity */}
+                <div className="block md:hidden flex-1 divide-y divide-slate-100 dark:divide-slate-800">
+                  {recentActivity.length === 0 ? (
+                    <div className="px-5 py-10 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No recent data</div>
+                  ) : (
+                    recentActivity.map((item, idx) => (
+                      <div key={idx} className="p-4 flex flex-col space-y-1.5 active:bg-slate-50 dark:active:bg-slate-800/40">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-black text-slate-400">ID: {item.id}</span>
+                          <span className="text-[11px] text-slate-400 font-bold">{item.time}</span>
+                        </div>
+                        <h4 className="text-xs sm:text-sm font-black text-[#0f2d52] dark:text-white leading-normal">
+                          {item.title}
+                        </h4>
+                        <div className="flex items-center justify-between pt-1 text-[11px] font-bold">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                              item.division === 'Central Lab' ? 'text-brand-blue border-brand-blue/20 bg-brand-blue/5' : item.division === 'Blood Bank' ? 'text-violet-500 border-violet-500/20 bg-violet-50 dark:bg-violet-950/20' : 'text-slate-500 border-slate-200 bg-slate-50 dark:bg-slate-800'
+                            }`}>
+                              {item.division}
+                            </span>
+                            <span className="text-slate-500 dark:text-slate-400">By {item.sender}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'Pending' ? 'bg-[#facc15]' : 'bg-[#22c55e]'}`} />
+                            <span className={`text-[11px] font-bold ${item.status === 'Pending' ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-emerald-400'}`}>{item.status}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -1459,6 +1574,37 @@ export default function AdminPortal({
                          </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Reception Channel Breakdown widget (Web vs LINE) */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm font-thai">
+                  <h3 className="text-sm font-[900] text-[#0f2d52] dark:text-white mb-4">สัดส่วนรับงานผ่านเว็บ และผ่านไลน์</h3>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center text-[10px] font-bold">
+                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          รับงานผ่านไลน์ (LINE LIFF)
+                        </span>
+                        <span className="text-[#0f2d52] dark:text-slate-200">{stats.viaLine} งาน ({stats.viaLinePercent}%)</span>
+                      </div>
+                      <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${stats.viaLinePercent}%` }} />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center text-[10px] font-bold">
+                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                          รับงานผ่านเว็บ (Web)
+                        </span>
+                        <span className="text-[#0f2d52] dark:text-slate-200">{stats.viaWeb} งาน ({stats.viaWebPercent}%)</span>
+                      </div>
+                      <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-blue-500" style={{ width: `${stats.viaWebPercent}%` }} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1519,7 +1665,7 @@ export default function AdminPortal({
           </div>
           </div>
         ) : activeTab === 'Handovers' ? (
-          <div className="p-6 space-y-6 animate-fadeIn">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 animate-fadeIn">
             {/* History Mini Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
@@ -1615,10 +1761,10 @@ export default function AdminPortal({
 
             {/* Filter and Action Card (Kaggle Theme) */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-[1.5rem] p-5 shadow-sm space-y-4">
-              <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
                 
                 {/* Search Bar */}
-                <div className="relative flex-1 flex items-center bg-slate-50 dark:bg-slate-950 px-4 h-11 border border-slate-200 dark:border-slate-800 rounded-xl focus-within:border-brand-blue/30 transition-all">
+                <div className="relative flex-grow flex items-center bg-slate-50 dark:bg-slate-950 px-4 h-11 border border-slate-200 dark:border-slate-800 rounded-xl focus-within:border-brand-blue/30 transition-all">
                   <Search size={16} className="text-slate-400 mr-2.5" />
                   <input 
                     type="text" 
@@ -1628,22 +1774,22 @@ export default function AdminPortal({
                     className="bg-transparent border-none outline-none text-xs font-bold text-slate-700 dark:text-slate-200 placeholder:text-slate-400 w-full"
                   />
                   {historySearch && (
-                    <button onClick={() => setHistorySearch('')} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                    <button onClick={() => setHistorySearch('')} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer">
                       <X size={16} />
                     </button>
                   )}
                 </div>
 
                 {/* CSV download button & Reset */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                   <button
                     onClick={() => {
                       handleExportCSV(filteredHandovers);
                     }}
-                    className="h-11 px-4.5 bg-brand-blue hover:bg-brand-dark text-white rounded-xl text-xs font-black shadow-md shadow-brand-blue/10 transition-all flex items-center justify-center gap-1.5"
+                    className="flex-1 sm:flex-initial h-11 px-4 bg-brand-blue hover:bg-brand-dark text-white rounded-xl text-xs font-black shadow-md shadow-brand-blue/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                   >
                     <FileDown size={14} />
-                    <span>ส่งออกข้อมูล CSV</span>
+                    <span>Export CSV</span>
                   </button>
 
                   {(historySearch || historyDivisionFilter !== 'All' || historyShiftFilter !== 'All' || historyStatusFilter !== 'All' || historyDateFilter) && (
@@ -1655,7 +1801,7 @@ export default function AdminPortal({
                         setHistoryStatusFilter('All');
                         setHistoryDateFilter('');
                       }}
-                      className="h-11 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 rounded-xl text-xs font-black transition-all flex items-center justify-center"
+                      className="flex-1 sm:flex-initial h-11 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer whitespace-nowrap"
                     >
                       ล้างตัวกรอง
                     </button>
@@ -1665,55 +1811,50 @@ export default function AdminPortal({
 
               {/* Advanced Controls Row */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">หน่วยงาน (Division)</label>
-                  <select
-                    value={historyDivisionFilter}
-                    onChange={(e) => setHistoryDivisionFilter(e.target.value)}
-                    className="w-full h-10 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-brand-blue/30"
-                  >
-                    <option value="All">ทุกหน่วยงาน (All)</option>
-                    <option value="Central Lab">Central Lab</option>
-                    <option value="Blood Bank">Blood Bank</option>
-                  </select>
-                </div>
+                <CustomSelect
+                  label="หน่วยงาน"
+                  value={historyDivisionFilter}
+                  onChange={(val) => setHistoryDivisionFilter(val)}
+                  options={[
+                    { value: 'All', label: 'ทุกหน่วยงาน' },
+                    { value: 'Central Lab', label: 'Central Lab' },
+                    { value: 'Blood Bank', label: 'Blood Bank' }
+                  ]}
+                />
+
+                <CustomSelect
+                  label="รอบปฏิบัติงาน"
+                  value={historyShiftFilter}
+                  onChange={(val) => setHistoryShiftFilter(val)}
+                  options={[
+                    { value: 'All', label: 'ทุกรอบเวร' },
+                    { value: 'เช้า', label: 'เวรเช้า' },
+                    { value: 'บ่าย', label: 'เวรบ่าย' },
+                    { value: 'ดึก', label: 'เวรดึก' }
+                  ]}
+                />
+
+                <CustomSelect
+                  label="สถานะเวร"
+                  value={historyStatusFilter}
+                  onChange={(val) => setHistoryStatusFilter(val)}
+                  options={[
+                    { value: 'All', label: 'ทุกสถานะ' },
+                    { value: 'Pending', label: 'รอตอบรับ' },
+                    { value: 'Accepted', label: 'ตอบรับสำเร็จ' }
+                  ]}
+                />
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">รอบปฏิบัติงาน (Shift)</label>
-                  <select
-                    value={historyShiftFilter}
-                    onChange={(e) => setHistoryShiftFilter(e.target.value)}
-                    className="w-full h-10 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-brand-blue/30"
-                  >
-                    <option value="All">ทุกรอบเวร (All)</option>
-                    <option value="เช้า">เวรเช้า</option>
-                    <option value="บ่าย">เวรบ่าย</option>
-                    <option value="ดึก">เวรดึก</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">สถานะเวร (Status)</label>
-                  <select
-                    value={historyStatusFilter}
-                    onChange={(e) => setHistoryStatusFilter(e.target.value)}
-                    className="w-full h-10 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-brand-blue/30"
-                  >
-                    <option value="All">ทุกสถานะ (All)</option>
-                    <option value="Pending">รอตอบรับ (Pending)</option>
-                    <option value="Accepted">ตอบรับสำเร็จ (Accepted)</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">ระบุวันที่ส่งเวร (Handover Date)</label>
-                  <div className="relative">
+                  <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">ระบุวันที่ส่งเวร</label>
+                  <div className="relative custom-datepicker">
                     <input
                       type="date"
                       value={historyDateFilter}
                       onChange={(e) => setHistoryDateFilter(e.target.value)}
-                      className="w-full h-10 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 pr-8 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-brand-blue/30"
+                      className="w-full h-10 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 pr-8 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-brand-blue/30 cursor-pointer"
                     />
+                    <Calendar size={11} className="text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                 </div>
               </div>
@@ -1728,7 +1869,7 @@ export default function AdminPortal({
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-slate-50/80 dark:bg-slate-850/50 text-left border-b border-slate-100 dark:border-slate-800 text-slate-450 dark:text-slate-350">
@@ -1843,6 +1984,118 @@ export default function AdminPortal({
                 </table>
               </div>
 
+              {/* Mobile View: Flexible Cards Layout */}
+              <div className="block md:hidden divide-y divide-slate-105 dark:divide-slate-800/60">
+                {paginatedHandovers.map((item, idx) => {
+                  const catField = item.category || '';
+                  let itemShift = item.shift || '';
+                  let itemCat = '';
+                  if (!itemShift && catField.includes('|')) {
+                    const [s, c] = catField.split('|');
+                    itemShift = s || 'ไม่ระบุ';
+                    itemCat = c || '';
+                  } else if (!itemShift) {
+                    itemShift = catField || 'ไม่ระบุ';
+                    itemCat = '';
+                  } else {
+                    itemCat = catField;
+                  }
+
+                  return (
+                    <div 
+                      key={idx} 
+                      onClick={() => setSelectedHandover(item)}
+                      className="p-4 hover:bg-slate-50/50 dark:hover:bg-slate-850/20 transition-all cursor-pointer space-y-3"
+                    >
+                      {/* Top Header line */}
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-450 dark:text-slate-500">
+                        <span 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(item.task_number || item.id);
+                          }}
+                          className="cursor-copy bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-mono text-[10px]"
+                        >
+                          ID: {item.task_number || item.id.substring(0, 8).toUpperCase()}
+                        </span>
+                        <span>{formatThaiDate(item.handover_date)} · {formatTimeStr(item.created_at)}</span>
+                      </div>
+
+                      {/* Title and details */}
+                      <div className="space-y-1 text-left">
+                        <h4 className="text-xs sm:text-sm font-[900] text-[#0f2d52] dark:text-white leading-snug line-clamp-1">
+                          {item.title}
+                        </h4>
+                        <p className="text-[11px] sm:text-xs text-slate-400 dark:text-slate-500 font-bold line-clamp-2 leading-relaxed">
+                          {item.description}
+                        </p>
+                      </div>
+
+                      {/* Division, Shift and Status */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                          item.division === 'Central Lab' ? 'text-brand-blue border-brand-blue/20 bg-brand-blue/5' : item.division === 'Blood Bank' ? 'text-violet-500 border-violet-500/20 bg-violet-50 dark:bg-violet-950/20' : 'text-slate-500 border-slate-200 bg-slate-50 dark:bg-slate-850 dark:border-slate-700'
+                        }`}>
+                          {item.division}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-[900] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                          เวร{itemShift} {itemCat && `· ${itemCat}`}
+                        </span>
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${item.status === 'Pending' ? 'text-yellow-600 border-yellow-500/20 bg-yellow-505/5' : 'text-green-600 border-green-500/20 bg-green-505/5'}`}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'Pending' ? 'bg-[#facc15]' : 'bg-[#22c55e]'}`} />
+                          {item.status === 'Pending' ? 'รอรับเวร' : 'รับเวรแล้ว'}
+                        </span>
+                      </div>
+
+                      {/* Flow Stakeholders and Action buttons */}
+                      <div className="flex items-center justify-between pt-2.5 border-t border-slate-100/50 dark:border-slate-850/40 text-[10px] font-bold text-slate-400">
+                        <div className="flex flex-col gap-0.5 text-left">
+                          <div>
+                            <span className="font-medium text-slate-400">ผู้ส่ง: </span>
+                            <span className="font-extrabold text-[#0f2d52] dark:text-slate-300">{item.sender?.full_name || 'System'}</span>
+                          </div>
+                          <div>
+                            <span className="font-medium text-slate-400">ผู้รับ: </span>
+                            {item.status === 'Accepted' ? (
+                              <span className="font-extrabold text-green-600 dark:text-green-400">{item.receiver?.full_name || item.receiver_line_name || 'ไม่ระบุ'}</span>
+                            ) : (
+                              <span className="font-extrabold text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-1.5 py-0.5 rounded text-[9px]">รอมอบหมาย ⌛</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button 
+                            onClick={() => setSelectedHandover(item)}
+                            className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-[#0f2d52] dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-800 flex items-center justify-center transition-all cursor-pointer"
+                            title="ดูรายละเอียดครบถ้วน"
+                          >
+                            <ExternalLink size={12} />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setHandoverToDelete(item);
+                              setIsDeleteConfirmOpen(true);
+                            }}
+                            className="w-8 h-8 rounded-lg bg-red-50/50 dark:bg-red-950/20 text-red-500 hover:bg-red-100/50 dark:hover:bg-red-900/40 border border-red-100 dark:border-red-950/50 flex items-center justify-center transition-all cursor-pointer"
+                            title="ลบรายการส่งเวรนี้"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {filteredHandovers.length === 0 && (
+                  <div className="px-5 py-12 text-center text-slate-400 dark:text-slate-500 font-bold text-xs uppercase tracking-widest pl-6 pr-6">
+                    ไม่พบประวัติการส่งเวรที่ตรงกับคำค้นหาหรือการคัดกรองในขณะนี้
+                  </div>
+                )}
+              </div>
+
               {/* Pagination Controls */}
               {filteredHandovers.length > HANDOVERS_PER_PAGE && (
                 <div className="flex flex-col sm:flex-row items-center justify-between p-4.5 bg-slate-50/50 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-800 gap-4">
@@ -1915,17 +2168,17 @@ export default function AdminPortal({
             </div>
           </div>
         ) : activeTab === 'Users' ? (
-          <div className="p-6 space-y-6 animate-fadeIn font-thai">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 animate-fadeIn font-thai">
             {/* Header section with summary stats */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 bg-brand-blue/10 rounded-lg text-brand-blue">
                     <Users size={18} />
                   </div>
-                  <h3 className="text-lg font-black text-[#0f2d52] dark:text-white">จัดการข้อมูลผู้ใช้งานและพนักงาน</h3>
+                  <h3 className="text-lg font-black text-[#0f2d52] dark:text-white">จัดการข้อมูลผู้ใช้งานและเจ้าหน้าที่</h3>
                 </div>
-                <p className="text-xs text-slate-400 font-bold">เพิ่มพนักงานใหม่ มอบสิทธิ์ผู้ดูแลระบบ (Admin) หรือปิดระงับบัญชี โดยไม่ต้องไปกดแก้ที่ฐานข้อมูลหลัก</p>
+                <p className="text-xs text-slate-400 font-bold">เพิ่มเจ้าหน้าที่ใหม่ มอบสิทธิ์ผู้ดูแลระบบ (Admin) หรือปิดระงับบัญชี โดยไม่ต้องไปกดแก้ที่ฐานข้อมูลหลัก</p>
               </div>
               <button
                 type="button"
@@ -1952,40 +2205,39 @@ export default function AdminPortal({
               </div>
 
               {/* Filters */}
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-150 dark:border-slate-800 rounded-xl px-3 h-11">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">ประเภทสิทธิ์:</span>
-                  <select
-                    value={userRoleFilter}
-                    onChange={(e) => setUserRoleFilter(e.target.value)}
-                    className="bg-transparent border-none text-xs font-extrabold text-[#0f2d52] dark:text-slate-200 outline-none cursor-pointer"
-                  >
-                    <option value="All">ทั้งหมด</option>
-                    <option value="staff">Staff (ผู้ใช้งานเวร)</option>
-                    <option value="admin">Admin (ผู้ดูแลระบบ)</option>
-                  </select>
-                </div>
+              <div className="grid grid-cols-2 md:flex md:items-center gap-2.5 w-full md:w-auto">
+                <CustomSelect
+                  inlineLabel="ประเภทสิทธิ์:"
+                  value={userRoleFilter}
+                  onChange={(val) => setUserRoleFilter(val)}
+                  options={[
+                    { value: 'All', label: 'ทั้งหมด' },
+                    { value: 'staff', label: 'Staff' },
+                    { value: 'admin', label: 'Admin' }
+                  ]}
+                  className="w-full md:w-auto md:min-w-32"
+                />
 
-                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-150 dark:border-slate-800 rounded-xl px-3 h-11">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">สถานะ:</span>
-                  <select
-                    value={userStatusFilter}
-                    onChange={(e) => setUserStatusFilter(e.target.value)}
-                    className="bg-transparent border-none text-xs font-extrabold text-[#0f2d52] dark:text-slate-200 outline-none cursor-pointer"
-                  >
-                    <option value="All">ทั้งหมด</option>
-                    <option value="Active">ใช้งานอยู่ (Active)</option>
-                    <option value="Inactive">ปิดใช้งาน (Inactive)</option>
-                  </select>
-                </div>
+                <CustomSelect
+                  inlineLabel="สถานะ:"
+                  value={userStatusFilter}
+                  onChange={(val) => setUserStatusFilter(val)}
+                  options={[
+                    { value: 'All', label: 'ทั้งหมด' },
+                    { value: 'Active', label: 'Active' },
+                    { value: 'Inactive', label: 'Inactive' }
+                  ]}
+                  className="w-full md:w-auto md:min-w-32"
+                />
 
                 <button
                   type="button"
                   onClick={fetchUsersData}
-                  className="w-11 h-11 bg-slate-50 hover:bg-slate-100 dark:bg-slate-850 dark:hover:bg-slate-800 rounded-xl flex items-center justify-center text-[#0f2d52] dark:text-slate-250 border border-slate-150 dark:border-slate-800 transition cursor-pointer"
+                  className="col-span-2 md:col-span-auto h-11 bg-slate-50 hover:bg-slate-100 dark:bg-slate-850 dark:hover:bg-slate-800 rounded-xl flex items-center justify-center text-[#0f2d52] dark:text-slate-250 border border-slate-150 dark:border-slate-800 transition cursor-pointer gap-2"
                   title="รีเฟรชข้อมูลผู้ใช้"
                 >
                   <RefreshCw size={13} className={isLoadingUsers ? "animate-spin" : ""} />
+                  <span className="text-xs font-bold md:hidden">รีเฟรชข้อมูลบัญชี</span>
                 </button>
               </div>
             </div>
@@ -2003,11 +2255,12 @@ export default function AdminPortal({
                   <span>ไม่พบข้อมูลผู้ใช้ที่เหมาะสมในปัจจุบัน</span>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <>
+                  <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/20 text-slate-400 text-[12px] uppercase font-black tracking-widest">
-                        <th className="px-6 py-4 pl-8">ชื่อ-นามสกุล / พนักงาน</th>
+                        <th className="px-6 py-4 pl-8">ชื่อ-นามสกุล / เจ้าหน้าที่</th>
                         <th className="px-6 py-4">อีเมลรับรอง (Email)</th>
                         <th className="px-6 py-4">ประเภทสิทธิ์</th>
                         <th className="px-6 py-4">สถานะใช้งาน</th>
@@ -2080,7 +2333,7 @@ export default function AdminPortal({
                                   type="button"
                                   onClick={() => openEditUserModal(user)}
                                   className="w-8 h-8 rounded-lg text-brand-blue hover:bg-brand-blue/5 border border-brand-blue/10 flex items-center justify-center transition cursor-pointer dark:text-blue-400"
-                                  title="แก้ไขข้อมูลพนักงาน"
+                                  title="แก้ไขข้อมูลเจ้าหน้าที่"
                                 >
                                   <Edit2 size={12} />
                                 </button>
@@ -2091,7 +2344,7 @@ export default function AdminPortal({
                                     setIsUserDeleteConfirmOpen(true);
                                   }}
                                   className="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-100 dark:border-red-950/40 flex items-center justify-center transition cursor-pointer"
-                                  title="ลบพนักงานออกถาวร"
+                                  title="ลบเจ้าหน้าที่ออกถาวร"
                                 >
                                   <Trash2 size={12} />
                                 </button>
@@ -2103,7 +2356,92 @@ export default function AdminPortal({
                     </tbody>
                   </table>
                 </div>
-              )}
+
+                {/* Mobile View: User Cards Layout */}
+                {!isLoadingUsers && filteredUsers.length > 0 && (
+                  <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {paginatedUsers.map((user) => {
+                      const isActive = user.is_active !== false;
+                      return (
+                        <div key={user.id} className="p-4 transition-all hover:bg-slate-50/50 dark:hover:bg-slate-850/20 space-y-3">
+                          {/* Header metadata row */}
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
+                              user.role === 'admin' 
+                                ? 'bg-rose-50 border-rose-250/25 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/30' 
+                                : 'bg-indigo-50 border-indigo-250/25 text-indigo-600 dark:bg-indigo-950/20 dark:border-indigo-900/30'
+                            }`}>
+                              <div className={`w-1 h-1 rounded-full ${user.role === 'admin' ? 'bg-rose-500' : 'bg-indigo-500'}`} />
+                              {user.role === 'admin' ? 'Admin' : 'Staff'}
+                            </span>
+
+                            {/* Toggle Active Switch */}
+                            <button
+                              type="button"
+                              onClick={() => toggleUserActiveStatus(user)}
+                              className="flex items-center gap-1.5 cursor-pointer bg-transparent border-none text-left"
+                              title="คลิกเพื่อสลับเปิด/ปิดสถานะผู้ใช้"
+                            >
+                              <div className={`relative w-8 h-4.5 rounded-full transition-colors duration-300 pointer-events-none ${
+                                isActive ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-700'
+                              }`}>
+                                <div className={`absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full transition-transform duration-300 ${
+                                  isActive ? 'translate-x-4' : 'translate-x-0.5'
+                                }`} />
+                              </div>
+                              <span className={`text-[11px] font-black uppercase tracking-wider ${
+                                isActive ? 'text-green-500' : 'text-slate-400'
+                              }`}>
+                                {isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </button>
+                          </div>
+
+                          {/* Name and Email details */}
+                          <div className="space-y-1 text-left">
+                            <h4 className="text-sm font-black text-[#0f2d52] dark:text-white leading-snug">
+                              {user.full_name || 'ไม่ระบุชื่อ'}
+                            </h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                              {user.email || '-'}
+                            </p>
+                          </div>
+
+                          {/* PIN indicator & action buttons */}
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-50 dark:border-slate-800/40 text-[10px] font-bold text-slate-400">
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-extrabold font-mono">
+                              PIN/PASS: ••••••••
+                            </span>
+
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => openEditUserModal(user)}
+                                className="w-8 h-8 rounded-lg text-brand-blue hover:bg-brand-blue/5 border border-brand-blue/10 flex items-center justify-center transition cursor-pointer dark:text-blue-400"
+                                title="แก้ไขข้อมูลเจ้าหน้าที่"
+                              >
+                                <Edit2 size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setUserToDelete(user);
+                                  setIsUserDeleteConfirmOpen(true);
+                                }}
+                                className="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-100 dark:border-red-950/40 flex items-center justify-center transition cursor-pointer"
+                                title="ลบเจ้าหน้าที่ออกถาวร"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
 
               {/* User Table Pagination Controls */}
               {!isLoadingUsers && filteredUsers.length > USERS_PER_PAGE && (
@@ -2177,9 +2515,9 @@ export default function AdminPortal({
             </div>
           </div>
         ) : activeTab === 'Announcements' ? (
-          <div className="space-y-6 animate-fadeIn font-thai p-6 md:p-8">
+          <div className="space-y-4 sm:space-y-6 animate-fadeIn font-thai p-4 sm:p-6 md:p-8">
             {/* Header section */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-500">
@@ -2187,7 +2525,7 @@ export default function AdminPortal({
                   </div>
                   <h3 className="text-lg font-black text-[#0f2d52] dark:text-white">จัดการข่าวสารและประกาศประชาสัมพันธ์</h3>
                 </div>
-                <p className="text-xs text-slate-400 font-bold">สร้างและจัดการข่าวสารสำคัญ กฎระเบียบปฏิบัติ หรือข้อความแจ้งเตือนที่เผยแพร่ให้พนักงานทราบในระบบ</p>
+                <p className="text-xs text-slate-400 font-bold">สร้างและจัดการข่าวสารสำคัญ กฎระเบียบปฏิบัติ หรือข้อความแจ้งเตือนที่เผยแพร่ให้เจ้าหน้าที่ทราบในระบบ</p>
               </div>
               <button
                 type="button"
@@ -2214,43 +2552,40 @@ export default function AdminPortal({
               </div>
 
               {/* Filters */}
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-                {/* Category filter */}
-                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-150 dark:border-slate-800 rounded-xl px-3 h-11">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">กลุ่ม:</span>
-                  <select
-                    value={announcementCategoryFilter}
-                    onChange={(e) => setAnnouncementCategoryFilter(e.target.value)}
-                    className="bg-transparent border-none text-xs font-extrabold text-[#0f2d52] dark:text-slate-200 outline-none cursor-pointer"
-                  >
-                    <option value="All">ทุกระดับความเร็ว</option>
-                    <option value="critical">ด่วนที่สุด (Critical)</option>
-                    <option value="important">สำคัญ (Important)</option>
-                    <option value="general">ทั่วไป (General)</option>
-                  </select>
-                </div>
+              <div className="grid grid-cols-2 md:flex md:items-center gap-2.5 w-full md:w-auto">
+                <CustomSelect
+                  inlineLabel="กลุ่ม:"
+                  value={announcementCategoryFilter}
+                  onChange={(val) => setAnnouncementCategoryFilter(val)}
+                  options={[
+                    { value: 'All', label: 'ทุกระดับ' },
+                    { value: 'critical', label: 'ด่วนที่สุด' },
+                    { value: 'important', label: 'สำคัญ' },
+                    { value: 'general', label: 'ทั่วไป' }
+                  ]}
+                  className="w-full md:w-auto md:min-w-32"
+                />
 
-                {/* Pinned filter */}
-                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-150 dark:border-slate-800 rounded-xl px-3 h-11">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">สถานะการปักหมุด:</span>
-                  <select
-                    value={announcementPinnedFilter}
-                    onChange={(e) => setAnnouncementPinnedFilter(e.target.value)}
-                    className="bg-transparent border-none text-xs font-extrabold text-[#0f2d52] dark:text-slate-200 outline-none cursor-pointer"
-                  >
-                    <option value="All">ทั้งหมด</option>
-                    <option value="Pinned">ปักหมุดเท่านั้น</option>
-                    <option value="Unpinned">ไม่ปักหมุด</option>
-                  </select>
-                </div>
+                <CustomSelect
+                  inlineLabel="ปักหมุด:"
+                  value={announcementPinnedFilter}
+                  onChange={(val) => setAnnouncementPinnedFilter(val)}
+                  options={[
+                    { value: 'All', label: 'ทั้งหมด' },
+                    { value: 'Pinned', label: 'ปักหมุด' },
+                    { value: 'Unpinned', label: 'ไม่ปักหมุด' }
+                  ]}
+                  className="w-full md:w-auto md:min-w-32"
+                />
 
                 <button
                   type="button"
                   onClick={loadAnnouncements}
-                  className="w-11 h-11 bg-slate-50 hover:bg-slate-100 dark:bg-slate-850 dark:hover:bg-slate-800 rounded-xl flex items-center justify-center text-[#0f2d52] dark:text-slate-250 border border-slate-150 dark:border-slate-800 transition cursor-pointer"
+                  className="col-span-2 md:col-span-auto h-11 bg-slate-50 hover:bg-slate-100 dark:bg-slate-850 dark:hover:bg-slate-800 rounded-xl flex items-center justify-center text-[#0f2d52] dark:text-slate-250 border border-slate-150 dark:border-slate-800 transition cursor-pointer gap-2"
                   title="รีเฟรชประกาศ"
                 >
                   <RefreshCw size={13} className={isAnnouncementsLoading ? "animate-spin" : ""} />
+                  <span className="text-xs font-bold md:hidden">รีเฟรชประกาศ</span>
                 </button>
               </div>
             </div>
@@ -2267,7 +2602,8 @@ export default function AdminPortal({
                   ไม่มีข่าวสารประชาสัมพันธ์ในคลังขณะนี้
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <>
+                  <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/50">
@@ -2376,11 +2712,114 @@ export default function AdminPortal({
                     </tbody>
                   </table>
                 </div>
-              )}
+
+                {/* Mobile View: Announcement Cards Layout */}
+                {!isAnnouncementsLoading && announcements.length > 0 && (
+                  <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {announcements
+                      .filter(ann => {
+                        const searchLower = announcementSearch.toLowerCase();
+                        const matchesSearch = 
+                          ann.title.toLowerCase().includes(searchLower) || 
+                          ann.content.toLowerCase().includes(searchLower) || 
+                          ann.author.toLowerCase().includes(searchLower);
+                          
+                        const matchesCategory = announcementCategoryFilter === 'All' || ann.category === announcementCategoryFilter;
+                        
+                        const matchesPinned = announcementPinnedFilter === 'All' || 
+                                              (announcementPinnedFilter === 'Pinned' && ann.pinned) || 
+                                              (announcementPinnedFilter === 'Unpinned' && !ann.pinned);
+                                              
+                        return matchesSearch && matchesCategory && matchesPinned;
+                      })
+                      .map((ann) => {
+                        return (
+                          <div 
+                            key={ann.id} 
+                            className="p-4 hover:bg-slate-50/50 dark:hover:bg-slate-850/20 transition-all space-y-3"
+                          >
+                            {/* Header row: level and pin */}
+                            <div className="flex items-center justify-between">
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase text-center min-w-[65px] inline-block ${
+                                ann.category === 'critical' 
+                                  ? 'bg-red-50 text-red-500 border border-red-100/50 dark:bg-red-950/20' 
+                                  : ann.category === 'important'
+                                  ? 'bg-yellow-50 text-yellow-600 border border-yellow-101 dark:bg-yellow-950/20'
+                                  : 'bg-blue-50 text-brand-blue border border-blue-101 dark:bg-blue-950/20'
+                              }`}>
+                                {ann.category === 'critical' ? 'ด่วนที่สุด' : ann.category === 'important' ? 'สำคัญ' : 'ทั่วไป'}
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() => handleTogglePinAnnouncement(ann)}
+                                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                  ann.pinned 
+                                    ? 'text-indigo-600 bg-indigo-50 dark:text-indigo-400' 
+                                    : 'text-slate-300 hover:text-slate-500'
+                                }`}
+                                title={ann.pinned ? 'ถอนหมุดออก' : 'ปักหมุดประกาศนี้ไว้บนสุด'}
+                              >
+                                <Pin size={14} className={ann.pinned ? 'fill-current' : ''} />
+                              </button>
+                            </div>
+
+                            {/* Body row: details */}
+                            <div className="space-y-1 text-left" onClick={() => setViewedAnnouncement(ann)}>
+                              <h4 className="text-sm font-black text-[#0f2d52] dark:text-white hover:underline cursor-pointer leading-snug">
+                                {ann.title}
+                              </h4>
+                              <p className="text-xs text-slate-450 dark:text-slate-500 font-bold line-clamp-2 leading-relaxed">
+                                {ann.content}
+                              </p>
+                            </div>
+
+                            {/* Footer row: author details and actions */}
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-50 dark:border-slate-800/40 text-[10px] font-bold text-slate-400">
+                              <div className="text-left leading-normal space-y-0.5">
+                                <div>
+                                  <span className="font-normal text-slate-400">ผู้ประกาศ: </span>
+                                  <span className="font-black text-slate-600 dark:text-slate-350">{ann.author}</span>
+                                </div>
+                                <div className="text-[9px] text-slate-400 font-medium">
+                                  อัปเดต: {ann.date}
+                                </div>
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => openEditAnnModal(ann)}
+                                  className="w-8 h-8 rounded-lg text-brand-blue hover:bg-brand-blue/5 border border-brand-blue/10 flex items-center justify-center transition cursor-pointer dark:text-blue-400"
+                                  title="แก้ไขข้อมูลประกาศ"
+                                >
+                                  <Edit2 size={12} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAnnToDelete(ann);
+                                    setIsAnnDeleteConfirmOpen(true);
+                                  }}
+                                  className="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-100 dark:border-red-950/40 flex items-center justify-center transition cursor-pointer"
+                                  title="ลบประกาศถาวร"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </>
+            )}
             </div>
           </div>
         ) : activeTab === 'Settings' ? (
-          <div className="p-6 space-y-6 md:space-y-8 animate-fadeIn min-h-[500px] max-w-full overflow-hidden font-thai">
+          <div className="p-4 sm:p-6 pb-6 space-y-4 sm:space-y-6 md:space-y-8 animate-fadeIn min-h-[500px] max-w-full font-thai">
             {/* Header section with styling matching other pages */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1.5 min-w-0">
@@ -2391,9 +2830,6 @@ export default function AdminPortal({
                 <h1 className="text-2xl md:text-3xl font-black text-[#0f2d52] dark:text-white leading-tight font-thai">
                   ตั้งค่าระบบแจ้งเตือน LINE
                 </h1>
-                <p className="text-xs text-slate-400 dark:text-slate-500 font-bold leading-relaxed font-thai">
-                  เชื่อมโยงและบริหารจัดการกลุ่ม LINE สำหรับส่งใบงานการส่งมอบเวรของแผนกเทคนิคการแพทย์
-                </p>
               </div>
 
               {/* Refresh Button */}
@@ -2401,9 +2837,9 @@ export default function AdminPortal({
                 type="button"
                 onClick={fetchLineSettings}
                 disabled={isLoadingLineSettings}
-                className="w-full md:w-auto h-11 px-6 bg-slate-50 hover:bg-slate-100 dark:bg-slate-850 dark:hover:bg-slate-800 rounded-xl flex items-center justify-center gap-2 text-xs font-black text-[#0f2d52] dark:text-slate-250 border border-slate-150 dark:border-slate-800 transition cursor-pointer disabled:opacity-50 flex-shrink-0"
+                className="w-full md:w-auto h-11 px-6 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 hover:bg-slate-55 dark:hover:bg-slate-850 rounded-2xl flex items-center justify-center gap-2 text-xs font-black text-[#0f2d52] dark:text-slate-200 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-50 flex-shrink-0"
               >
-                <RefreshCw size={14} className={isLoadingLineSettings ? "animate-spin" : ""} />
+                <RefreshCw size={14} className={isLoadingLineSettings ? "animate-spin" : "text-slate-400"} />
                 <span>รีเฟรชการเชื่อมต่อ</span>
               </button>
             </div>
@@ -2414,32 +2850,65 @@ export default function AdminPortal({
                 <p className="text-xs text-slate-400 font-bold font-thai">กำลังตรวจสอบข้อมูลกลุ่ม LINE ในระบบ...</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              <div className="grid grid-cols-1 gap-6 max-w-3xl mx-auto w-full">
                 
-                {/* Left Column - Forms & Testing (7 cols) */}
-                <div className="lg:col-span-7 space-y-6 max-w-full">
+                {/* Column - Forms & Testing */}
+                <div className="space-y-6 max-w-full">
                   
                   {/* Active Status Display Box */}
-                  <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 dark:from-emerald-950/20 dark:to-teal-950/10 border border-emerald-500/20 dark:border-emerald-800/30 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col md:flex-row items-center gap-5">
-                    <div className="w-14 h-14 rounded-2xl bg-[#06C755] flex items-center justify-center text-white flex-shrink-0 shadow-[0_8px_20px_rgba(6,199,85,0.25)]">
+                  <div className="bg-gradient-to-br from-[#06C755]/8 to-[#05b34c]/5 dark:from-[#06C755]/12 dark:to-emerald-950/20 border border-[#06C755]/20 dark:border-[#06C755]/30 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col md:flex-row items-center gap-5 shadow-[0_8px_30px_rgb(0,0,0,0.01)]">
+                    <div className="absolute right-0 bottom-0 opacity-5 select-none pointer-events-none translate-x-4 translate-y-4">
+                      <Bell size={180} className="text-[#06C755]" />
+                    </div>
+                    <div className="w-14 h-14 rounded-2xl bg-[#06C755] flex items-center justify-center text-white flex-shrink-0 shadow-[0_10px_25px_rgba(6,199,85,0.22)] transition hover:scale-105">
                       <Bell size={24} />
                     </div>
-                    <div className="text-center md:text-left space-y-1 min-w-0 flex-1">
-                      <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">สถานะการทำงานปัจจุบัน</span>
+                    <div className="text-center md:text-left space-y-1.5 min-w-0 flex-1 relative z-10">
+                      <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">สถานะการเชื่อมต่อล่าสุด</span>
                       <h4 className="text-base font-black text-[#0f2d52] dark:text-white leading-none font-thai">
-                        {activeLineGroupId ? 'เชื่อมต่อ LINE Notification สำเร็จ' : 'ยังไม่ได้เชื่อมต่อกลุ่ม LINE'}
+                        {activeLineGroupId ? 'เชื่อมต่อกับ LINE สำเร็จแล้ว' : 'ยังไม่ได้เชื่อมต่อกลุ่ม LINE'}
                       </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-bold max-w-sm font-thai break-all">
-                        {activeLineGroupId 
-                          ? `ระบบกำลังส่งส่งมอบเวรไปยังกลุ่ม LINE ID: ${activeLineGroupId}`
-                          : 'กรุณากรอกและเปิดใช้งาน Group ID เพื่อให้ระบบสามารถแจ้งเตือนไปยังกลุ่ม LINE ของท่าน'
-                        }
-                      </p>
+                      
+                      {activeLineGroupId ? (
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
+                          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold font-thai">
+                            LINE Group ID:
+                          </span>
+                          <span className="inline-flex items-center gap-1 bg-white hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-emerald-500/15 font-mono text-emerald-700 dark:text-emerald-300 font-black text-xs select-all">
+                            {activeLineGroupId}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyGroupId(activeLineGroupId)}
+                            className="p-1 px-2 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-350 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 text-[10px]"
+                            title="คัดลอกรหัสกลุ่ม LINE"
+                          >
+                            {copiedGroupId === activeLineGroupId ? (
+                              <>
+                                <Check size={11} className="text-emerald-600" />
+                                <span className="text-emerald-600 font-thai font-black">คัดลอกสำเร็จ</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={11} />
+                                <span className="font-thai font-black">คัดลอก ID</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-550 dark:text-slate-400 font-bold max-w-sm font-thai leading-relaxed">
+                          กรุณากรอกและเปิดใช้งาน Group ID เพื่อให้ระบบส่งเสริมและแจ้งเตือนเข้าสู่กลุ่ม LINE แผนกของคุณ
+                        </p>
+                      )}
                     </div>
                     {activeLineGroupId && (
-                      <div className="flex-shrink-0 md:ml-auto flex items-center gap-1.5 px-3 py-1 bg-[#06C755]/20 text-[#06C755] border border-[#06C755]/10 rounded-full text-[10px] font-black uppercase tracking-wider">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#06C755] animate-ping"></span>
-                        <span>Active</span>
+                      <div className="flex-shrink-0 md:ml-auto flex items-center gap-1.5 px-3.5 py-1.5 bg-[#06C755]/15 text-[#06C755] dark:bg-[#06C755]/20 border border-[#06C755]/15 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
+                        <span className="w-2 h-2 rounded-full bg-[#06C755] relative flex">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#06C755] opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#06C755]"></span>
+                        </span>
+                        <span>ACTIVE</span>
                       </div>
                     )}
                   </div>
@@ -2447,21 +2916,23 @@ export default function AdminPortal({
                   {/* Settings Input Form */}
                   <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
                     <div className="space-y-1">
-                      <h3 className="text-base font-black text-[#0f2d52] dark:text-white font-thai leading-none">ระบุกลุ่มแจ้งเตือนไลน์</h3>
-                      <p className="text-xs text-slate-400 font-bold font-thai">อัปเดต ID กลุ่ม LINE เพื่อเปลี่ยนปลายทางสำหรับการแจ้งเตือน</p>
+                      <h3 className="text-base font-black text-[#0f2d52] dark:text-white font-thai leading-none">ระบุกลุ่มแจ้งเตือนใหม่</h3>
+                      <p className="text-xs text-slate-400 font-bold font-thai">อัปเดต ID กลุ่ม LINE เพื่อเปลี่ยนสถานที่รับข่าวสารและการส่งรายงานเวร</p>
                     </div>
 
                     <form onSubmit={(e) => { e.preventDefault(); handleSaveLineGroup(newLineGroupId); }} className="space-y-4">
                       <div className="space-y-2">
-                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block font-thai">LINE Group ID (สืบค้นจาก LINE Chat)</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-wider block font-thai">LINE GROUP ID (ค้นหาแรกรหัสกลุ่มได้จากห้องแชท LINE)</label>
+                        </div>
                         <div className="relative">
                           <input
                             type="text"
                             required
                             value={newLineGroupId}
                             onChange={(e) => setNewLineGroupId(e.target.value)}
-                            placeholder="ตัวอย่างเช่น: Ca9e6ca..."
-                            className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 font-mono text-sm font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                            placeholder="ป้อนรหัสกลุ่มตัวอย่าง เช่น C2bac21be00b17f53809..."
+                            className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 font-mono text-sm font-bold text-slate-850 dark:text-white focus:ring-2 focus:ring-[#06C755] focus:border-transparent outline-none transition-all duration-300 shadow-inner"
                           />
                         </div>
                       </div>
@@ -2470,38 +2941,179 @@ export default function AdminPortal({
                         <button
                           type="submit"
                           disabled={isSavingLineSettings || !newLineGroupId.trim()}
-                          className="w-full sm:w-auto px-6 h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(16,185,129,0.2)] disabled:opacity-50"
+                          className="w-full sm:w-auto px-6 h-12 bg-[#06C755] hover:bg-[#05b34c] text-white rounded-xl text-xs font-black transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer flex items-center justify-center gap-2 shadow-[0_5px_15px_rgba(6,199,85,0.22)] disabled:opacity-50"
                         >
                           {isSavingLineSettings ? (
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                           ) : (
-                            <CheckCircle2 size={14} />
+                            <CheckCircle2 size={15} />
                           )}
                           <span>อัปเดตและเปิดใช้งานกลุ่ม (Save & Activate)</span>
                         </button>
                       </div>
                     </form>
 
-                    {/* How-to guide info */}
-                    <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2.5">
-                      <div className="flex items-center gap-2 text-[11px] font-black text-slate-500 dark:text-slate-400">
-                        <AlertTriangle size={13} className="text-amber-500" />
-                        <span className="font-thai">วิธีการรับสิทธิ์และค้นหา Line Group ID:</span>
+                    {/* How-to guide info list */}
+                    <div className="p-6 bg-slate-50 dark:bg-slate-950/40 rounded-[2rem] border border-slate-100 dark:border-slate-805 space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
+                          <HelpCircle size={12} />
+                        </div>
+                        <span className="text-xs font-black text-[#0f2d52] dark:text-slate-350 font-thai">วิธีการรับสิทธิ์และค้นหา LINE Group ID:</span>
                       </div>
-                      <ol className="list-decimal list-inside text-[11px] text-slate-450 dark:text-slate-500 space-y-1 font-thai font-bold">
-                        <li>เชิญบอทไลน์ของระบบเข้าร่วมกลุ่ม LINE ของแผนก</li>
-                        <li>บอทจะพิมพ์ข้อความตอบรับพร้อมแจ้ง ID กลุ่มลงในแชทโดยอัตโนมัติ</li>
-                        <li>คัดลอกรหัสกลุ่มดังกล่าวมาระบุในแบบฟอร์มด้านบนนี้เพื่อเชื่อมข้อมูล</li>
-                        <li>ทดสอบส่งการแจ้งเตือนโดยกดปุ่มตรวจวัดสุขภาพด้านล่างได้ทันที</li>
-                      </ol>
+
+                      <div className="space-y-0.5 ml-1">
+                        {/* Step 1 */}
+                        <div className="relative pl-6 pb-4">
+                          {/* Vertical Connector Line */}
+                          <div className="absolute left-[5px] top-4 bottom-0 w-[2px] bg-emerald-500/15 dark:bg-emerald-500/10"></div>
+                          
+                          {/* Indicator Dot */}
+                          <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-[#06C755] border-2 border-white dark:border-slate-950 shadow-sm z-10"></div>
+                          
+                          <p className="text-xs text-slate-550 dark:text-slate-450 font-bold font-thai">
+                            <span className="text-[#06C755] font-black mr-1">1.</span> เชิญบอทไลน์ของระบบเข้าร่วมกลุ่ม LINE ของแผนก
+                          </p>
+                        </div>
+
+                        {/* Step 2 */}
+                        <div className="relative pl-6 pb-4">
+                          {/* Vertical Connector Line */}
+                          <div className="absolute left-[5px] top-4 bottom-0 w-[2px] bg-emerald-500/15 dark:bg-emerald-500/10"></div>
+                          
+                          {/* Indicator Dot */}
+                          <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-[#06C755] border-2 border-white dark:border-slate-950 shadow-sm z-10"></div>
+                          
+                          <p className="text-xs text-slate-550 dark:text-slate-450 font-bold font-thai leading-relaxed">
+                            <span className="text-[#06C755] font-black mr-1">2.</span> บอทจะพิมพ์ข้อความตอบรับพร้อมแจ้ง ID กลุ่มลงในแชทโดยอัตโนมัติ
+                          </p>
+                        </div>
+
+                        {/* Step 3 */}
+                        <div className="relative pl-6 pb-4">
+                          {/* Vertical Connector Line */}
+                          <div className="absolute left-[5px] top-4 bottom-0 w-[2px] bg-emerald-500/15 dark:bg-emerald-500/10"></div>
+                          
+                          {/* Indicator Dot */}
+                          <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-[#06C755] border-2 border-white dark:border-slate-950 shadow-sm z-10"></div>
+                          
+                          <p className="text-xs text-slate-550 dark:text-slate-450 font-bold font-thai">
+                            <span className="text-[#06C755] font-black mr-1">3.</span> คัดลอกรหัสกลุ่มดังกล่าวมาระบุในรูปแบบฟอร์มด้านบนนี้เพื่อบันทึก
+                          </p>
+                        </div>
+
+                        {/* Step 4 */}
+                        <div className="relative pl-6">
+                          {/* NO Vertical Connector Line here! */}
+                          
+                          {/* Indicator Dot */}
+                          <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-[#06C755] border-2 border-white dark:border-slate-950 shadow-sm z-10"></div>
+                          
+                          <p className="text-xs text-slate-550 dark:text-slate-450 font-bold font-thai">
+                            <span className="text-[#06C755] font-black mr-1">4.</span> ทดสอบส่งการแจ้งเตือนโดยกดปุ่มยิงข้อความทดสอบด้านขวาได้ทันที
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
+                </div>
+
+                {/* Column - Registered Groups List */}
+                <div className="space-y-6 max-w-full">
+                  
+                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <h3 className="text-base font-black text-[#0f2d52] dark:text-white font-thai leading-none">กลุ่มที่เคยลงทะเบียน ({lineGroups.length})</h3>
+                        <p className="text-[10px] text-slate-400 font-bold font-thai">ประวัติกลุ่มที่มีการจดรหัสในฐานระบบ</p>
+                      </div>
+                      <span className="text-[9px] bg-slate-50 dark:bg-slate-950 text-slate-400 border border-slate-150 dark:border-slate-800 px-2.5 py-0.5 rounded-full font-bold">History Log</span>
+                    </div>
+
+                    {lineGroups.length === 0 ? (
+                      <div className="py-12 text-center text-slate-400 font-bold text-xs uppercase tracking-wider font-thai">
+                        ยังไม่มีประวัติกลุ่ม LINE ที่เชื่อมต่อ
+                      </div>
+                    ) : (
+                      <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                        {lineGroups.map((group) => {
+                          const isActive = group.group_id === activeLineGroupId;
+                          return (
+                            <div 
+                              key={group.group_id}
+                              className={`p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-3 ${
+                                isActive 
+                                  ? 'bg-[#06C755]/5 dark:bg-[#06C755]/10 border-[#06C755]/30 dark:border-[#06C755]/40 shadow-sm' 
+                                  : 'bg-slate-50/50 dark:bg-slate-950/40 border-slate-100 dark:border-slate-800/60 hover:bg-slate-100/50 dark:hover:bg-slate-950/80 shadow-inner'
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="text-slate-850 dark:text-slate-200 font-mono font-bold text-xs truncate max-w-[100px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-[120px] lg:max-w-[100px] xl:max-w-[150px] block font-extrabold" title={group.group_id}>
+                                    {group.group_id}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyGroupId(group.group_id)}
+                                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-emerald-600 dark:hover:text-[#06C755] rounded-md transition cursor-pointer flex-shrink-0"
+                                    title="คัดลอกรหัสกลุ่ม"
+                                  >
+                                    {copiedGroupId === group.group_id ? (
+                                      <Check size={11} className="text-emerald-600" />
+                                    ) : (
+                                      <Copy size={11} />
+                                    )}
+                                  </button>
+                                  {isActive && (
+                                    <span className="flex-shrink-0 px-2 py-0.2 bg-emerald-100 dark:bg-[#06C755]/20 text-[#06C755] dark:text-emerald-400 border border-emerald-250/20 rounded text-[8px] font-black uppercase">
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-slate-400 block font-bold font-thai">
+                                  เชื่อมต่อเมื่อ: {new Date(group.joined_at).toLocaleDateString('th-TH', { 
+                                    day: 'numeric', 
+                                    month: 'short', 
+                                    year: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                {!isActive && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveLineGroup(group.group_id)}
+                                    className="px-3 h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 border border-slate-150 dark:border-slate-750 text-slate-600 dark:text-slate-250 rounded-lg text-[10px] font-black transition cursor-pointer"
+                                  >
+                                    เข้าใช้
+                                  </button>
+                                )}
+                                
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteLineGroup(group.group_id)}
+                                  className="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-transparent hover:border-red-100 flex items-center justify-center transition cursor-pointer"
+                                  title="ลบกลุ่มจากประวัติ"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Diagnostics & Connection Test */}
-                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
+                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-5">
                     <div className="space-y-1">
-                      <h3 className="text-base font-black text-[#0f2d52] dark:text-white font-thai leading-none">ทดสอบระบบ (Interactive Diagnostic)</h3>
-                      <p className="text-xs text-slate-400 font-bold font-thai">เพื่อความแม่นยำในการตั้งค่า ทดสอบส่งการแจ้งเตือนเสมือนจริง</p>
+                      <h3 className="text-base font-black text-[#0f2d52] dark:text-white font-thai leading-none">ทดสอบระบบแจ้งเตือน</h3>
+                      <p className="text-xs text-slate-400 font-bold font-thai">ตรวจสอบสถานะการรับส่งข้อความ Flex Message ไปยังกลุ่ม LINE</p>
                     </div>
 
                     <div className="space-y-4">
@@ -2521,93 +3133,16 @@ export default function AdminPortal({
                         type="button"
                         onClick={handleTestNotification}
                         disabled={testNotificationStatus.status === 'loading'}
-                        className="w-full px-5 h-12 bg-[#06C755] hover:bg-[#05b34c] text-white rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(6,199,85,0.15)] disabled:opacity-50"
+                        className="w-full px-5 h-12 bg-gradient-to-r from-[#06C755] to-[#05b34c] hover:brightness-105 active:scale-[0.99] text-white rounded-xl text-xs font-black transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(6,199,85,0.18)] disabled:opacity-50"
                       >
                         {testNotificationStatus.status === 'loading' ? (
                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                         ) : (
                           <RefreshCw size={14} />
                         )}
-                        <span>ยิงข้อความทดสอบไปยัง Line Group (Send Test Message)</span>
+                        <span>ยิงข้อความทดสอบไปยัง LINE Group (Send Test Message)</span>
                       </button>
                     </div>
-                  </div>
-
-                </div>
-
-                {/* Right Column - Registered Groups List (5 cols) */}
-                <div className="lg:col-span-5 space-y-6 max-w-full">
-                  
-                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-5">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-base font-black text-[#0f2d52] dark:text-white font-thai leading-none">กลุ่มที่เคยลงทะเบียน ({lineGroups.length})</h3>
-                      <span className="text-[10px] bg-slate-50 dark:bg-slate-950 text-slate-400 border border-slate-150 dark:border-slate-800 px-2.5 py-0.5 rounded-full font-bold">History Log</span>
-                    </div>
-
-                    {lineGroups.length === 0 ? (
-                      <div className="py-12 text-center text-slate-400 font-bold text-xs uppercase tracking-wider font-thai">
-                        ยังไม่มีประวัติกลุ่ม LINE ที่เชื่อมต่อ
-                      </div>
-                    ) : (
-                      <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
-                        {lineGroups.map((group) => {
-                          const isActive = group.group_id === activeLineGroupId;
-                          return (
-                            <div 
-                              key={group.group_id}
-                              className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                isActive 
-                                  ? 'bg-emerald-500/5 dark:bg-emerald-950/10 border-emerald-500/20 dark:border-emerald-500/30 shadow-sm' 
-                                  : 'bg-slate-50/50 dark:bg-slate-950/40 border-slate-100 dark:border-slate-800/60'
-                              }`}
-                            >
-                              <div className="min-w-0 flex-1 space-y-1">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className="text-slate-850 dark:text-slate-200 font-mono font-bold text-xs truncate max-w-[110px] xs:max-w-[170px] sm:max-w-[220px] md:max-w-[130px] lg:max-w-[110px] xl:max-w-[180px] block" title={group.group_id}>
-                                    {group.group_id}
-                                  </span>
-                                  {isActive && (
-                                    <span className="flex-shrink-0 px-2 py-0.2 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 rounded text-[8px] font-black uppercase">
-                                      Active
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-[10px] text-slate-400 block font-bold font-thai">
-                                  เชื่อมต่อเมื่อ: {new Date(group.joined_at).toLocaleDateString('th-TH', { 
-                                    day: 'numeric', 
-                                    month: 'short', 
-                                    year: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                {!isActive && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSaveLineGroup(group.group_id)}
-                                    className="px-2.5 h-8 bg-white dark:bg-slate-800 hover:bg-slate-50 border border-slate-150 dark:border-slate-700 text-slate-600 dark:text-slate-200 rounded-lg text-[10px] font-black transition cursor-pointer"
-                                  >
-                                    เปิดใช้
-                                  </button>
-                                )}
-                                
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteLineGroup(group.group_id)}
-                                  className="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-transparent hover:border-red-100 flex items-center justify-center transition cursor-pointer"
-                                  title="ลบกลุ่มจากประวัติ"
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
 
                 </div>
@@ -2847,7 +3382,7 @@ export default function AdminPortal({
                   {/* User ID / Employee ID */}
                   <div>
                     <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
-                      รหัสพนักงาน / บัญชีล็อกอิน (USER ID) <span className="text-red-500">*จำเป็นและแก้ไขไม่ได้ภายหลัง</span>
+                      รหัสเจ้าหน้าที่ / บัญชีล็อกอิน (USER ID) <span className="text-red-500">*จำเป็นและแก้ไขไม่ได้ภายหลัง</span>
                     </label>
                     <input
                       type="text"
@@ -3003,7 +3538,7 @@ export default function AdminPortal({
                     ) : (
                       <Check size={14} />
                     )}
-                    <span>{selectedUser ? 'ปรับปรุงพนักงาน' : 'บันทึกพนักงานใหม่'}</span>
+                    <span>{selectedUser ? 'ปรับปรุงเจ้าหน้าที่' : 'บันทึกเจ้าหน้าที่ใหม่'}</span>
                   </button>
                 </div>
               </form>
@@ -3032,7 +3567,7 @@ export default function AdminPortal({
                     <h3 className="text-xs sm:text-sm font-black text-[#0f2d52] dark:text-white leading-none">
                       {selectedAnnouncement ? 'แก้ไขข้อมูลข่าวสารประกาศ' : 'เพิ่มประกาศประชาสัมพันธ์ใหม่'}
                     </h3>
-                    <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mt-1">กรอกข้อมูลข่าวสารที่ต้องการให้พนักงานทุกคนในกลุ่มงานรับทราบ</p>
+                    <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mt-1">กรอกข้อมูลข่าวสารที่ต้องการให้เจ้าหน้าที่ทุกคนในกลุ่มงานรับทราบ</p>
                   </div>
                 </div>
                 <button
@@ -3344,7 +3879,7 @@ export default function AdminPortal({
                   ) : (
                     <Trash2 size={14} />
                   )}
-                  <span>ยืนยันลบพนักงาน</span>
+                  <span>ยืนยันลบเจ้าหน้าที่</span>
                 </button>
               </div>
             </motion.div>
@@ -3426,9 +3961,9 @@ export default function AdminPortal({
                   </div>
                   <div>
                     <h3 className="text-xs sm:text-sm font-black text-[#0f2d52] dark:text-white leading-none">
-                      ส่งออกรูปภาพแดชบอร์ดสำเร็จ / Export Dashboard Successful
+                      Export Dashboard Successful
                     </h3>
-                    <p className="text-[10px] text-slate-400 font-bold mt-1">รูปภาพพรีวิวสำหรับการบันทึกงานสรุปผล</p>
+                    <p className="text-[10px] text-slate-400 font-bold mt-1">Preview image for shift summary</p>
                   </div>
                 </div>
                 <button
@@ -3443,7 +3978,7 @@ export default function AdminPortal({
               {/* Content / Preview Image */}
               <div className="p-5 overflow-y-auto flex-1 flex flex-col items-center gap-4 bg-slate-100 dark:bg-slate-950">
                 <p className="text-center text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed max-w-sm mt-1">
-                  💡 หากภาพไม่เริ่มดาวน์โหลดโดยอัตโนมัติ กรุณากดปุ่ม <strong>"บันทึกรูปภาพ"</strong> ด้านล่าง หรือแตะค้างที่รูปภาพ (สำหรับมือถือ) / คลิกขวาแล้วเลือก "บันทึกภาพเป็น..." (สำหรับคอมพิวเตอร์) เพื่อบันทึกรูปภาพโดยตรง
+                  💡 If the image does not start downloading automatically, click the <strong>"Save Image"</strong> button below, or long-press the image (on mobile devices) or right-click and choose "Save image as..." (on computer) to save it directly.
                 </p>
                 
                 <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white shadow-lg max-w-full">
@@ -3463,7 +3998,7 @@ export default function AdminPortal({
                   onClick={() => setIsExportModalOpen(false)}
                   className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-700 transition-all text-xs font-black cursor-pointer bg-transparent"
                 >
-                  ปิดหน้าต่าง
+                  Close
                 </button>
                 <a
                   href={exportedImage}
@@ -3471,7 +4006,7 @@ export default function AdminPortal({
                   className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-lg shadow-emerald-650/15 transition-all flex items-center gap-1.5 cursor-pointer decoration-transparent"
                 >
                   <Download size={14} />
-                  <span>บันทึกรูปภาพ / Save Image</span>
+                  <span>Save Image</span>
                 </a>
               </div>
             </motion.div>

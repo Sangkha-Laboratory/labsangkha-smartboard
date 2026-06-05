@@ -303,7 +303,7 @@ export default function LoginPage({ onLoginSuccess, onBack, onAdminClick }: Logi
 
           <form className="space-y-3.5" onSubmit={handleLogin}>
             <div>
-              <label className="block text-[12px] sm:text-sm font-[900] text-[#374151] uppercase tracking-[0.2em] mb-1.5 ml-1">ชื่อพนักงาน</label>
+              <label className="block text-[12px] sm:text-sm font-[900] text-[#374151] uppercase tracking-[0.2em] mb-1.5 ml-1">ชื่อเจ้าหน้าที่</label>
               <Dropdown 
                 options={users} 
                 value={userId} 

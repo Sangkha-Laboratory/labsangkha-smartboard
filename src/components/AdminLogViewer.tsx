@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getLogs, clearAllLogs, LogEntry, sanitizeLogData } from '../lib/logger';
+import { getLogs, clearAllLogs, LogEntry } from '../lib/logger';
 import { 
   Activity, 
   Search, 
@@ -9,17 +9,13 @@ import {
   AlertTriangle, 
   AlertOctagon, 
   Info, 
-  Database,
   Terminal, 
   ChevronDown, 
   ChevronUp, 
-  FileCode, 
-  Copy, 
-  Check, 
-  ShieldAlert,
   Download,
-  Calendar,
-  UserCheck
+  UserCheck,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -30,7 +26,6 @@ interface AdminLogViewerProps {
 export default function AdminLogViewer({ isDarkMode = false }: AdminLogViewerProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   
   // Filtering States
@@ -39,7 +34,14 @@ export default function AdminLogViewer({ isDarkMode = false }: AdminLogViewerPro
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [daysFilter, setDaysFilter] = useState<string>('All');
 
-  const [showSqlGuide, setShowSqlGuide] = useState(false);
+  // Pagination States
+  const LOGS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Auto reset page on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, levelFilter, categoryFilter, daysFilter]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -58,36 +60,10 @@ export default function AdminLogViewer({ isDarkMode = false }: AdminLogViewerPro
   }, []);
 
   const handleClearLogs = async () => {
-    if (window.confirm('คุณแน่ใจหรือไม่ที่จะล้างประวัติการบันทึก Log ทั้งหมด? (This will also attempt to purge Supabase entries)')) {
+    if (window.confirm('คุณแน่ใจหรือไม่ที่จะล้างประวัติการบันทึก Log ทั้งหมด?')) {
       await clearAllLogs();
       setLogs([]);
     }
-  };
-
-  const copySqlToClipboard = () => {
-    const sql = `-- Script สำหรับสร้างตาราง system_logs ในฐานข้อมูล Supabase (handover_sys)
-CREATE TABLE IF NOT EXISTS handover_sys.system_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    user_id TEXT,
-    user_name TEXT,
-    log_level VARCHAR(20) NOT NULL,
-    category VARCHAR(50) NOT NULL,
-    message TEXT NOT NULL,
-    details TEXT
-);
-
--- ถ้านโยบาย RLS ปิดกั้นการรับเข้า ให้สร้าง RLS Policy ดังนี้:
-ALTER TABLE handover_sys.system_logs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow read/write on system_logs" ON handover_sys.system_logs 
-    FOR ALL USING (true) WITH CHECK (true);
-
-GRANT ALL ON TABLE handover_sys.system_logs TO anon, authenticated, service_role;`;
-
-    navigator.clipboard.writeText(sql);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   // Extract unique categories from logs
@@ -116,6 +92,12 @@ GRANT ALL ON TABLE handover_sys.system_logs TO anon, authenticated, service_role
 
     return matchesSearch && matchesLevel && matchesCategory && matchesDays;
   });
+
+  // Paginate filtered system logs
+  const totalPages = Math.ceil(filteredLogs.length / LOGS_PER_PAGE);
+  const startIndex = (currentPage - 1) * LOGS_PER_PAGE;
+  const endIndex = Math.min(startIndex + LOGS_PER_PAGE, filteredLogs.length);
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
 
   const getLevelBadgeClass = (level: string) => {
     switch (level) {
@@ -160,7 +142,7 @@ GRANT ALL ON TABLE handover_sys.system_logs TO anon, authenticated, service_role
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 md:space-y-8 animate-fadeIn max-w-full overflow-hidden font-thai">
+    <div className="p-4 sm:p-6 pb-6 space-y-6 md:space-y-8 animate-fadeIn max-w-full font-thai">
       {/* Header section with styling matching other pages */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1.5 min-w-0">
@@ -170,7 +152,7 @@ GRANT ALL ON TABLE handover_sys.system_logs TO anon, authenticated, service_role
           </div>
           <h1 className="text-2xl md:text-3xl font-black text-[#0f2d52] dark:text-white leading-tight font-thai flex items-center gap-2.5">
             <Activity className="text-brand-blue" />
-            ระบบบันทึกความมั่นคงและข้อผิดพลาด (System Logs)
+            System Logs
           </h1>
           <p className="text-xs text-slate-400 dark:text-slate-500 font-bold leading-relaxed font-thai">
             การเก็บบันทึกประวัติการทำงานของเวร ระบบ LINE และความผิดพลาด โดยเซนเซอร์ข้อมูลตัวตนผู้ป่วยอัตโนมัติ
@@ -181,21 +163,12 @@ GRANT ALL ON TABLE handover_sys.system_logs TO anon, authenticated, service_role
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowSqlGuide(!showSqlGuide)}
-            className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-black text-xs transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <Database size={14} />
-            <span>{showSqlGuide ? 'ซ่อนโครงสร้าง DB' : 'ติดตั้งตาราง Supabase'}</span>
-          </button>
-          
-          <button
-            type="button"
             onClick={handleExportText}
             disabled={filteredLogs.length === 0}
             className="px-3 py-2.5 bg-[#f1f5f9] dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-black text-xs transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
           >
             <Download size={14} />
-            <span>ส่งออก (.txt)</span>
+            <span>Export (.txt)</span>
           </button>
 
           <button
@@ -218,57 +191,6 @@ GRANT ALL ON TABLE handover_sys.system_logs TO anon, authenticated, service_role
           </button>
         </div>
       </div>
-
-      {/* SQL Setup Helper Guide */}
-      <AnimatePresence>
-        {showSqlGuide && (
-          <motion.div
-            initial={{ opacity: 0, y: -15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            className="bg-slate-900 border border-slate-850 rounded-[2rem] p-6 text-slate-100 space-y-4 shadow-xl"
-          >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <FileCode className="text-yellow-500" />
-                <h3 className="text-sm font-bold text-white">โค้ดสร้างตาราง `system_logs` ใน Supabase SQL Editor</h3>
-              </div>
-              <button
-                type="button"
-                onClick={copySqlToClipboard}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-250 hover:text-white rounded-lg text-xs font-black transition flex items-center gap-1.5 cursor-pointer"
-              >
-                {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
-                <span>{copied ? 'คัดลอกแล้ว' : 'คัดลอก SQL Code'}</span>
-              </button>
-            </div>
-            
-            <p className="text-xs text-slate-400 leading-relaxed max-w-3xl">
-              หากในฐานข้อมูล Supabase ยังไม่มีตารางเก็บบันทึก Log ระบบจะบันทึก Log สำรองใน Local Storage ของอุปกรณ์แอดมินโดยอัตโนมัติ เพื่อให้สมบูรณ์ แอดมินสามารถเข้าไปที่หน้าโครงการ Supabase &gt; Menu SQL Editor และแปะชุดคำสั่งนี้เพื่อสร้างตารางเก็บประวัติร่วมทุกผู้ใช้งานได้ทันที:
-            </p>
-
-            <pre className="p-4 bg-[#0a0f1d] border border-slate-950 rounded-xl overflow-auto text-xs font-mono text-green-400 text-left whitespace-pre leading-relaxed scrollbar-hide max-h-60">
-{`CREATE TABLE IF NOT EXISTS handover_sys.system_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    user_id TEXT,
-    user_name TEXT,
-    log_level VARCHAR(20) NOT NULL,
-    category VARCHAR(50) NOT NULL,
-    message TEXT NOT NULL,
-    details TEXT
-);
-
-ALTER TABLE handover_sys.system_logs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow read/write on system_logs" ON handover_sys.system_logs 
-    FOR ALL USING (true) WITH CHECK (true);
-
-GRANT ALL ON TABLE handover_sys.system_logs TO anon, authenticated, service_role;`}
-            </pre>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Filter panel */}
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-5 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col gap-4">
@@ -349,132 +271,286 @@ GRANT ALL ON TABLE handover_sys.system_logs TO anon, authenticated, service_role
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="py-24 text-center space-y-4">
-            <Terminal className="text-slate-300 dark:text-slate-700 mx-auto" size={44} />
+            <Terminal className="text-slate-350 dark:text-slate-700 mx-auto" size={44} />
             <div className="space-y-1">
               <h4 className="text-sm font-black text-[#0f2d52] dark:text-white font-thai">ไม่พบรายการบันทึก Log ค้นหา</h4>
               <p className="text-xs text-slate-400 font-medium font-thai max-w-sm mx-auto">
-                ยังไม่มีการบันทึกเหตุการณ์ที่ตรงตามเกณฑ์ หรือกรองข้อมูลที่สืบค้นในปัจจุบัน
+                ลองตรวจสอบตัวเลือกการกรองข้อมูลหรือเปลี่ยนคำค้นหาใหม่อีกครั้ง
               </p>
             </div>
           </div>
         ) : (
-          <div className="max-w-full overflow-x-auto text-left">
-            <table className="w-full min-w-[800px] border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 text-[#0f2d52] dark:text-slate-300 font-black">
-                  <th className="py-4 pl-6 pr-4 w-[6%] text-center">ระดับ</th>
-                  <th className="py-4 px-4 w-[12%]">หมวดหมู่</th>
-                  <th className="py-4 px-4 w-[16%]">วัน-เวลาเกิดปัญหา</th>
-                  <th className="py-4 px-4 w-[40%]">ข้อความบันทึกเหตุการณ์</th>
-                  <th className="py-4 px-4 w-[16%]">ผู้ดำเนินการ</th>
-                  <th className="py-4 pr-6 pl-4 w-[10%] text-center">รายละเอียด</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredLogs.map((log) => {
-                  const isExpanded = expandedLogId === log.id;
-                  const dateStr = new Date(log.created_at).toLocaleString('th-TH', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    second: '2-digit'
-                  });
+          <>
+            {/* Desktop Version table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-[#f8fafc]/50 dark:bg-slate-950/20 font-thai text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                    <th className="py-3.5 pl-6 pr-4 text-center">ระดับ</th>
+                    <th className="py-3.5 px-4">หมวดหมู่</th>
+                    <th className="py-3.5 px-4">วันและเวลาที่เกิด</th>
+                    <th className="py-3.5 px-4">รายละเอียดข้อความ</th>
+                    <th className="py-3.5 px-4">ชื่อผู้ทำรายการ</th>
+                    <th className="py-3.5 pr-6 pl-4 text-center">ประวัติ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {paginatedLogs.map((log) => {
+                    const isExpanded = expandedLogId === log.id;
+                    const dateStr = new Date(log.created_at).toLocaleString('th-TH', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      second: '2-digit'
+                    });
 
-                  return (
-                    <React.Fragment key={log.id}>
-                      <tr 
-                        className={`hover:bg-[#f8fafc]/50 dark:hover:bg-slate-950/20 transition-all font-medium ${
-                          log.log_level === 'CRITICAL' ? 'bg-red-50/10' : ''
-                        }`}
-                      >
-                        {/* level badge */}
-                        <td className="py-4 pl-6 pr-4 text-center">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] border ${getLevelBadgeClass(log.log_level)}`}>
-                            {getLevelIcon(log.log_level)}
-                            {log.log_level}
-                          </span>
-                        </td>
-
-                        {/* category */}
-                        <td className="py-4 px-4">
-                          <code className="text-[10px] px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-850 rounded font-mono font-bold text-[#0f2d52] dark:text-slate-300">
-                            {log.category}
-                          </code>
-                        </td>
-
-                        {/* timestamp */}
-                        <td className="py-4 px-4 text-slate-450 font-bold whitespace-nowrap">
-                          {dateStr}
-                        </td>
-
-                        {/* message */}
-                        <td className="py-4 px-4 text-slate-700 dark:text-slate-300 select-all font-bold text-xs">
-                          {log.message}
-                        </td>
-
-                        {/* user system identification */}
-                        <td className="py-4 px-4">
-                          {log.user_name ? (
-                            <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-400 font-bold">
-                              <UserCheck size={11} className="text-[#6b8daf]" />
-                              {log.user_name}
+                    return (
+                      <React.Fragment key={log.id}>
+                        <tr 
+                          className={`hover:bg-[#f8fafc]/50 dark:hover:bg-slate-950/20 transition-all font-medium ${
+                            log.log_level === 'CRITICAL' ? 'bg-red-50/10' : ''
+                          }`}
+                        >
+                          {/* level badge */}
+                          <td className="py-4 pl-6 pr-4 text-center">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] border ${getLevelBadgeClass(log.log_level)}`}>
+                              {getLevelIcon(log.log_level)}
+                              {log.log_level}
                             </span>
-                          ) : (
-                            <span className="text-slate-350 dark:text-slate-650 italic">System Auto</span>
+                          </td>
+
+                          {/* category */}
+                          <td className="py-4 px-4">
+                            <code className="text-[10px] px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-850 rounded font-mono font-bold text-[#0f2d52] dark:text-slate-300">
+                              {log.category}
+                            </code>
+                          </td>
+
+                          {/* timestamp */}
+                          <td className="py-4 px-4 text-slate-404 dark:text-slate-500 font-bold whitespace-nowrap">
+                            {dateStr}
+                          </td>
+
+                          {/* message */}
+                          <td className="py-4 px-4 text-slate-700 dark:text-slate-300 select-all font-bold text-xs">
+                            {log.message}
+                          </td>
+
+                          {/* user system identification */}
+                          <td className="py-4 px-4">
+                            {log.user_name ? (
+                              <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-400 font-bold">
+                                <UserCheck size={11} className="text-[#6b8daf]" />
+                                {log.user_name}
+                              </span>
+                            ) : (
+                              <span className="text-slate-350 dark:text-slate-650 italic">System Auto</span>
+                            )}
+                          </td>
+
+                          {/* action detail disclosure toggler */}
+                          <td className="py-4 pr-6 pl-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black border border-slate-200 hover:border-brand-blue/30 dark:border-slate-800 text-slate-500 hover:text-brand-blue rounded-lg transition cursor-pointer"
+                            >
+                              <span>ดูประวัติ</span>
+                              {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            </button>
+                          </td>
+                        </tr>
+
+                        {/* Disclosure details */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan={6} className="bg-[#FAFAFA] dark:bg-slate-950/60 p-5 pl-12 pr-6 border-b border-slate-100 dark:border-slate-850">
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="space-y-3.5 text-left"
+                                >
+                                  <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-2">
+                                    <h4 className="text-[11px] font-black text-[#0f2d52] dark:text-slate-300 uppercase tracking-widest font-mono flex items-center gap-1.5">
+                                      <Terminal size={12} className="text-slate-400" />
+                                      Detailed Log Metadata & Raw System Context
+                                    </h4>
+                                    <span className="text-[10px] text-slate-400 font-mono">ID: {log.id}</span>
+                                  </div>
+
+                                  {log.details ? (
+                                    <pre className="p-4 bg-[#0a0f1d] border border-slate-950 rounded-xl overflow-auto text-xs font-mono text-cyan-400 leading-relaxed scrollbar-hide select-text">
+                                      {log.details}
+                                    </pre>
+                                  ) : (
+                                    <p className="text-xs text-slate-400 italic">ไม่มีข้อมูลดีบั๊กสรุปของประวัติรายละเอียดเพิ่มเติม</p>
+                                  )}
+                                </motion.div>
+                              </td>
+                            </tr>
                           )}
-                        </td>
+                        </AnimatePresence>
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-                        {/* action detail disclosure toggler */}
-                        <td className="py-4 pr-6 pl-4 text-center">
-                          <button
-                            type="button"
-                            onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black border border-slate-200 hover:border-brand-blue/30 dark:border-slate-800 text-slate-500 hover:text-brand-blue rounded-lg transition cursor-pointer"
-                          >
-                            <span>ดูประวัติ</span>
-                            {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                          </button>
-                        </td>
-                      </tr>
+            {/* Mobile Only Card List Layout */}
+            <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+              {paginatedLogs.map((log) => {
+                const isExpanded = expandedLogId === log.id;
+                const dateStr = new Date(log.created_at).toLocaleString('th-TH', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  second: '2-digit'
+                });
 
-                      {/* Disclosure details */}
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <tr>
-                            <td colSpan={6} className="bg-[#FAFAFA] dark:bg-slate-950/60 p-5 pl-12 pr-6 border-b border-slate-100 dark:border-slate-850">
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="space-y-3.5 text-left"
-                              >
-                                <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-2">
-                                  <h4 className="text-[11px] font-black text-[#0f2d52] dark:text-slate-300 uppercase tracking-widest font-mono flex items-center gap-1.5">
-                                    <Terminal size={12} className="text-slate-400" />
-                                    Detailed Log Metadata & Raw System Context
-                                  </h4>
-                                  <span className="text-[10px] text-slate-400 font-mono">ID: {log.id}</span>
-                                </div>
+                return (
+                  <div 
+                    key={log.id} 
+                    className={`p-4 transition-all space-y-2.5 ${
+                      log.log_level === 'CRITICAL' ? 'bg-red-50/10' : ''
+                    }`}
+                  >
+                    {/* Card Header Row */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[10px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] border ${getLevelBadgeClass(log.log_level)}`}>
+                          {getLevelIcon(log.log_level)}
+                          {log.log_level}
+                        </span>
+                        <code className="text-[9px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded font-mono font-bold text-[#0f2d52] dark:text-slate-300">
+                          {log.category}
+                        </code>
+                      </div>
+                      <span className="text-slate-400 dark:text-slate-500 font-bold font-mono">
+                        {dateStr}
+                      </span>
+                    </div>
 
-                                {log.details ? (
-                                  <pre className="p-4 bg-[#0a0f1d] border border-slate-950 rounded-xl overflow-auto text-xs font-mono text-cyan-400 leading-relaxed scrollbar-hide select-text">
-                                    {log.details}
-                                  </pre>
-                                ) : (
-                                  <p className="text-xs text-slate-400 italic">ไม่มีข้อมูลดีบั๊กสรุปของประวัติรายละเอียดเพิ่มเติม</p>
-                                )}
-                              </motion.div>
-                            </td>
-                          </tr>
+                    {/* Message content */}
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200 select-all leading-relaxed">
+                      {log.message}
+                    </div>
+
+                    {/* User system info & expand details button */}
+                    <div className="flex items-center justify-between gap-4 text-[10px] pt-1">
+                      <div className="flex-1 min-w-0">
+                        {log.user_name ? (
+                          <span className="inline-flex items-center gap-1 text-slate-500 dark:text-slate-400 font-bold overflow-hidden text-ellipsis whitespace-nowrap max-w-full">
+                            <UserCheck size={11} className="text-[#6b8daf] shrink-0" />
+                            <span className="truncate">{log.user_name}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-350 dark:text-slate-650 italic">System Auto</span>
                         )}
-                      </AnimatePresence>
-                    </React.Fragment>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[9px] font-black border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-brand-blue rounded-xl transition cursor-pointer shrink-0"
+                      >
+                        <span>รายละเอียด</span>
+                        {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                      </button>
+                    </div>
+
+                    {/* Detail Panel */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden bg-[#FAFAFA] dark:bg-slate-950/60 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 text-left space-y-2 mt-1"
+                        >
+                          <div className="flex justify-between items-center text-[8px] text-slate-400 tracking-wider">
+                            <span className="font-mono">RAW SYSTEM CONTEXT</span>
+                            <span className="font-mono">ID: {log.id}</span>
+                          </div>
+                          {log.details ? (
+                            <pre className="p-2.5 bg-[#0a0f1d] border border-slate-950 rounded-xl overflow-auto text-[10px] font-mono text-cyan-400 leading-normal scrollbar-hide select-text max-h-[160px]">
+                              {log.details}
+                            </pre>
+                          ) : (
+                            <p className="text-[10px] text-slate-400 italic">ไม่มีข้อมูลดีบั๊กสรุปของประวัติรายละเอียดเพิ่มเติม</p>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Pagination controls */}
+        {!loading && filteredLogs.length > LOGS_PER_PAGE && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-500 font-thai">
+            <div>
+              แสดง {startIndex + 1} - {endIndex} จาก {filteredLogs.length} รายการ
+            </div>
+            
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl text-slate-700 dark:text-slate-300 transition disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center"
+                title="หน้าก่อนหน้า"
+              >
+                <ChevronLeft size={14} />
+              </button>
+
+              {/* Render page numbers nicely */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                  return (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl font-black text-xs transition cursor-pointer flex items-center justify-center ${
+                        currentPage === page
+                          ? 'bg-brand-blue text-white shadow-md shadow-brand-blue/15'
+                          : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {page}
+                    </button>
                   );
-                })}
-              </tbody>
-            </table>
+                }
+                if (page === 2 || page === totalPages - 1) {
+                  return (
+                    <span key={page} className="px-1 text-slate-350 dark:text-slate-650">
+                      ...
+                    </span>
+                  );
+                }
+                return null;
+              })}
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl text-slate-750 dark:text-slate-300 transition disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center"
+                title="หน้าถัดไป"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -60,6 +60,7 @@ supabase.auth.getSession = async () => {
 
       if (isTokenErr) {
         clearLocalAuth();
+        return { data: { session: null }, error: null };
       }
     }
     return res;
@@ -74,6 +75,44 @@ supabase.auth.getSession = async () => {
 
     if (isTokenErr) {
       clearLocalAuth();
+      return { data: { session: null }, error: null };
+    }
+    throw err;
+  }
+};
+
+// Also intercept getUser to prevent unhandled rejections
+const originalGetUser = supabase.auth.getUser.bind(supabase.auth);
+supabase.auth.getUser = async (jwt?: string) => {
+  try {
+    const res = await originalGetUser(jwt);
+    if (res?.error) {
+      const errMsg = res.error.message || '';
+      const isTokenErr = 
+        errMsg.toLowerCase().includes('refresh token') || 
+        errMsg.toLowerCase().includes('refresh_token') || 
+        errMsg.toLowerCase().includes('invalid_grant') ||
+        errMsg.toLowerCase().includes('token not found') ||
+        errMsg.toLowerCase().includes('grant_not_found');
+
+      if (isTokenErr) {
+        clearLocalAuth();
+        return { data: { user: null }, error: null };
+      }
+    }
+    return res;
+  } catch (err: any) {
+    const errMsg = err?.message || '';
+    const isTokenErr = 
+      errMsg.toLowerCase().includes('refresh token') || 
+      errMsg.toLowerCase().includes('refresh_token') || 
+      errMsg.toLowerCase().includes('invalid_grant') ||
+      errMsg.toLowerCase().includes('token not found') ||
+      errMsg.toLowerCase().includes('grant_not_found');
+
+    if (isTokenErr) {
+      clearLocalAuth();
+      return { data: { user: null }, error: null };
     }
     throw err;
   }

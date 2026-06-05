@@ -98,3 +98,18 @@ option {
   color: #f8fafc;
 }
 
+/* Hide standard browser calendar picker icon so custom icon doesn't overlap/look messy */
+.custom-datepicker input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  z-index: 10;
+}
+.custom-datepicker input[type="date"] {
+  position: relative;
+}
+
+

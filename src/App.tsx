@@ -140,7 +140,6 @@ export default function App() {
     };
 
     const handleError = (e: ErrorEvent) => {
-      console.error('Global Error caught:', e.error || e.message);
       const errMsg = serializeError(e.error) || e.message || '';
       
       const isTokenError = 
@@ -155,12 +154,12 @@ export default function App() {
         clearAuthSession();
         return;
       }
+      console.error('Global Error caught:', e.error || e.message);
       setError(`เกิดข้อผิดพลาด: ${e.error?.message || e.message || 'ไม่ทราบสาเหตุ'}`);
     };
     window.addEventListener('error', handleError);
 
     const handleRejection = (e: PromiseRejectionEvent) => {
-      console.error('Global Promise Rejection caught:', e.reason);
       const errMsg = serializeError(e.reason);
 
       const isTokenError = 
@@ -175,6 +174,7 @@ export default function App() {
         clearAuthSession();
         return;
       }
+      console.error('Global Promise Rejection caught:', e.reason);
     };
     window.addEventListener('unhandledrejection', handleRejection);
 

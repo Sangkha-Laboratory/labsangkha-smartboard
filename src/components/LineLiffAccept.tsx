@@ -407,7 +407,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
       .catch(notifyErr => console.warn('❌ Failed to trigger LINE notification update:', notifyErr));
 
       // Successfully logged
-      await writeLog('INFO', 'LINE_LIFF_ACCEPT', `พนักงาน ${currentUserName} ร่วมรับงานในหมวดหมู่ผ่าน LIFF สำเร็จ`, {
+      await writeLog('INFO', 'LINE_LIFF_ACCEPT', `เจ้าหน้าที่ ${currentUserName} ร่วมรับงานในหมวดหมู่ผ่าน LIFF สำเร็จ`, {
         handoverId: targetId,
         acceptedCount: selectedTaskIds.size,
         acceptedIds: Array.from(selectedTaskIds),

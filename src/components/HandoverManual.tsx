@@ -375,7 +375,7 @@ export default function HandoverManual({ onClose }: HandoverManualProps) {
                       เจ้าหน้าที่เทคนิคการแพทย์ทุกคนต้องเข้าใช้ระบบด้วยบัญชีสิทธิ์ส่วนฐานข้อมูลโรงพยาบาล ระบบจะจดจำประวัติผู้ลงชื่อ (Logged-in Practitioner) เพื่อความถูกต้องของกฎหมายเวชระเบียนแบบดิจิทัล
                     </p>
                     <ul className="text-xs text-slate-500 font-bold space-y-1.5 pl-4 list-disc">
-                      <li>สลับบทบาทหน้า Portal (หัวหน้าเวร Admin / พนักงานเวร User)</li>
+                      <li>สลับบทบาทหน้า Portal (หัวหน้าเวร Admin / เจ้าหน้าที่เวร User)</li>
                       <li>สัญลักษณ์แจ้งเตือนมุมบนของระบบจะระบุชื่อผู้ปฏิบัติหน้าที่ปัจจุบัน</li>
                       <li>ระบบมีกลไกเซสชันอัตโนมัติเพื่อป้องกันการสวมรอยบุคคล</li>
                     </ul>
