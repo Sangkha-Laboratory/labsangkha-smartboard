@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Megaphone, X, ArrowRight, Eye, AlertCircle, Volume2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Announcement, getAnnouncements } from '../lib/announcements';
+import { Announcement, getAnnouncements, subscribeToAnnouncements } from '../lib/announcements';
 
 export default function AnnouncementBar() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -10,7 +10,7 @@ export default function AnnouncementBar() {
   const [selectedAnn, setSelectedAnn] = useState<Announcement | null>(null);
 
   useEffect(() => {
-    getAnnouncements().then(list => {
+    const handleUpdate = (list: Announcement[]) => {
       // Prioritize pinned and critical announcements
       const sorted = [...list].sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
@@ -20,7 +20,22 @@ export default function AnnouncementBar() {
         return 0;
       });
       setAnnouncements(sorted);
-    });
+      // Reset indicator to active if current index is out of bounds
+      setCurrentIndex(prev => {
+        if (prev >= sorted.length) return 0;
+        return prev;
+      });
+    };
+
+    // Initial fetch
+    getAnnouncements().then(handleUpdate);
+
+    // Subscribe to real-time changes
+    const unsubscribe = subscribeToAnnouncements(handleUpdate);
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // Rotate announcements every 12 seconds if there are multiple (longer interval to let users read & manual nav is active)

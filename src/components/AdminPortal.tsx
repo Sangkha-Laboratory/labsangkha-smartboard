@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getAnnouncements, saveAnnouncement, deleteAnnouncement, Announcement } from '../lib/announcements';
+import { getAnnouncements, saveAnnouncement, deleteAnnouncement, Announcement, subscribeToAnnouncements } from '../lib/announcements';
 import AdminLogViewer from './AdminLogViewer';
 import { 
   LayoutDashboard, 
@@ -734,10 +734,18 @@ export default function AdminPortal({
     loadAnnouncements();
     const interval = setInterval(() => {
       fetchDashboardData();
-      loadAnnouncements();
     }, 30000);
     return () => clearInterval(interval);
   }, [fetchDashboardData, loadAnnouncements]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAnnouncements((list) => {
+      setAnnouncements(list);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'Users') {

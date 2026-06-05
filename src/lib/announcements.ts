@@ -319,3 +319,29 @@ export async function deleteAnnouncement(id: string): Promise<boolean> {
   saveLocalAnnouncements(updated);
   return true;
 }
+
+/**
+ * Subscribe to real-time changes to the announcements table
+ */
+export function subscribeToAnnouncements(onUpdate: (list: Announcement[]) => void) {
+  // Use schema: 'handover_sys' to match the custom schema configured in our supabase client
+  const channel = supabase
+    .channel('realtime_announcements')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'handover_sys', table: 'announcements' },
+      async () => {
+        console.log('📢 Realtime: Announcement change detected! Fetching latest...');
+        const updatedList = await getAnnouncements();
+        onUpdate(updatedList);
+      }
+    )
+    .subscribe((status) => {
+      console.log(`📢 Realtime: Announcement subscription status: ${status}`);
+    });
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+

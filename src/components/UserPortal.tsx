@@ -39,7 +39,7 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 import { supabase } from '../lib/supabase';
-import { getAnnouncements, Announcement } from '../lib/announcements';
+import { getAnnouncements, Announcement, subscribeToAnnouncements } from '../lib/announcements';
 import ShiftHistory from './ShiftHistory';
 import HandoverForm from './HandoverForm';
 
@@ -336,6 +336,15 @@ export default function UserPortal({
   useEffect(() => {
     fetchUserDashboardData();
   }, [fetchUserDashboardData]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAnnouncements((list) => {
+      setAnnouncements(list);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   // Filtering handovers
   const filteredMyHandovers = myHandovers.filter(h => {
