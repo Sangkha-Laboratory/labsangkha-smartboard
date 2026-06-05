@@ -308,14 +308,8 @@ export default function App() {
 
         if (data.role === 'admin') {
           setIsAdmin(true);
-          if (!isAnyViewActive) {
-            setIsAdminPortal(true);
-          }
         } else {
           setIsAdmin(false);
-          if (!isAnyViewActive) {
-            setIsUserPortal(true);
-          }
         }
       }
     } catch (e) {
@@ -326,6 +320,16 @@ export default function App() {
   };
 
   const activeUser = userProfile || localUserProfile;
+
+  useEffect(() => {
+    if (activeUser && !isAdminPortal && !isUserPortal && !showManual && !showContact && !showSafety) {
+      if (activeUser.role === 'admin') {
+        setIsAdminPortal(true);
+      } else {
+        setIsUserPortal(true);
+      }
+    }
+  }, [activeUser, isAdminPortal, isUserPortal, showManual, showContact, showSafety]);
 
   useEffect(() => {
     if (isDarkMode) {
