@@ -26,22 +26,48 @@ export default function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [isAdminPortal, setIsAdminPortal] = useState(() => {
-    return localStorage.getItem('sangkha_view_isAdminPortal') === 'true';
+    const val = sessionStorage.getItem('sangkha_view_isAdminPortal');
+    if (val !== null) return val === 'true';
+    
+    // Fallback: If opening a new tab and logged-in, auto-redirect to portal immediately
+    const savedLocalUser = localStorage.getItem('sangkha_handover_local_user');
+    if (savedLocalUser) {
+      try {
+        const u = JSON.parse(savedLocalUser);
+        return u.role === 'admin';
+      } catch {
+        return false;
+      }
+    }
+    return false;
   });
   const [isUserPortal, setIsUserPortal] = useState(() => {
-    return localStorage.getItem('sangkha_view_isUserPortal') === 'true';
+    const val = sessionStorage.getItem('sangkha_view_isUserPortal');
+    if (val !== null) return val === 'true';
+
+    // Fallback: If opening a new tab and logged-in, auto-redirect to portal immediately
+    const savedLocalUser = localStorage.getItem('sangkha_handover_local_user');
+    if (savedLocalUser) {
+      try {
+        const u = JSON.parse(savedLocalUser);
+        return u.role !== 'admin';
+      } catch {
+        return false;
+      }
+    }
+    return false;
   });
   const [showManual, setShowManual] = useState(() => {
-    return localStorage.getItem('sangkha_view_showManual') === 'true';
+    return sessionStorage.getItem('sangkha_view_showManual') === 'true';
   });
   const [showContact, setShowContact] = useState(() => {
-    return localStorage.getItem('sangkha_view_showContact') === 'true';
+    return sessionStorage.getItem('sangkha_view_showContact') === 'true';
   });
   const [showSafety, setShowSafety] = useState(() => {
-    return localStorage.getItem('sangkha_view_showSafety') === 'true';
+    return sessionStorage.getItem('sangkha_view_showSafety') === 'true';
   });
   const [safetyTab, setSafetyTab] = useState<'public_privacy' | 'public_terms'>(() => {
-    return (localStorage.getItem('sangkha_view_safetyTab') as any) || 'public_privacy';
+    return (sessionStorage.getItem('sangkha_view_safetyTab') as any) || 'public_privacy';
   });
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +86,17 @@ export default function App() {
     keysToRemove.forEach(k => localStorage.removeItem(k));
     localStorage.removeItem('sangkha_view_isAdminPortal');
     localStorage.removeItem('sangkha_view_isUserPortal');
+    localStorage.removeItem('sangkha_view_showManual');
+    localStorage.removeItem('sangkha_view_showContact');
+    localStorage.removeItem('sangkha_view_showSafety');
+    localStorage.removeItem('sangkha_view_safetyTab');
+
+    sessionStorage.removeItem('sangkha_view_isAdminPortal');
+    sessionStorage.removeItem('sangkha_view_isUserPortal');
+    sessionStorage.removeItem('sangkha_view_showManual');
+    sessionStorage.removeItem('sangkha_view_showContact');
+    sessionStorage.removeItem('sangkha_view_showSafety');
+    sessionStorage.removeItem('sangkha_view_safetyTab');
     
     // Clear and reset state to logged out / defaults safely
     setUser(null);
@@ -80,9 +117,31 @@ export default function App() {
   };
 
   useEffect(() => {
+    const serializeError = (err: any): string => {
+      if (!err) return '';
+      if (typeof err === 'string') return err;
+      let str = '';
+      if (err.message) str += ' ' + err.message;
+      if (err.description) str += ' ' + err.description;
+      if (err.error_description) str += ' ' + err.error_description;
+      if (err.error) {
+        if (typeof err.error === 'string') {
+          str += ' ' + err.error;
+        } else {
+          str += ' ' + (err.error.message || err.error.error_description || '');
+        }
+      }
+      try {
+        str += ' ' + JSON.stringify(err);
+      } catch {
+        // ignore
+      }
+      return str;
+    };
+
     const handleError = (e: ErrorEvent) => {
       console.error('Global Error caught:', e.error || e.message);
-      const errMsg = e.error?.message || e.message || '';
+      const errMsg = serializeError(e.error) || e.message || '';
       
       const isTokenError = 
         errMsg.toLowerCase().includes('refresh token') || 
@@ -96,13 +155,13 @@ export default function App() {
         clearAuthSession();
         return;
       }
-      setError(`เกิดข้อผิดพลาด: ${errMsg || 'ไม่ทราบสาเหตุ'}`);
+      setError(`เกิดข้อผิดพลาด: ${e.error?.message || e.message || 'ไม่ทราบสาเหตุ'}`);
     };
     window.addEventListener('error', handleError);
 
     const handleRejection = (e: PromiseRejectionEvent) => {
       console.error('Global Promise Rejection caught:', e.reason);
-      const errMsg = e.reason?.message || String(e.reason || '');
+      const errMsg = serializeError(e.reason);
 
       const isTokenError = 
         errMsg.toLowerCase().includes('refresh token') || 
@@ -238,25 +297,23 @@ export default function App() {
       
       if (!error && data) {
         setUserProfile(data);
+        
+        // Define if any view is currently set to true in sessionStorage
+        const isAnyViewActive = 
+          sessionStorage.getItem('sangkha_view_isAdminPortal') === 'true' ||
+          sessionStorage.getItem('sangkha_view_isUserPortal') === 'true' ||
+          sessionStorage.getItem('sangkha_view_showManual') === 'true' ||
+          sessionStorage.getItem('sangkha_view_showContact') === 'true' ||
+          sessionStorage.getItem('sangkha_view_showSafety') === 'true';
+
         if (data.role === 'admin') {
           setIsAdmin(true);
-          const hasStored = 
-            localStorage.getItem('sangkha_view_isAdminPortal') !== null ||
-            localStorage.getItem('sangkha_view_isUserPortal') !== null ||
-            localStorage.getItem('sangkha_view_showManual') !== null ||
-            localStorage.getItem('sangkha_view_showContact') !== null ||
-            localStorage.getItem('sangkha_view_showSafety') !== null;
-          if (!hasStored) {
+          if (!isAnyViewActive) {
             setIsAdminPortal(true);
           }
         } else {
-          const hasStored = 
-            localStorage.getItem('sangkha_view_isAdminPortal') !== null ||
-            localStorage.getItem('sangkha_view_isUserPortal') !== null ||
-            localStorage.getItem('sangkha_view_showManual') !== null ||
-            localStorage.getItem('sangkha_view_showContact') !== null ||
-            localStorage.getItem('sangkha_view_showSafety') !== null;
-          if (!hasStored) {
+          setIsAdmin(false);
+          if (!isAnyViewActive) {
             setIsUserPortal(true);
           }
         }
@@ -279,12 +336,12 @@ export default function App() {
   }, [isDarkMode]);
 
   useEffect(() => {
-    localStorage.setItem('sangkha_view_isAdminPortal', String(isAdminPortal));
-    localStorage.setItem('sangkha_view_isUserPortal', String(isUserPortal));
-    localStorage.setItem('sangkha_view_showManual', String(showManual));
-    localStorage.setItem('sangkha_view_showContact', String(showContact));
-    localStorage.setItem('sangkha_view_showSafety', String(showSafety));
-    localStorage.setItem('sangkha_view_safetyTab', safetyTab);
+    sessionStorage.setItem('sangkha_view_isAdminPortal', String(isAdminPortal));
+    sessionStorage.setItem('sangkha_view_isUserPortal', String(isUserPortal));
+    sessionStorage.setItem('sangkha_view_showManual', String(showManual));
+    sessionStorage.setItem('sangkha_view_showContact', String(showContact));
+    sessionStorage.setItem('sangkha_view_showSafety', String(showSafety));
+    sessionStorage.setItem('sangkha_view_safetyTab', safetyTab);
   }, [isAdminPortal, isUserPortal, showManual, showContact, showSafety, safetyTab]);
 
   const handleLogout = async () => {
@@ -303,6 +360,15 @@ export default function App() {
     localStorage.removeItem('sangkha_view_safetyTab');
     localStorage.removeItem('user_portal_active_tab');
     localStorage.removeItem('admin_portal_active_tab');
+
+    sessionStorage.removeItem('sangkha_view_isAdminPortal');
+    sessionStorage.removeItem('sangkha_view_isUserPortal');
+    sessionStorage.removeItem('sangkha_view_showManual');
+    sessionStorage.removeItem('sangkha_view_showContact');
+    sessionStorage.removeItem('sangkha_view_showSafety');
+    sessionStorage.removeItem('sangkha_view_safetyTab');
+    sessionStorage.removeItem('user_portal_active_tab');
+    sessionStorage.removeItem('admin_portal_active_tab');
 
     setIsAdminPortal(false);
     setIsUserPortal(false);

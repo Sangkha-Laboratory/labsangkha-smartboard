@@ -21,3 +21,61 @@ export const supabase = createClient(
     }
   }
 );
+
+// Centralized session cleaner helper
+const clearLocalAuth = () => {
+  console.warn('Silently clearing stale user session due to Auth / Refresh Token Error in Supabase Client');
+  localStorage.removeItem('sangkha_handover_local_user');
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.startsWith('sb-') || key.includes('auth-token') || key.includes('supabase.auth.token'))) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+  localStorage.removeItem('sangkha_view_isAdminPortal');
+  localStorage.removeItem('sangkha_view_isUserPortal');
+  
+  try {
+    supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+  } catch {
+    // ignore
+  }
+};
+
+// Intercept getSession calls to prevent unhandled refresh token errors in components
+const originalGetSession = supabase.auth.getSession.bind(supabase.auth);
+supabase.auth.getSession = async () => {
+  try {
+    const res = await originalGetSession();
+    if (res?.error) {
+      const errMsg = res.error.message || '';
+      const isTokenErr = 
+        errMsg.toLowerCase().includes('refresh token') || 
+        errMsg.toLowerCase().includes('refresh_token') || 
+        errMsg.toLowerCase().includes('invalid_grant') ||
+        errMsg.toLowerCase().includes('token not found') ||
+        errMsg.toLowerCase().includes('grant_not_found');
+
+      if (isTokenErr) {
+        clearLocalAuth();
+      }
+    }
+    return res;
+  } catch (err: any) {
+    const errMsg = err?.message || '';
+    const isTokenErr = 
+      errMsg.toLowerCase().includes('refresh token') || 
+      errMsg.toLowerCase().includes('refresh_token') || 
+      errMsg.toLowerCase().includes('invalid_grant') ||
+      errMsg.toLowerCase().includes('token not found') ||
+      errMsg.toLowerCase().includes('grant_not_found');
+
+    if (isTokenErr) {
+      clearLocalAuth();
+    }
+    throw err;
+  }
+};
+
