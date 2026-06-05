@@ -444,6 +444,17 @@ Deno.serve(async (req) => {
               console.warn("Legacy RPC error:", e);
             }
 
+            // Fetch users map to display real names
+            const usersMap: Record<string, string> = {};
+            try {
+              const { data: usersData } = await supabase.from('users').select('id, full_name');
+              if (usersData) {
+                usersData.forEach((u: any) => { usersMap[u.id] = u.full_name; });
+              }
+            } catch (err) {
+              console.warn("Failed to fetch users map in webhook:", err);
+            }
+
             // Fetch the final batch tasks to build the Flex Message
             let batchTasks: any[] = [];
             try {
@@ -472,11 +483,28 @@ Deno.serve(async (req) => {
 
             const shortId = refTask.task_number || `LAB-${handoverId.substring(0, 4).toUpperCase()}`;
             const assignments = batchTasks.map((t) => {
-              const recName = t.receiver_line_name || (t.id === handoverId ? displayName : "ไม่ระบุชื่อ");
+              // Determine display name
+              let recName = "ไม่ระบุชื่อ";
+              let channel = "LINE";
+
+              if (t.id === handoverId) {
+                recName = displayName;
+                channel = "LINE";
+              } else if (t.receiver_line_name) {
+                recName = t.receiver_line_name;
+                channel = "LINE";
+              } else if (t.receiver_id && usersMap[t.receiver_id]) {
+                recName = usersMap[t.receiver_id];
+                channel = "เว็บ";
+              } else if (t.receiver_id) {
+                recName = t.receiver_id;
+                channel = "เว็บ";
+              }
+
               return {
                 name: recName,
                 title: t.title || "ไม่มีหัวข้อ",
-                channel: "LINE"
+                channel: channel
               };
             });
 
