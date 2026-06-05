@@ -15,7 +15,9 @@ import {
   AlertCircle, 
   X,
   Share2,
-  Info
+  Info,
+  ChevronRight,
+  RefreshCw
 } from 'lucide-react';
 import { maskSensitiveData } from '../lib/maskUtils';
 import { writeLog } from '../lib/logger';
@@ -74,6 +76,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
   const [isSuccess, setIsSuccess] = useState(false);
   const [acceptedTasksList, setAcceptedTasksList] = useState<BatchTask[]>([]);
   const [usersMap, setUsersMap] = useState<Record<string, string>>({});
+  const [recentHandovers, setRecentHandovers] = useState<any[]>([]);
 
   useEffect(() => {
     // Helper to extract parameters from URL query, hash, or LINE LIFF storage
@@ -188,14 +191,10 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
 
   // Fetch handover tasks
   useEffect(() => {
-    if (!targetId) {
-      setIsLoading(false);
-      return;
-    }
-
     const loadData = async () => {
       try {
         setIsLoading(true);
+        setError(null);
 
         // a. Fetch all users for name-mapping
         const { data: usersData } = await supabase
@@ -209,6 +208,21 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
           });
         }
         setUsersMap(m);
+
+        if (!targetId) {
+          console.log("[LIFF_Accept] No target ID, loading recent handovers for portal view");
+          // No specific handover ID, load the 15 most recent handovers
+          const { data: recentItems, error: recentError } = await supabase
+            .from('handovers')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(15);
+
+          if (recentError) throw recentError;
+          setRecentHandovers(recentItems || []);
+          setIsLoading(false);
+          return;
+        }
 
         // b. Fetch target handover
         const { data: targetItem, error: targetError } = await supabase
@@ -269,7 +283,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
 
         setBatchTasks(formattedTasks);
       } catch (err: any) {
-        console.error("Error loading LIFF handover details:", err);
+        console.error("Error loading LIFF details:", err);
         setError(err.message || "เกิดข้อขัดข้องในการเรียกข้อมูลจากระบบฐานข้อมูล");
       } finally {
         setIsLoading(false);
@@ -427,20 +441,236 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
   const getAvatarLetter = (name: string) => name ? name.trim().slice(0, 1) : '?';
 
   if (!targetId) {
+    const pendingRecent = recentHandovers.filter(item => item.status === 'Pending');
+    const acceptedRecent = recentHandovers.filter(item => item.status !== 'Pending');
+    const currentUserName = liffProfile?.displayName || mockProfileName;
+
+    const handleRefresh = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error: err } = await supabase
+          .from('handovers')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(15);
+        if (err) throw err;
+        setRecentHandovers(data || []);
+      } catch (e: any) {
+        console.error("Refresh recent error:", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     return (
-      <div className="min-h-screen bg-[#DAEAF7] flex items-center justify-center p-4 font-sans text-[#1A1A2E]">
-        <div className="bg-white rounded-3xl w-full max-w-sm p-8 text-center shadow-lg">
-          <AlertCircle size={44} className="text-red-500 mx-auto mb-4" />
-          <h2 className="text-lg font-bold">ข้อมูลพารามิเตอร์ไม่ครบถ้วน</h2>
-          <p className="text-sm text-[#6B7280] mt-2 mb-6">
-            ลิงค์นี้ไม่มีรหัสรันงานที่ต้องการรับ กรุณาเข้าใช้งานผ่านปุ่ม "เลือกรับงาน" จากการแจ้งเตือนทางกลุ่มไลน์
-          </p>
-          <button 
-            onClick={() => window.location.href = '/'}
-            className="w-full h-11 bg-[#2B8BE8] text-white font-bold rounded-xl hover:bg-[#1E6FC7] transition-all"
-          >
-            กลับหน้าหลักเว็บไซต์
-          </button>
+      <div className="min-h-screen bg-[#DAEAF7] flex items-start justify-center p-0 sm:py-8 sm:px-4 font-sans text-[#1A1A2E]">
+        <div className="w-full max-w-md bg-white sm:rounded-[2.5rem] shadow-2xl overflow-hidden min-h-screen sm:min-h-[790px] flex flex-col relative border border-transparent sm:border-gray-100 animate-fadeIn">
+          
+          {/* Header */}
+          <div className="bg-white border-b border-[#E5E7EB] px-5 py-4 flex items-center justify-between sticky top-0 z-10">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-[#2B8BE8]">
+                <Clock size={16} />
+              </div>
+              <div>
+                <h1 className="text-[15px] font-extrabold leading-tight">พอร์ทัลรับเวร LINE LIFF</h1>
+                <p className="text-[11px] text-[#6B7280] font-medium leading-none mt-0.5">กลุ่มงานเทคนิคการแพทย์ รพ.สังขะ</p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="p-2 rounded-lg text-gray-500 hover:bg-slate-100 disabled:opacity-50 transition-colors"
+              title="รีเฟรชข้อมูล"
+            >
+              <RefreshCw size={17} className={`${isLoading ? 'animate-spin text-[#2B8BE8]' : ''}`} />
+            </button>
+          </div>
+
+          {/* Profile Banner */}
+          <div className="bg-gradient-to-r from-[#EFF6FF] to-[#DBEAFE] border-b border-[#BFDBFE] px-5 py-3.5 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#2B8BE8] flex items-center justify-center font-bold text-white text-sm shrink-0">
+              {getAvatarLetter(currentUserName)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-bold text-[#1E40AF] truncate">
+                  {currentUserName}
+                </span>
+                {isEmulated && (
+                  <button 
+                    onClick={() => setShowNameEditor(!showNameEditor)}
+                    className="text-[9px] bg-blue-100/80 hover:bg-blue-200 text-blue-700 px-1.5 py-0.5 rounded font-black border border-blue-200/50 shrink-0"
+                  >
+                    แก้ไขชื่อจำลอง
+                  </button>
+                )}
+              </div>
+              <div className="text-[10.5px] text-[#3B82F6] font-medium mt-0.5 flex items-center gap-1">
+                <ShieldCheck size={11} className="text-blue-500 shrink-0" />
+                <span>{isEmulated ? 'ใช้งานโหมดจำลอง (Emulated)' : 'เชื่อมข้อมูลจาก LINE สำเร็จ'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Name Editor Popup if Emulated */}
+          {isEmulated && showNameEditor && (
+            <div className="bg-blue-50/50 border-b border-[#BFDBFE] px-5 py-3 animate-fadeIn">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">
+                ระบุชื่อของคุณเพื่อจำลองล็อกอินรับเวร
+              </label>
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  value={mockProfileName}
+                  onChange={(e) => setMockProfileName(e.target.value)}
+                  placeholder="พิมพ์ชื่อ-นามสกุล..."
+                  className="flex-1 px-3 py-1.5 text-xs border border-blue-200 rounded-xl outline-none bg-white font-semibold"
+                />
+                <button 
+                  onClick={() => setShowNameEditor(false)}
+                  className="px-3.5 py-1.5 bg-[#2B8BE8] text-white rounded-xl text-xs font-bold"
+                >
+                  ตกลง
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Main List Area */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+            
+            {/* 1. Pending Section */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-red-600">งานรอส่งมอบ-รับเวร ({pendingRecent.length})</h2>
+              </div>
+
+              {pendingRecent.length === 0 ? (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-center text-xs text-gray-500 font-medium">
+                  ไม่มีงานรอส่งมอบในขณะนี้ 🎉 ทุกรายการถูกรับทั้งหมดแล้ว
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {pendingRecent.map((item) => {
+                    const originalSender = usersMap[item.sender_id] || item.sender_name || 'เจ้าหน้าที่รพ.';
+                    const dateFormatted = new Date(item.created_at).toLocaleDateString('th-TH', { 
+                      day: '2-digit', 
+                      month: '2-digit',
+                      year: '2-digit'
+                    });
+                    const timeFormatted = new Date(item.created_at).toLocaleTimeString('th-TH', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    });
+
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setTargetId(item.id)}
+                        className="w-full text-left bg-white border border-red-100 hover:border-[#2B8BE8] p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-3 group"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase">
+                              {item.task_number || 'LAB-TASK'}
+                            </span>
+                            <span className="bg-[#FEF3C7] text-[#D97706] px-2 py-0.5 rounded-md text-[10px] font-bold">
+                              เวร{item.shift || 'ไม่ระบุ'}
+                            </span>
+                          </div>
+                          
+                          <h3 className="font-bold text-[13.5px] leading-snug text-slate-800 truncate mb-1">
+                            {item.title}
+                          </h3>
+                          
+                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-[#6B7280] font-medium">
+                            <span className="text-blue-600 font-semibold">{item.division}</span>
+                            <span>•</span>
+                            <span>โดย: {originalSender}</span>
+                            <span>•</span>
+                            <span className="text-slate-400">{dateFormatted} {timeFormatted} น.</span>
+                          </div>
+                        </div>
+
+                        <div className="w-8 h-8 rounded-full bg-red-50 group-hover:bg-blue-50 text-red-500 group-hover:text-[#2B8BE8] flex items-center justify-center shrink-0 transition-colors">
+                          <ChevronRight size={16} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 2. Recently Done Section */}
+            <div className="pt-2">
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-600">รายการส่งเวรล่าสุด ({acceptedRecent.length})</h2>
+              </div>
+
+              {acceptedRecent.length === 0 ? (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center text-xs text-gray-400 font-medium">
+                  ไม่มีประวัติงานช่วงเร็วๆ นี้
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {acceptedRecent.slice(0, 8).map((item) => {
+                    const originalSender = usersMap[item.sender_id] || item.sender_name || 'เจ้าหน้าที่รพ.';
+                    const originalReceiver = usersMap[item.receiver_id] || item.receiver_line_name || item.receiver_id || 'ผู้รับเวรแล้ว';
+
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setTargetId(item.id)}
+                        className="w-full text-left bg-slate-50/70 hover:bg-white border border-slate-105 hover:border-slate-300 p-3 rounded-xl transition-all flex items-center justify-between gap-3 group"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9.5px] font-bold">
+                              {item.task_number || 'LAB-DONE'}
+                            </span>
+                            <span className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded text-[9.5px] font-bold flex items-center gap-0.5">
+                              <Check size={9} /> รับเวรแล้ว
+                            </span>
+                          </div>
+                          
+                          <h4 className="font-bold text-[12.5px] leading-snug text-slate-700 truncate mb-0.5">
+                            {item.title}
+                          </h4>
+                          
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] text-[#8C93A3] font-medium">
+                            <span className="text-slate-600 font-semibold">{item.division}</span>
+                            <span>•</span>
+                            <span>ผู้รับเวร: {originalReceiver}</span>
+                          </div>
+                        </div>
+
+                        <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-slate-200 text-slate-400 group-hover:text-slate-600 flex items-center justify-center shrink-0 transition-colors">
+                          <ChevronRight size={14} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Footer Navigation */}
+          <div className="bg-white border-t border-[#E5E7EB] p-4">
+            <button 
+              onClick={() => window.location.href = '/'}
+              className="w-full h-11 bg-[#F0F6FC] text-[#1A1A2E] font-bold rounded-xl hover:bg-slate-100 transition-colors text-xs flex items-center justify-center gap-2"
+            >
+              <ChevronLeft size={14} /> กลับสู่หน้าจอสมาร์ทบอร์ดหลัก
+            </button>
+          </div>
+
         </div>
       </div>
     );

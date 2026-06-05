@@ -380,11 +380,20 @@ export default function App() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const currentView = urlParams.get('view') || '';
+  
+  // Robust LIFF detection (handles direct 'view=liff', pathnames, liff.state redirects, or presence of handover_id/id)
   const isLiff = 
     currentView === 'liff' || 
     window.location.pathname === '/liff' || 
     window.location.pathname.endsWith('/liff') || 
-    window.location.pathname.endsWith('/liff/');
+    window.location.pathname.endsWith('/liff/') ||
+    urlParams.has('handover_id') ||
+    urlParams.has('id') ||
+    urlParams.has('liff.state') ||
+    window.location.href.includes('liff.state') ||
+    window.location.hash.includes('liff.state') ||
+    window.location.hash.includes('view=liff') ||
+    window.location.hash.includes('handover_id=');
 
   if (isLiff) {
     return <LineLiffAccept isDarkMode={isDarkMode} onToggleDarkMode={() => setIsDarkMode(!isDarkMode)} />;
