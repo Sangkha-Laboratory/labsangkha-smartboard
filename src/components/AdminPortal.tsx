@@ -22,6 +22,8 @@ import {
   RefreshCw,
   LogOut,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
   MoreVertical,
   Menu,
@@ -119,6 +121,10 @@ export default function AdminPortal({
   const [handoverToDelete, setHandoverToDelete] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Pagination States
+  const [historyPage, setHistoryPage] = useState(1);
+  const [usersPage, setUsersPage] = useState(1);
+
   const handleDeleteHandover = async (id: string) => {
     setIsDeleting(true);
     try {
@@ -163,6 +169,15 @@ export default function AdminPortal({
   const [userPasswordInput, setUserPasswordInput] = useState('');
   const [userEmailInput, setUserEmailInput] = useState('');
   const [userIsActiveInput, setUserIsActiveInput] = useState(true);
+
+  // Reset page to 1 when filters or search terms change
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [historySearch, historyDivisionFilter, historyShiftFilter, historyStatusFilter, historyDateFilter]);
+
+  useEffect(() => {
+    setUsersPage(1);
+  }, [userSearchText, userRoleFilter, userStatusFilter]);
   
   // Delete User Confirmation Modal State
   const [isUserDeleteConfirmOpen, setIsUserDeleteConfirmOpen] = useState(false);
@@ -1007,6 +1022,43 @@ export default function AdminPortal({
     return true;
   });
 
+  const USERS_PER_PAGE = 10;
+  const paginatedUsers = filteredUsers.slice((usersPage - 1) * USERS_PER_PAGE, usersPage * USERS_PER_PAGE);
+  const totalUserPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE) || 1;
+
+  const filteredHandovers = handovers.filter(item => {
+    let match = true;
+    if (historySearch) {
+      const hSearch = historySearch.toLowerCase();
+      const matchTitle = (item.title || '').toLowerCase().includes(hSearch);
+      const matchDesc = (item.description || '').toLowerCase().includes(hSearch);
+      const matchSender = (item.sender?.full_name || '').toLowerCase().includes(hSearch);
+      const matchReceiver = (item.receiver?.full_name || '').toLowerCase().includes(hSearch);
+      const matchDivision = (item.division || '').toLowerCase().includes(hSearch);
+      if (!matchTitle && !matchDesc && !matchSender && !matchReceiver && !matchDivision) match = false;
+    }
+    if (historyDivisionFilter !== 'All' && item.division !== historyDivisionFilter) match = false;
+    if (historyShiftFilter !== 'All') {
+      let itemShift = item.shift || '';
+      const catField = item.category || '';
+      if (!itemShift && catField.includes('|')) {
+        const [s] = catField.split('|');
+        itemShift = s || '';
+      } else if (!itemShift) itemShift = catField;
+      if (itemShift !== historyShiftFilter) match = false;
+    }
+    if (historyStatusFilter !== 'All' && item.status !== historyStatusFilter) match = false;
+    if (historyDateFilter) {
+      const itemDate = item.handover_date ? String(item.handover_date).substring(0, 10) : '';
+      if (itemDate !== historyDateFilter) match = false;
+    }
+    return match;
+  });
+
+  const HANDOVERS_PER_PAGE = 10;
+  const paginatedHandovers = filteredHandovers.slice((historyPage - 1) * HANDOVERS_PER_PAGE, historyPage * HANDOVERS_PER_PAGE);
+  const totalHandoverPages = Math.ceil(filteredHandovers.length / HANDOVERS_PER_PAGE) || 1;
+
   return (
     <div className="flex min-h-screen bg-[#f3f7fa] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-thai">
       {/* Bottom Navigation (Mobile Only) */}
@@ -1546,34 +1598,7 @@ export default function AdminPortal({
                 </div>
                 <div>
                   <p className="text-2xl font-[905] text-green-500 leading-none">
-                    {handovers.filter(item => {
-                      let match = item.status === 'Accepted';
-                      if (!match) return false;
-                      if (historySearch) {
-                        const hSearch = historySearch.toLowerCase();
-                        const matchTitle = (item.title || '').toLowerCase().includes(hSearch);
-                        const matchDesc = (item.description || '').toLowerCase().includes(hSearch);
-                        const matchSender = (item.sender?.full_name || '').toLowerCase().includes(hSearch);
-                        const matchReceiver = (item.receiver?.full_name || '').toLowerCase().includes(hSearch);
-                        const matchDivision = (item.division || '').toLowerCase().includes(hSearch);
-                        if (!matchTitle && !matchDesc && !matchSender && !matchReceiver && !matchDivision) match = false;
-                      }
-                      if (historyDivisionFilter !== 'All' && item.division !== historyDivisionFilter) match = false;
-                      if (historyShiftFilter !== 'All') {
-                        let itemShift = item.shift || '';
-                        const catField = item.category || '';
-                        if (!itemShift && catField.includes('|')) {
-                          const [s] = catField.split('|');
-                          itemShift = s || '';
-                        } else if (!itemShift) itemShift = catField;
-                        if (itemShift !== historyShiftFilter) match = false;
-                      }
-                      if (historyDateFilter) {
-                        const itemDate = item.handover_date ? String(item.handover_date).substring(0, 10) : '';
-                        if (itemDate !== historyDateFilter) match = false;
-                      }
-                      return match;
-                    }).length}
+                    {filteredHandovers.filter(item => item.status === 'Accepted').length}
                   </p>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1.5">รับมอบหมายเวรสำเร็จ</p>
                 </div>
@@ -1605,35 +1630,7 @@ export default function AdminPortal({
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => {
-                      const filtered = handovers.filter(item => {
-                        let match = true;
-                        if (historySearch) {
-                          const hSearch = historySearch.toLowerCase();
-                          const matchTitle = (item.title || '').toLowerCase().includes(hSearch);
-                          const matchDesc = (item.description || '').toLowerCase().includes(hSearch);
-                          const matchSender = (item.sender?.full_name || '').toLowerCase().includes(hSearch);
-                          const matchReceiver = (item.receiver?.full_name || '').toLowerCase().includes(hSearch);
-                          const matchDivision = (item.division || '').toLowerCase().includes(hSearch);
-                          if (!matchTitle && !matchDesc && !matchSender && !matchReceiver && !matchDivision) match = false;
-                        }
-                        if (historyDivisionFilter !== 'All' && item.division !== historyDivisionFilter) match = false;
-                        if (historyShiftFilter !== 'All') {
-                          let itemShift = item.shift || '';
-                          const catField = item.category || '';
-                          if (!itemShift && catField.includes('|')) {
-                            const [s] = catField.split('|');
-                            itemShift = s || '';
-                          } else if (!itemShift) itemShift = catField;
-                          if (itemShift !== historyShiftFilter) match = false;
-                        }
-                        if (historyStatusFilter !== 'All' && item.status !== historyStatusFilter) match = false;
-                        if (historyDateFilter) {
-                          const itemDate = item.handover_date ? String(item.handover_date).substring(0, 10) : '';
-                          if (itemDate !== historyDateFilter) match = false;
-                        }
-                        return match;
-                      });
-                      handleExportCSV(filtered);
+                      handleExportCSV(filteredHandovers);
                     }}
                     className="h-11 px-4.5 bg-brand-blue hover:bg-brand-dark text-white rounded-xl text-xs font-black shadow-md shadow-brand-blue/10 transition-all flex items-center justify-center gap-1.5"
                   >
@@ -1738,152 +1735,96 @@ export default function AdminPortal({
                     </tr>
                   </thead>
                   <tbody>
-                    {handovers
-                      .filter(item => {
-                        let match = true;
-                        if (historySearch) {
-                          const hSearch = historySearch.toLowerCase();
-                          const matchTitle = (item.title || '').toLowerCase().includes(hSearch);
-                          const matchDesc = (item.description || '').toLowerCase().includes(hSearch);
-                          const matchSender = (item.sender?.full_name || '').toLowerCase().includes(hSearch);
-                          const matchReceiver = (item.receiver?.full_name || '').toLowerCase().includes(hSearch);
-                          const matchDivision = (item.division || '').toLowerCase().includes(hSearch);
-                          if (!matchTitle && !matchDesc && !matchSender && !matchReceiver && !matchDivision) match = false;
-                        }
-                        if (historyDivisionFilter !== 'All' && item.division !== historyDivisionFilter) match = false;
-                        if (historyShiftFilter !== 'All') {
-                          let itemShift = item.shift || '';
-                          const catField = item.category || '';
-                          if (!itemShift && catField.includes('|')) {
-                            const [s] = catField.split('|');
-                            itemShift = s || '';
-                          } else if (!itemShift) itemShift = catField;
-                          if (itemShift !== historyShiftFilter) match = false;
-                        }
-                        if (historyStatusFilter !== 'All' && item.status !== historyStatusFilter) match = false;
-                        if (historyDateFilter) {
-                          const itemDate = item.handover_date ? String(item.handover_date).substring(0, 10) : '';
-                          if (itemDate !== historyDateFilter) match = false;
-                        }
-                        return match;
-                      })
-                      .map((item, idx) => {
-                        const catField = item.category || '';
-                        let itemShift = item.shift || '';
-                        let itemCat = '';
-                        if (!itemShift && catField.includes('|')) {
-                          const [s, c] = catField.split('|');
-                          itemShift = s || 'ไม่ระบุ';
-                          itemCat = c || '';
-                        } else if (!itemShift) {
-                          itemShift = catField || 'ไม่ระบุ';
-                          itemCat = '';
-                        } else {
-                          itemCat = catField;
-                        }
+                    {paginatedHandovers.map((item, idx) => {
+                      const catField = item.category || '';
+                      let itemShift = item.shift || '';
+                      let itemCat = '';
+                      if (!itemShift && catField.includes('|')) {
+                        const [s, c] = catField.split('|');
+                        itemShift = s || 'ไม่ระบุ';
+                        itemCat = c || '';
+                      } else if (!itemShift) {
+                        itemShift = catField || 'ไม่ระบุ';
+                        itemCat = '';
+                      } else {
+                        itemCat = catField;
+                      }
 
-                        return (
-                          <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/80 hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer" onClick={() => setSelectedHandover(item)}>
-                            <td className="px-5 py-4 text-[13px] font-black text-slate-400 pl-6" onClick={(e) => e.stopPropagation()}>
-                              <span 
-                                onClick={() => navigator.clipboard.writeText(item.task_number || item.id)}
-                                className="cursor-copy bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-250/20 dark:border-slate-700 font-mono text-[12px]"
-                                title={item.task_number ? "คลิกเพื่อคัดลอกรหัสงาน" : "คลิกเพื่อคัดลอกรหัสหลัก"}
+                      return (
+                        <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/80 hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer" onClick={() => setSelectedHandover(item)}>
+                          <td className="px-5 py-4 text-[13px] font-black text-slate-400 pl-6" onClick={(e) => e.stopPropagation()}>
+                            <span 
+                              onClick={() => navigator.clipboard.writeText(item.task_number || item.id)}
+                              className="cursor-copy bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-250/20 dark:border-slate-700 font-mono text-[12px]"
+                              title={item.task_number ? "คลิกเพื่อคัดลอกรหัสงาน" : "คลิกเพื่อคัดลอกรหัสหลัก"}
+                            >
+                              {item.task_number || item.id.substring(0, 8).toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 min-w-[130px]">
+                            <p className="text-[13px] font-[900] text-[#0f2d52] dark:text-white leading-none">{formatThaiDate(item.handover_date)}</p>
+                            <span className="text-[12px] text-slate-400 font-bold flex items-center gap-1 mt-1"><Clock size={10} /> {formatTimeStr(item.created_at)}</span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border block w-fit ${
+                              item.division === 'Central Lab' ? 'text-brand-blue border-brand-blue/20 bg-brand-blue/5' : item.division === 'Blood Bank' ? 'text-violet-500 border-violet-500/20 bg-violet-50 dark:bg-violet-950/20' : 'text-slate-500 border-slate-200 bg-slate-50 dark:bg-slate-850 dark:border-slate-700'
+                            }`}>
+                              {item.division}
+                            </span>
+                            <span className="text-[12px] text-slate-400 font-[900] block mt-1">เวร{itemShift} {itemCat && `• ${itemCat}`}</span>
+                          </td>
+                          <td className="px-5 py-4 max-w-[200px]">
+                            <p className="text-sm font-[900] text-[#0f2d52] dark:text-slate-200 truncate leading-snug">{item.title}</p>
+                            <p className="text-[12px] text-slate-400 dark:text-slate-500 font-bold truncate mt-1">{item.description}</p>
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="text-[13px] font-[900] text-[#0f2d52] dark:text-slate-200 leading-snug">{item.sender?.full_name || 'System'}</p>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 block">Staff Sender</span>
+                          </td>
+                          <td className="px-5 py-4">
+                            {item.status === 'Accepted' ? (
+                              <div>
+                                <p className="text-[13px] font-[900] text-green-600 dark:text-green-400 leading-snug">{item.receiver?.full_name || item.receiver_line_name || 'ไม่ระบุ'}</p>
+                                <span className="text-[11px] font-bold text-green-500 uppercase tracking-widest mt-0.5 block">Accepted Staff</span>
+                              </div>
+                            ) : (
+                              <span className="text-[11px] font-extrabold text-amber-500 bg-amber-50 dark:bg-amber-950/20 border border-amber-500/10 px-2 py-0.5 rounded block w-fit">รอมอบหมาย</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-1.5">
+                              <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'Pending' ? 'bg-[#facc15]' : 'bg-[#22c55e]'}`} />
+                              <span className={`text-[12px] font-black ${item.status === 'Pending' ? 'text-yellow-600 dark:text-yellow-500' : 'text-green-600 dark:text-green-400'}`}>
+                                {item.status === 'Pending' ? 'รอรับเวร' : 'รับเวรแล้ว'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 text-center pr-6" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center gap-1">
+                              <button 
+                                onClick={() => setSelectedHandover(item)}
+                                className="w-8 h-8 rounded-lg text-[#0f2d52] dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-150/10 dark:border-slate-800 flex items-center justify-center transition-all"
+                                title="ดูรายละเอียดครบถ้วน"
                               >
-                                {item.task_number || item.id.substring(0, 8).toUpperCase()}
-                              </span>
-                            </td>
-                            <td className="px-5 py-4 min-w-[130px]">
-                              <p className="text-[13px] font-[900] text-[#0f2d52] dark:text-white leading-none">{formatThaiDate(item.handover_date)}</p>
-                              <span className="text-[12px] text-slate-400 font-bold flex items-center gap-1 mt-1"><Clock size={10} /> {formatTimeStr(item.created_at)}</span>
-                            </td>
-                            <td className="px-5 py-4">
-                              <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border block w-fit ${
-                                item.division === 'Central Lab' ? 'text-brand-blue border-brand-blue/20 bg-brand-blue/5' : item.division === 'Blood Bank' ? 'text-violet-500 border-violet-500/20 bg-violet-50 dark:bg-violet-950/20' : 'text-slate-500 border-slate-200 bg-slate-50 dark:bg-slate-850 dark:border-slate-700'
-                              }`}>
-                                {item.division}
-                              </span>
-                              <span className="text-[12px] text-slate-400 font-[900] block mt-1">เวร{itemShift} {itemCat && `• ${itemCat}`}</span>
-                            </td>
-                            <td className="px-5 py-4 max-w-[200px]">
-                              <p className="text-sm font-[900] text-[#0f2d52] dark:text-slate-200 truncate leading-snug">{item.title}</p>
-                              <p className="text-[12px] text-slate-400 dark:text-slate-500 font-bold truncate mt-1">{item.description}</p>
-                            </td>
-                            <td className="px-5 py-4">
-                              <p className="text-[13px] font-[900] text-[#0f2d52] dark:text-slate-200 leading-snug">{item.sender?.full_name || 'System'}</p>
-                              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 block">Staff Sender</span>
-                            </td>
-                            <td className="px-5 py-4">
-                              {item.status === 'Accepted' ? (
-                                <div>
-                                  <p className="text-[13px] font-[900] text-green-600 dark:text-green-400 leading-snug">{item.receiver?.full_name || item.receiver_line_name || 'ไม่ระบุ'}</p>
-                                  <span className="text-[11px] font-bold text-green-500 uppercase tracking-widest mt-0.5 block">Accepted Staff</span>
-                                </div>
-                              ) : (
-                                <span className="text-[11px] font-extrabold text-amber-500 bg-amber-50 dark:bg-amber-950/20 border border-amber-500/10 px-2 py-0.5 rounded block w-fit">รอมอบหมาย</span>
-                              )}
-                            </td>
-                            <td className="px-5 py-4">
-                              <div className="flex items-center gap-1.5">
-                                <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'Pending' ? 'bg-[#facc15]' : 'bg-[#22c55e]'}`} />
-                                <span className={`text-[12px] font-black ${item.status === 'Pending' ? 'text-yellow-600 dark:text-yellow-500' : 'text-green-600 dark:text-green-400'}`}>
-                                  {item.status === 'Pending' ? 'รอรับเวร' : 'รับเวรแล้ว'}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-5 py-4 text-center pr-6" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center justify-center gap-1">
-                                <button 
-                                  onClick={() => setSelectedHandover(item)}
-                                  className="w-8 h-8 rounded-lg text-[#0f2d52] dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-150/10 dark:border-slate-800 flex items-center justify-center transition-all"
-                                  title="ดูรายละเอียดครบถ้วน"
-                                >
-                                  <ExternalLink size={13} />
-                                </button>
-                                <button 
-                                  onClick={() => {
-                                    setHandoverToDelete(item);
-                                    setIsDeleteConfirmOpen(true);
-                                  }}
-                                  className="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-100 dark:border-red-950/40 flex items-center justify-center transition-all"
-                                  title="ลบรายการส่งเวรนี้"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                                <ExternalLink size={13} />
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  setHandoverToDelete(item);
+                                  setIsDeleteConfirmOpen(true);
+                                }}
+                                className="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-100 dark:border-red-950/40 flex items-center justify-center transition-all"
+                                title="ลบรายการส่งเวรนี้"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
 
-                    {handovers.filter(item => {
-                      let match = true;
-                      if (historySearch) {
-                        const hSearch = historySearch.toLowerCase();
-                        const matchTitle = (item.title || '').toLowerCase().includes(hSearch);
-                        const matchDesc = (item.description || '').toLowerCase().includes(hSearch);
-                        const matchSender = (item.sender?.full_name || '').toLowerCase().includes(hSearch);
-                        const matchReceiver = (item.receiver?.full_name || '').toLowerCase().includes(hSearch);
-                        const matchDivision = (item.division || '').toLowerCase().includes(hSearch);
-                        if (!matchTitle && !matchDesc && !matchSender && !matchReceiver && !matchDivision) match = false;
-                      }
-                      if (historyDivisionFilter !== 'All' && item.division !== historyDivisionFilter) match = false;
-                      if (historyShiftFilter !== 'All') {
-                        let itemShift = item.shift || '';
-                        const catField = item.category || '';
-                        if (!itemShift && catField.includes('|')) {
-                          const [s] = catField.split('|');
-                          itemShift = s || '';
-                        } else if (!itemShift) itemShift = catField;
-                        if (itemShift !== historyShiftFilter) match = false;
-                      }
-                      if (historyStatusFilter !== 'All' && item.status !== historyStatusFilter) match = false;
-                      if (historyDateFilter) {
-                        const itemDate = item.handover_date ? String(item.handover_date).substring(0, 10) : '';
-                        if (itemDate !== historyDateFilter) match = false;
-                      }
-                      return match;
-                    }).length === 0 && (
+                    {filteredHandovers.length === 0 && (
                       <tr>
                         <td colSpan={8} className="px-5 py-12 text-center text-slate-400 dark:text-slate-500 font-bold text-xs uppercase tracking-widest pl-6 pr-6">
                           ไม่พบประวัติการส่งเวรที่ตรงกับคำค้นหาหรือการคัดกรองในขณะนี้
@@ -1893,6 +1834,76 @@ export default function AdminPortal({
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination Controls */}
+              {filteredHandovers.length > HANDOVERS_PER_PAGE && (
+                <div className="flex flex-col sm:flex-row items-center justify-between p-4.5 bg-slate-50/50 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-800 gap-4">
+                  <div className="text-[12px] text-slate-400 font-extrabold font-thai">
+                    แสดง {((historyPage - 1) * HANDOVERS_PER_PAGE) + 1} - {Math.min(historyPage * HANDOVERS_PER_PAGE, filteredHandovers.length)} จาก {filteredHandovers.length} รายการ
+                  </div>
+                  
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
+                      disabled={historyPage === 1}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 transition-colors bg-white dark:bg-slate-800 border border-slate-150/10 shadow-sm"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    
+                    {(() => {
+                      const maxDisplayedPages = 5;
+                      let startPage = 1;
+                      let endPage = totalHandoverPages;
+
+                      if (totalHandoverPages > maxDisplayedPages) {
+                        const half = Math.floor(maxDisplayedPages / 2);
+                        startPage = historyPage - half;
+                        endPage = historyPage + half;
+
+                        if (startPage < 1) {
+                          startPage = 1;
+                          endPage = maxDisplayedPages;
+                        } else if (endPage > totalHandoverPages) {
+                          endPage = totalHandoverPages;
+                          startPage = totalHandoverPages - maxDisplayedPages + 1;
+                        }
+                      }
+
+                      const pages = [];
+                      for (let p = startPage; p <= endPage; p++) {
+                        pages.push(p);
+                      }
+
+                      return (
+                        <div className="flex items-center gap-1">
+                          {pages.map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              onClick={() => setHistoryPage(pageNum)}
+                              className={`w-8 h-8 rounded-lg text-[12px] font-black transition-all shadow-sm ${
+                                historyPage === pageNum 
+                                  ? 'bg-brand-blue text-white' 
+                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-150/10'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
+                    <button 
+                      onClick={() => setHistoryPage(prev => Math.min(totalHandoverPages, prev + 1))}
+                      disabled={historyPage === totalHandoverPages}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 transition-colors bg-white dark:bg-slate-800 border border-slate-150/10 shadow-sm"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : activeTab === 'Users' ? (
@@ -1996,7 +2007,7 @@ export default function AdminPortal({
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredUsers.map((user) => {
+                      {paginatedUsers.map((user) => {
                         const isActive = user.is_active !== false;
                         return (
                           <tr key={user.id} className="border-b border-slate-50 dark:border-slate-850 hover:bg-slate-50/30 dark:hover:bg-slate-850/30 transition-all font-bold text-sm">
@@ -2083,6 +2094,76 @@ export default function AdminPortal({
                       })}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* User Table Pagination Controls */}
+              {!isLoadingUsers && filteredUsers.length > USERS_PER_PAGE && (
+                <div className="flex flex-col sm:flex-row items-center justify-between p-4.5 bg-slate-50/50 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-800 gap-4">
+                  <div className="text-[12px] text-slate-400 font-extrabold font-thai">
+                    แสดง {((usersPage - 1) * USERS_PER_PAGE) + 1} - {Math.min(usersPage * USERS_PER_PAGE, filteredUsers.length)} จาก {filteredUsers.length} บัญชี
+                  </div>
+                  
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={() => setUsersPage(prev => Math.max(1, prev - 1))}
+                      disabled={usersPage === 1}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 transition-colors bg-white dark:bg-slate-800 border border-slate-150/10 shadow-sm"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    
+                    {(() => {
+                      const maxDisplayedPages = 5;
+                      let startPage = 1;
+                      let endPage = totalUserPages;
+
+                      if (totalUserPages > maxDisplayedPages) {
+                        const half = Math.floor(maxDisplayedPages / 2);
+                        startPage = usersPage - half;
+                        endPage = usersPage + half;
+
+                        if (startPage < 1) {
+                          startPage = 1;
+                          endPage = maxDisplayedPages;
+                        } else if (endPage > totalUserPages) {
+                          endPage = totalUserPages;
+                          startPage = totalUserPages - maxDisplayedPages + 1;
+                        }
+                      }
+
+                      const pages = [];
+                      for (let p = startPage; p <= endPage; p++) {
+                        pages.push(p);
+                      }
+
+                      return (
+                        <div className="flex items-center gap-1">
+                          {pages.map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              onClick={() => setUsersPage(pageNum)}
+                              className={`w-8 h-8 rounded-lg text-[12px] font-black transition-all shadow-sm ${
+                                usersPage === pageNum 
+                                  ? 'bg-brand-blue text-white' 
+                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-150/10'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
+                    <button 
+                      onClick={() => setUsersPage(prev => Math.min(totalUserPages, prev + 1))}
+                      disabled={usersPage === totalUserPages}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 transition-colors bg-white dark:bg-slate-800 border border-slate-150/10 shadow-sm"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

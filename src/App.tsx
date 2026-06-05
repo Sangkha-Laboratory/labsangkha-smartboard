@@ -46,12 +46,78 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Centralized safe session cleaning without page reload or signout loop crashes
+  const clearAuthSession = () => {
+    console.warn('Silently clearing stale user session due to Auth / Refresh Token Error');
+    localStorage.removeItem('sangkha_handover_local_user');
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('sb-') || key.includes('auth-token') || key.includes('supabase.auth.token'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    localStorage.removeItem('sangkha_view_isAdminPortal');
+    localStorage.removeItem('sangkha_view_isUserPortal');
+    
+    // Clear and reset state to logged out / defaults safely
+    setUser(null);
+    setUserProfile(null);
+    setLocalUserProfile(null);
+    setIsAdmin(false);
+    setIsAdminPortal(false);
+    setIsUserPortal(false);
+    setLoading(false);
+    setError(null);
+
+    // Call local signOut if possible, but run securely to prevent further errors
+    try {
+      supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+    } catch {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     const handleError = (e: ErrorEvent) => {
-      console.error('Global Error caught:', e.error);
-      setError(`เกิดข้อผิดพลาด: ${e.error?.message || 'ไม่ทราบสาเหตุ'}`);
+      console.error('Global Error caught:', e.error || e.message);
+      const errMsg = e.error?.message || e.message || '';
+      
+      const isTokenError = 
+        errMsg.toLowerCase().includes('refresh token') || 
+        errMsg.toLowerCase().includes('refresh_token') || 
+        errMsg.toLowerCase().includes('invalid_grant') ||
+        errMsg.toLowerCase().includes('token not found') ||
+        errMsg.toLowerCase().includes('grant_not_found');
+
+      if (isTokenError) {
+        e.preventDefault(); // Prevent crash overlay/console panic
+        clearAuthSession();
+        return;
+      }
+      setError(`เกิดข้อผิดพลาด: ${errMsg || 'ไม่ทราบสาเหตุ'}`);
     };
     window.addEventListener('error', handleError);
+
+    const handleRejection = (e: PromiseRejectionEvent) => {
+      console.error('Global Promise Rejection caught:', e.reason);
+      const errMsg = e.reason?.message || String(e.reason || '');
+
+      const isTokenError = 
+        errMsg.toLowerCase().includes('refresh token') || 
+        errMsg.toLowerCase().includes('refresh_token') || 
+        errMsg.toLowerCase().includes('invalid_grant') ||
+        errMsg.toLowerCase().includes('token not found') ||
+        errMsg.toLowerCase().includes('grant_not_found');
+
+      if (isTokenError) {
+        e.preventDefault(); // Prevent unhandled rejection console panic
+        clearAuthSession();
+        return;
+      }
+    };
+    window.addEventListener('unhandledrejection', handleRejection);
 
     const handleOpenTab = (e: Event) => {
       const customEvent = e as CustomEvent<'public_privacy' | 'public_terms'>;
@@ -69,6 +135,7 @@ export default function App() {
 
     return () => {
       window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
       window.removeEventListener('open-safety-tab', handleOpenTab as EventListener);
     };
   }, []);
@@ -103,20 +170,17 @@ export default function App() {
 
       if (error) {
         console.error('Supabase Auth Error:', error.message);
-        // Clear stale local session items if we encounter a refresh token error
-        if (
-          error.message.includes('Refresh Token') || 
-          error.message.includes('refresh_token_not_found') || 
-          error.message.includes('invalid_grant')
-        ) {
-          localStorage.removeItem('sangkha_handover_local_user');
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-              localStorage.removeItem(key);
-            }
-          }
-          supabase.auth.signOut().catch(() => {});
+        
+        const isTokenErr = 
+          error.message.toLowerCase().includes('refresh token') || 
+          error.message.toLowerCase().includes('refresh_token') || 
+          error.message.toLowerCase().includes('invalid_grant') ||
+          error.message.toLowerCase().includes('token not found') ||
+          error.message.toLowerCase().includes('grant_not_found');
+
+        if (isTokenErr) {
+          clearAuthSession();
+          return;
         }
       }
 
@@ -131,7 +195,20 @@ export default function App() {
       clearTimeout(timeout);
     }).catch(err => {
       console.error('getSession catch:', err);
-      setLoading(false);
+      const errMsg = err?.message || String(err || '');
+      
+      const isTokenErr = 
+        errMsg.toLowerCase().includes('refresh token') || 
+        errMsg.toLowerCase().includes('refresh_token') || 
+        errMsg.toLowerCase().includes('invalid_grant') ||
+        errMsg.toLowerCase().includes('token not found') ||
+        errMsg.toLowerCase().includes('grant_not_found');
+
+      if (isTokenErr) {
+        clearAuthSession();
+      } else {
+        setLoading(false);
+      }
       clearTimeout(timeout);
     });
 
