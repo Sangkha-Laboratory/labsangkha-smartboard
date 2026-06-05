@@ -13,26 +13,13 @@ export interface Announcement {
 
 const LOCAL_STORAGE_KEY = 'sangkha_handover_announcements';
 
-// Helper to load fallback local announcements
-function getLocalAnnouncements(): Announcement[] {
-  try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (saved) {
-      return JSON.parse(saved);
-    }
-  } catch (e) {
-    console.error('Error loading announcements from local storage:', e);
+// Wipe any legacy mock announcements stored in localStorage to ensure brand-new or old devices get clean DB items
+try {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.removeItem(LOCAL_STORAGE_KEY);
   }
-  return [];
-}
-
-// Helper to save to local storage
-function saveLocalAnnouncements(list: Announcement[]) {
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-  } catch (e) {
-    console.error('Error saving announcements to local storage:', e);
-  }
+} catch (e) {
+  console.warn('Could not clean legacy announcements storage:', e);
 }
 
 /**
@@ -120,7 +107,7 @@ function parseAnnouncementRow(item: any): Announcement {
 
 /**
  * Fetch announcements asynchronously.
- * Tries Supabase first, falls back to local storage.
+ * Tries Supabase first.
  */
 export async function getAnnouncements(): Promise<Announcement[]> {
   try {
@@ -130,8 +117,8 @@ export async function getAnnouncements(): Promise<Announcement[]> {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.warn('Supabase announcements query failed, using local storage fallback:', error.message);
-      return getLocalAnnouncements();
+      console.warn('Supabase announcements query failed:', error.message);
+      return [];
     }
 
     if (data) {
@@ -149,14 +136,13 @@ export async function getAnnouncements(): Promise<Announcement[]> {
         return dateB - dateA;
       });
 
-      saveLocalAnnouncements(mapped);
       return mapped;
     }
   } catch (err) {
-    console.warn('Supabase network error in announcements, using local storage:', err);
+    console.warn('Network error in fetching announcements:', err);
   }
 
-  return getLocalAnnouncements();
+  return [];
 }
 
 /**
@@ -212,7 +198,7 @@ export async function saveAnnouncement(ann: Omit<Announcement, 'id'> & { id?: st
     dbValue.author_id = authorId;
   }
 
-  // 1. Try to sync with Supabase
+  // Sync with Supabase
   try {
     if (isEdit) {
       const { error } = await supabase
@@ -236,21 +222,6 @@ export async function saveAnnouncement(ann: Omit<Announcement, 'id'> & { id?: st
     console.warn('Could not sync announcement with Supabase database:', err.message || err);
   }
 
-  // 2. Always persist details in local storage for instant fallback
-  const locals = getLocalAnnouncements();
-  let updatedLocals: Announcement[];
-  
-  const targetId = isEdit ? completeAnn.id : ann.id;
-  const exists = locals.some(item => item.id === targetId);
-
-  if (exists) {
-    updatedLocals = locals.map(item => item.id === targetId ? completeAnn : item);
-  } else {
-    const customFiltered = locals.filter(item => item.id !== ann.id);
-    updatedLocals = [completeAnn, ...customFiltered];
-  }
-
-  saveLocalAnnouncements(updatedLocals);
   return completeAnn;
 }
 
@@ -258,7 +229,7 @@ export async function saveAnnouncement(ann: Omit<Announcement, 'id'> & { id?: st
  * Delete an announcement
  */
 export async function deleteAnnouncement(id: string): Promise<boolean> {
-  // 1. Try deleting from Supabase
+  // Try deleting from Supabase
   if (isUUID(id)) {
     try {
       const { error: delError } = await supabase
@@ -278,10 +249,6 @@ export async function deleteAnnouncement(id: string): Promise<boolean> {
     }
   }
 
-  // 2. Always apply to local storage
-  const locals = getLocalAnnouncements();
-  const updated = locals.filter(item => item.id !== id);
-  saveLocalAnnouncements(updated);
   return true;
 }
 
