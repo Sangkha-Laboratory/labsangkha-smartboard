@@ -188,8 +188,7 @@ Deno.serve(async (req) => {
                     text: "TECHNICAL SUPPORT TICKET",
                     size: "xxs",
                     color: "#A5B4FC",
-                    weight: "bold",
-                    spacing: "md"
+                    weight: "bold"
                   }
                 ]
               },
