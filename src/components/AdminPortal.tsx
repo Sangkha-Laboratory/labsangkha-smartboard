@@ -531,7 +531,7 @@ export default function AdminPortal({
 
     // Password is only mandatory for new users
     if (!selectedUser && !trimmedPass) {
-      setUserFormError('กรุณากรอกรหัสผ่าน / PIN สำหรับการบันทึกเวร');
+      setUserFormError('กรุณากรอกรหัสผ่านสำหรับการบันทึกเวร');
       return;
     }
 
@@ -2279,7 +2279,7 @@ export default function AdminPortal({
                                   {user.full_name || 'ไม่ระบุชื่อ'}
                                 </span>
                                 <span className="text-[12px] text-slate-400 dark:text-slate-500 font-extrabold flex items-center gap-1 mt-1 font-mono">
-                                  PIN/PASS: •••••••• (เปิดใช้งานแล้ว)
+                                  รหัสผ่าน: •••••••• (เปิดใช้งานแล้ว)
                                 </span>
                               </div>
                             </td>
@@ -2410,7 +2410,7 @@ export default function AdminPortal({
                           {/* PIN indicator & action buttons */}
                           <div className="flex items-center justify-between pt-2 border-t border-slate-50 dark:border-slate-800/40 text-[10px] font-bold text-slate-400">
                             <span className="text-[11px] text-slate-400 dark:text-slate-500 font-extrabold font-mono">
-                              PIN/PASS: ••••••••
+                              รหัสผ่าน: ••••••••
                             </span>
 
                             <div className="flex items-center gap-1">
@@ -3413,7 +3413,7 @@ export default function AdminPortal({
                   {/* Password / PIN Code */}
                   <div>
                     <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
-                      รหัสผ่าน / พินบันทึกเวร (PASSWORD / PIN) {selectedUser ? <span className="text-slate-400 font-bold"> (ว่างไว้หากไม่ต้องการเปลี่ยน)</span> : <span className="text-red-500">*จำเป็น</span>}
+                      รหัสผ่านสำหรับบันทึกเวร (PASSWORD / รหัสผ่าน) {selectedUser ? <span className="text-slate-400 font-bold"> (ว่างไว้หากไม่ต้องการเปลี่ยน)</span> : <span className="text-red-500">*จำเป็น</span>}
                     </label>
                     <div className="relative">
                       <input
@@ -3421,7 +3421,7 @@ export default function AdminPortal({
                         required={!selectedUser}
                         value={userPasswordInput}
                         onChange={(e) => setUserPasswordInput(e.target.value)}
-                        placeholder={selectedUser ? "•••••••• (เว้นว่างใช้รหัสเดิม)" : "กรอก PIN 4-6 หลัก หรือรหัสเซ็นรับเวร"}
+                        placeholder={selectedUser ? "•••••••• (เว้นว่างใช้รหัสเดิม)" : "กรอกรหัสผ่าน 4-6 หลัก หรือรหัสเซ็นรับเวร"}
                         className="w-full pl-3 pr-10 h-10 bg-slate-50 dark:bg-slate-800 border border-transparent dark:border-slate-800 rounded-xl text-xs font-bold text-[#0f2d52] dark:text-white outline-none focus:bg-white focus:border-brand-blue/20 dark:focus:bg-slate-850 dark:focus:border-brand-blue/30 transition-all placeholder:text-slate-355"
                       />
                       <button

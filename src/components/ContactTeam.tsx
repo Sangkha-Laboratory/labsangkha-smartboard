@@ -226,12 +226,6 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
               </div>
             </div>
 
-            <div className="p-3 bg-red-50/50 dark:bg-red-950/10 border border-red-100 dark:border-red-950/30 rounded-xl text-xs sm:text-sm font-bold text-red-700 dark:text-red-400 font-thai leading-relaxed flex gap-2">
-              <ShieldAlert className="shrink-0 mt-0.5 text-red-500" size={14} />
-              <span>
-                <strong>นโยบายข้อมูลผู้ป่วย & ความเสี่ยง:</strong> สำหรับกรณีบาร์โค้ดสูญหาย หรือบันทึกรายงานความเสี่ยง (Incident Report) ไปยังศูนย์คุณภาพ <strong>ไม่เกี่ยวข้องกับระบบส่งเวรนี้</strong> (ให้ดำเนินการตามกระบวนการหลักหน้างานของทางโรงพยาบาล)
-              </span>
-            </div>
           </div>
 
           {/* Admin Team List */}

@@ -7,6 +7,8 @@ import {
   FileText,
   Globe
 } from 'lucide-react';
+import PrivacyContent from './PrivacyContent';
+import TermsContent from './TermsContent';
 import { supabase } from '../lib/supabase';
 
 interface SafetyPolicyProps {
@@ -56,38 +58,73 @@ export default function SafetyPolicy({ initialTab = 'public_privacy', onClose }:
     setTimeout(() => setCopiedText(null), 2500);
   };
 
-  const docPrivacyNotice = `ประกาศนโยบายคุ้มครองข้อมูลส่วนบุคคล (Privacy Notice) ฉบับสาธารณชน
+  const docPrivacyNotice = `ประกาศความเป็นส่วนตัว (Privacy Notice)
+สำหรับผู้ใช้บริการและผู้เข้าถึงระบบสารสนเทศกระดานอัจฉริยะทางห้องปฏิบัติการ (Labsangkha SmartBoard System)
 กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ
-สำนักงานปลัดกระทรวงสาธารณสุข กระทรวงสาธารณสุข
+สำนักงานปลัดกระทรวงสาธารณสุข โดยโรงพยาบาลสังขะ มีหน้าที่ต้องปฏิบัติตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. ๒๕๖๒ และนโยบายการคุ้มครองข้อมูลส่วนบุคคล กระทรวงสาธารณสุข กลุ่มงานเทคนิคการแพทย์จึงขอแจ้งรายละเอียดการเก็บรวบรวม ใช้ หรือเปิดเผยข้อมูลส่วนบุคคลที่เกิดขึ้นภายในระบบสารสนเทศกระดานอัจฉริยะ เพื่อให้เจ้าของข้อมูลทราบดังต่อไปนี้
 
-ประกาศฉบับนี้จัดทำขึ้นเพื่อชี้แจงรายละเอียดเกี่ยวกับการเก็บรวบรวม ใช้ และเปิดเผยข้อมูลส่วนบุคคล (PDPA) สำหรับผู้ใช้บริการและผู้เข้าถึงระบบสารสนเทศประสานงานและส่งมอบเวรทางห้องปฏิบัติการ (Labsangkha Handover System)
+๑. ขอบเขตการบังคับใช้
+ประกาศฉบับนี้มีผลบังคับใช้กับข้าราชการ พนักงาน ผู้ปฏิบัติงานภายในกลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ และผู้ที่มีสิทธิเข้าถึงระบบสารสนเทศกระดานอัจฉริยะทางห้องปฏิบัติการทุกคน
 
-1. ข้อมูลส่วนบุคคลที่จัดเก็บเพื่อการทำงานของห้องปฏิบัติการ
-เพื่อประโยชน์ในการประสานงานเวรทางการแพทย์และป้องกันความคลาดเคลื่อนในการส่งต่อการรักษา ระบบมีการบันทึกและรวบรวมข้อมูล ได้แก่ รหัสประจำตัวผู้ป่วยภายในโรงพยาบาล (HN), รหัสตัวเลขสิ่งส่งตรวจวิเคราะห์ (LN), ประเภทรายการสิ่งส่งตรวจตรวจวิเคราะห์, ข้อความบันทึกสิ่งส่งตรวจวิกฤต, และรายนามเจ้าหน้าที่ผู้ปฏิบัติหน้าที่ประจำเวร
+๒. ข้อมูลส่วนบุคคลและข้อมูลสุขภาพที่ระบบจัดเก็บ
+กลุ่มงานเทคนิคการแพทย์ จะเก็บรวบรวมข้อมูลส่วนบุคคลและข้อมูลสุขภาพเท่าที่จำเป็นตามภารกิจของสถานพยาบาล โดยแบ่งออกเป็นกลุ่มข้อมูลดังนี้:
 
-2. วัตถุประสงค์และฐานทางกฎหมายในการประมวลผลข้อมูล
-ระบบขับเคลื่อนการประมวลผลข้อมูลเพื่อวัตถุประสงค์ในการวินิจฉัย การเฝ้าระวังสิ่งส่งตรวจวิกฤต และประสานงานส่งต่อผู้ป่วยระหว่างกะ/เวรอย่างมีความปลอดภัยและถูกต้องแม่นยำ โดยพึงอยู่ภายใต้ฐานทางกฎหมายดังนี้:
-- ฐานความจำเป็นในการป้องกันหรือระงับอันตรายต่อชีวิต ร่างกาย หรือสุขภาพของบุคคล (Vital Interest) ตามมาตรา 26 (5)(ก) แห่ง พรบ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562
-- ฐานความจำเป็นเพื่อการปฏิบัติหน้าที่ในการดำเนินภารกิจเพื่อประโยชน์สาธารณะของผู้ควบคุมข้อมูลส่วนบุคคล (Public Task) ตามมาตรา 26 (5)(ข) พรบ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562
+ข้อมูลระบุตัวตนผู้ป่วยและเจ้าหน้าที่: รหัสประจำตัวผู้ป่วยภายในโรงพยาบาล (HN) และรายนามเจ้าหน้าที่ผู้ปฏิบัติหน้าที่ประจำเวร
 
-3. มาตรการจำกัดการแสดงผลแบบพรางตัวตนอัตโนมัติ (Data Masking)
-กลุ่มงานเทคนิคการแพทย์ ถือปฏิบัติมาตรการคุ้มครองความเป็นส่วนตัวขั้นสูง โดยใช้ระบบพรางรหัสข้อมูลผู้ป่วยอัตโนมัติก่อนแสดงผลสู่ภายนอก ดังนี้:
-- พรางตัวเลข HN และ ชื่อ-นามสกุล บนรายงานหน้าเว็บสาธารณะและในระบบสรุปสถิติทั่วไป
-- พรางรหัสและซ่อนข้อมูลละเอียดของผู้รับบริการทุกรายในการแจ้งเตือนแบบย่อผ่านข้อความ LINE Notify หรือกลุ่มประสานภายนอก เพื่อรับประกันว่าจะไม่มีการเผยแพร่ความลับผู้ป่วยเด็ดขาด
+ข้อมูลสิทธิ์เข้าใช้งาน: ชื่อผู้ใช้ (Username) และรหัสผ่าน (Password) ของเจ้าหน้าที่ห้องปฏิบัติการทางการแพทย์ในการเข้าถึงและแสดงผลระบบกระดานอัจฉริยะ
 
-4. ระยะเวลาการเก็บรักษาข้อมูลทางการแพทย์
-- ข้อมูลสิ่งส่งตรวจวิกฤตและรหัสผู้ป่วย (HN/LN) จะถูกจัดเก็บสำรองในฐานข้อมูลที่ปลอดภัยเป็นระยะเวลาไม่เกิน 10 ปี เพื่อความต่อเนื่องทางการดูแลรักษาโรคตามระเบียบกระทรวงสาธารณสุข
-- ข้อมูลสรุปรอบเวลาตรวจสอบเวรจะถูกเก็บรักษาไว้เป็นเวลาอย่างน้อย 3 ปี เพื่อประโยชน์รอบกระบวนการตรวจสอบคุณภาพและการรับรองมาตรฐานวิชาชีพเทคนิคการแพทย์ (LA/ISO 15189)
+ข้อมูลอ่อนไหวและข้อมูลสุขภาพ: รหัสตัวเลขสิ่งส่งตรวจวิเคราะห์ (LN) หมู่โลหิต ประเภทรายการวิเคราะห์ ผลการวิเคราะห์ทางห้องปฏิบัติการ (Lab results) ข้อมูลสิ่งส่งตรวจวิกฤต รวมถึงประวัติการเจ็บป่วยและข้อมูลประสานงานติดตามผลเพื่อการส่งต่อผู้ป่วย (Refer)
 
-5. สิทธิ์ตามกฎหมายของเจ้าของข้อมูล (Data Subject Rights)
-ผู้รับบริการและเจ้าของข้อมูลส่วนบุคคลพึงรักษาไว้ซึ่งสิทธิ์ตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 รวมถึงสิทธิ์ในการขอนำเข้าสำเนา ตรวจสอบ ขอแก้ไขข้อมูลที่คลาดเคลื่อน และยื่นขอระงับใช้อันอาจนำมาซึ่งการละเมิดความเป็นส่วนตัว โดยสามารถประสานแจ้งความประสงค์อย่างเป็นทางการต่อผู้ควบคุมข้อมูลและเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคลของกลุ่มงานได้และจะดำเนินการตรวจสอบใน 30 วันทำการ`;
+ข้อมูลการปฏิบัติงานประจำเวรและการแสดงผลบนหน้าจอ: ข้อมูลบันทึกงานคงค้าง ข้อมูลสถานะความพร้อมของเครื่องมือวิทยาศาสตร์การแพทย์ และประวัติการโต้ตอบประสานงานระหว่างผลัดเวร
 
+๓. วัตถุประสงค์ในการนำข้อมูลไปใช้
+กลุ่มงานเทคนิคการแพทย์ ดำเนินการจัดเก็บและประมวลผลข้อมูลในระบบ โดยมีวัตถุประสงค์และเหตุผลความจำเป็นทางกฎหมายรองรับ ดังต่อไปนี้:
+
+เพื่อความต่อเนื่องในการตรวจรักษาโรคและให้บริการทางการแพทย์: ใช้ในการระบุตัวตนผู้ป่วย บริหารจัดการและส่งมอบภารกิจการวิเคราะห์ทางห้องปฎิบัติการทางการแพทย์ระหว่างกะ/เวร แจ้งเตือนสิ่งส่งตรวจวิกฤต และรายงานผลการตรวจวิเคราะห์ทางห้องปฎิบัติการทางการแพทย์สำหรับเคสส่งต่อ (Refer) ผ่านกระดานสารสนเทศอัจฉริยะ เพื่อให้ผู้ป่วยได้รับบริการทางการแพทย์ที่เหมาะสมและทันท่วงที
+
+เพื่อการวินิจฉัยโรคทางการแพทย์และการรักษาพยาบาล: ปฏิบัติตามหลักเกณฑ์การวินิจฉัยและให้บริการด้านสาธารณสุขแก่ผู้รับบริการ ตามมาตรา ๒๖ (๕)(ก) แห่งพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. ๒๕๖๒
+
+เพื่อประโยชน์สาธารณะด้านการสาธารณสุข: เพื่อใช้ในการควบคุมมาตรฐานหรือคุณภาพของการให้บริการทางวิชาชีพเทคนิคการแพทย์และการสาธารณสุข ตามมาตรา ๒๖ (๕)(ข)
+
+เพื่อการปฏิบัติหน้าที่ในการดำเนินภารกิจเพื่อประโยชน์สาธารณะ: เพื่อให้การดำเนินงานของสถานพยาบาลบรรลุตามเป้าหมายและอำนาจหน้าที่ตามที่กฎหมายกำหนดไว้ตามมาตรา ๒๔ (๔)
+
+๔. การกำกับดูแลและข้อจำกัดในการเปิดเผยข้อมูลอ่อนไหว
+เนื่องจากการบริหารจัดการข้อมูลผ่านระบบกระดานอัจฉริยะทางห้องปฏิบัติการ มีความจำเป็นต้องบันทึกและแสดงผลข้อมูลอ่อนไหว เช่น ผลการตรวจวิเคราะห์ทางห้องปฎิบัติการทางการแพทย์เคส Refer หรือข้อมูลประสานงานติดตามผลผู้ป่วย กลุ่มงานเทคนิคการแพทย์จึงจัดให้มีมาตรการกำกับดูแลที่เข้มงวดดังนี้:
+
+จำกัดสิทธิการเรียกดูและการส่งต่อข้อมูลอ่อนไหวเฉพาะเจ้าหน้าที่ห้องปฏิบัติการทางการแพทย์ผู้ที่มีอำนาจหน้าที่และได้รับมอบหมายในเวรนั้น ๆ เท่านั้น
+
+ควบคุมและตรวจสอบมิให้ผู้ที่ไม่มีหน้าที่ หรือบุคคลภายนอกที่ไม่เกี่ยวข้อง สามารถเข้าถึง แสดง หรือทำให้ปรากฏซึ่งข้อมูลสุขภาพและข้อมูลการตรวจวิเคราะห์ทางห้องปฎิบัติการทางการแพทย์ของผู้ป่วยในทุกลักษณะ นอกเหนือจากวัตถุประสงค์การปฏิบัติงานและการส่งเวรที่กำหนดไว้
+
+๕. มาตรการรักษาความมั่นคงปลอดภัยของข้อมูล
+หน่วยงานกำหนดมาตรการรักษาความมั่นคงปลอดภัยของข้อมูลส่วนบุคคลอย่างเหมาะสมตามมาตรฐาน ครอบคลุมทั้งด้านการบริหารจัดการ ด้านเทคนิค และทางกายภาพ ดังนี้:
+
+มาตรการพรางตัวตนอัตโนมัติ (Data Masking): ระบบจะพรางตัวเลข HN ชื่อและนามสกุลของผู้ป่วยบนหน้าจอรายงานและกระดานแสดงผลสรุปสถิติทั่วไปที่ไม่มีความจำเป็นต้องแสดงข้อมูลส่วนบุคคล
+
+การบริหารสิทธิเข้าถึง (Access Control): กำหนดสิทธิของเจ้าหน้าที่และลูกจ้างในการเข้าถึงข้อมูลอย่างเหมาะสม พร้อมใช้เทคโนโลยีตรวจสอบตัวตนและการเข้ารหัสข้อมูล (Encryption) ก่อนเข้าใช้งานระบบ
+
+ความปลอดภัยในการแจ้งเตือนภายนอก: ระบบจะปิดกั้นและพรางรหัสข้อมูลละเอียดของผู้รับบริการทุกรายในการแจ้งเตือนแบบย่อผ่านระบบ LINE Messaging API หรือกลุ่มประสานงานภายใน เพื่อรักษาความลับตามหลักวิชาชีพและจริยธรรมทางการแพทย์อย่างสูงสุด
+
+เพื่อการตอบสนองและแจ้งเตือนเมื่อเกิดเหตุละเมิดข้อมูลส่วนบุคคล: ในกรณีที่เกิดเหตุสุดวิสัยอันทำให้เกิดการรั่วไหลหรือการละเมิดข้อมูลส่วนบุคคลที่มีความเสี่ยงสูงที่จะกระทบต่อสิทธิและเสรีภาพของท่าน หน่วยงานจะดำเนินการแจ้งเหตุการณ์ดังกล่าวให้เจ้าของข้อมูลทราบ พร้อมทั้งแจ้งแนวทางการเยียวยาแก้ไขโดยไม่ชักช้าตามที่กฎหมายกำหนด
+
+๖. ระยะเวลาในการจัดเก็บรักษาข้อมูลส่วนบุคคล
+ระบบจะเก็บรักษาข้อมูลส่วนบุคคลไว้ตราบเท่าที่วัตถุประสงค์ในการนำข้อมูลไปใช้ยังคงมีอยู่ ดังนี้:
+
+ข้อมูลสิ่งส่งตรวจวิกฤต ผลการวิเคราะห์ทางห้องปฏิบัติการ และรหัสผู้ป่วย (HN/LN) จะถูกจัดเก็บสำรองในระบบฐานข้อมูลที่ปลอดภัยเป็นระยะเวลาไม่เกิน ๑๐ ปี เพื่อประโยชน์และหลักฐานในการรักษาพยาบาลต่อเนื่อง
+
+ข้อมูลบันทึกบนกระดานอัจฉริยะ งานคงค้าง และบันทึกการตรวจสอบความพร้อมของเครื่องมือแพทย์ จะถูกเก็บรักษาไว้เป็นเวลาอย่างน้อย ๓ ปี เพื่อประโยชน์ในกระบวนการตรวจสอบคุณภาพและการรับรองมาตรฐานวิชาชีพ (LA/ISO ๑๕๑๘๙)
+
+เมื่อพ้นกำหนดระยะเวลาหรือหมดความจำเป็น หน่วยงานจะดำเนินการลบ ทำลาย หรือทำให้ข้อมูลไม่สามารถระบุตัวตนของเจ้าของข้อมูลได้ทันที
+
+๗. สิทธิของเจ้าของข้อมูลส่วนบุคคล
+ในฐานะเจ้าของข้อมูลส่วนบุคคล ท่านมีสิทธิร้องขอให้ผู้ควบคุมข้อมูลส่วนบุคคลดำเนินการตามขอบเขตที่กฎหมายอนุญาต ได้แก่ สิทธิขอเข้าถึงและรับสำเนาข้อมูล สิทธิในการคัดค้าน สิทธิขอให้ลบหรือทำลาย สิทธิขอให้ระงับการใช้ และสิทธิในการขอแก้ไขข้อมูลส่วนบุคคลให้ถูกต้อง เป็นปัจจุบัน และสมบูรณ์
+
+ท่านสามารถประสานแจ้งความประสงค์อย่างเป็นทางการต่อผู้ควบคุมข้อมูลส่วนบุคคลของหน่วยงาน โดยหน่วยงานจะดำเนินการตรวจสอบและตอบสนองต่อคำขอภายในระยะเวลาไม่เกิน ๓๐ วันนับแต่วันที่ได้รับคำร้อง`;
   const docTermsOfService = `# ข้อกำหนดและเงื่อนไขการใช้บริการ (Terms of Service)
 **ระบบสารสนเทศประสานการส่งมอบเวรทางห้องปฏิบัติการ (Labsangkha Handover System)**
 กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ
 สังกัดสำนักงานปลัดกระทรวงสาธารณสุข กระทรวงสาธารณสุข
 
-> ฉบับที่ 1.0 | ประกาศใช้เดือนมิถุนายน พุทธศักราช 2568
+> ฉบับที่ ๑| ประกาศใช้เดือนมิถุนายน พุทธศักราช ๒๕๖๙
 > อ้างอิงตาม: พระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์ พ.ศ. 2550 และที่แก้ไขเพิ่มเติม พ.ศ. 2560 · พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 · พระราชบัญญัติลิขสิทธิ์ พ.ศ. 2537
 
 ---
@@ -103,7 +140,7 @@ export default function SafetyPolicy({ initialTab = 'public_privacy', onClose }:
 1. **"ระบบ"** หมายความว่า ระบบสารสนเทศประสานการส่งมอบเวรทางห้องปฏิบัติการ (Labsangkha Handover System)
 2. **"หน่วยงาน"** หมายความว่า กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ
 3. **"ผู้ใช้งาน"** หมายความว่า บุคคลผู้เข้าถึงหรือใช้งานระบบ ไม่ว่าจะในฐานะผู้เข้าชมทั่วไป บุคลากร หรือผู้ดูแลระบบ
-4. **"รหัส PIN"** หมายความว่า รหัสยืนยันตัวบุคคลของผู้ส่งเวรซึ่งจัดเก็บในรูปแบบที่เข้ารหัสแล้ว
+4. **"รหัสผ่าน"** หมายความว่า รหัสยืนยันตัวบุคคลของผู้ส่งเวรซึ่งจัดเก็บในรูปแบบที่เข้ารหัสแล้ว
 
 ---
 
@@ -117,8 +154,8 @@ export default function SafetyPolicy({ initialTab = 'public_privacy', onClose }:
 
 | บทบาท | การเข้าถึง | สิทธิการใช้งาน |
 |---|---|---|
-| ผู้เข้าชมทั่วไป (Public) | ไม่ต้องเข้าสู่ระบบ | เรียกดูรายการส่งมอบเวรย้อนหลัง 3 วัน และส่งเวรโดยยืนยันด้วยรหัส PIN |
-| บุคลากร (User) | เข้าสู่ระบบด้วยบัญชีและรหัส PIN | เรียกดูประวัติการส่งมอบงานของตน และรับมอบงานเวร |
+| ผู้เข้าชมทั่วไป (Public) | ไม่ต้องเข้าสู่ระบบ | เรียกดูรายการส่งมอบเวรย้อนหลัง 3 วัน และส่งเวรโดยยืนยันด้วยรหัสผ่าน |
+| บุคลากร (User) | เข้าสู่ระบบด้วยบัญชีและรหัสผ่าน | เรียกดูประวัติการส่งมอบงานของตน และรับมอบงานเวร |
 | ผู้ดูแลระบบ (Admin) | เข้าสู่ระบบผ่านช่องทางเฉพาะ | จัดการบัญชีผู้ใช้งาน จัดการรายการส่งมอบเวรทั้งหมด ตั้งค่าระบบ และการเชื่อมต่อ LINE |
 
 ---
@@ -127,11 +164,11 @@ export default function SafetyPolicy({ initialTab = 'public_privacy', onClose }:
 
 ผู้ใช้งานมีหน้าที่และความรับผิดชอบ ดังต่อไปนี้
 
-1. รักษารหัสผ่านและรหัส PIN ไว้เป็นความลับ และไม่เปิดเผยแก่บุคคลอื่นไม่ว่ากรณีใด
+1. รักษารหัสผ่านและรหัสผ่านไว้เป็นความลับ และไม่เปิดเผยแก่บุคคลอื่นไม่ว่ากรณีใด
 2. บันทึกข้อมูลการส่งมอบเวรและรายการงานให้ถูกต้อง ครบถ้วน และตรงตามความเป็นจริง เนื่องจากข้อมูลที่คลาดเคลื่อนอาจส่งผลกระทบต่อความปลอดภัยของผู้ป่วย
 3. ออกจากระบบทุกครั้งภายหลังการใช้งานบนอุปกรณ์ที่ใช้งานร่วมกับผู้อื่น
-4. รับผิดชอบต่อรายการส่งมอบเวรทั้งหมดที่ดำเนินการด้วยรหัส PIN ของตน
-5. แจ้งต่อผู้ดูแลระบบโดยทันที เมื่อพบความผิดปกติหรือสงสัยว่ารหัสผ่านหรือรหัส PIN ถูกนำไปใช้โดยไม่ได้รับอนุญาต
+4. รับผิดชอบต่อรายการส่งมอบเวรทั้งหมดที่ดำเนินการด้วยรหัสผ่านของตน
+5. แจ้งต่อผู้ดูแลระบบโดยทันที เมื่อพบความผิดปกติหรือสงสัยว่ารหัสผ่านหรือรหัสผ่านถูกนำไปใช้โดยไม่ได้รับอนุญาต
 6. ปฏิบัติตามนโยบายคุ้มครองข้อมูลส่วนบุคคลและนโยบายความมั่นคงปลอดภัยสารสนเทศของโรงพยาบาล
 
 ---
@@ -146,13 +183,13 @@ export default function SafetyPolicy({ initialTab = 'public_privacy', onClose }:
 
 ห้ามมิให้ผู้ใช้งานกระทำการอย่างหนึ่งอย่างใด ดังต่อไปนี้ การฝ่าฝืนถือเป็นความผิดทางวินัย และอาจเป็นความผิดทางอาญาตามพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์ พ.ศ. 2550 และที่แก้ไขเพิ่มเติม และ/หรือพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562
 
-1. เข้าถึงระบบโดยไม่ได้รับอนุญาต หรือใช้รหัส PIN หรือรหัสผ่านของผู้อื่น (มาตรา 5 และมาตรา 7 แห่งพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์)
+1. เข้าถึงระบบโดยไม่ได้รับอนุญาต หรือใช้รหัสผ่านหรือรหัสผ่านของผู้อื่น (มาตรา 5 และมาตรา 7 แห่งพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์)
 2. นำข้อมูลสุขภาพของผู้ป่วยออกจากระบบ หรือเปิดเผยต่อบุคคลผู้ไม่มีสิทธิ (มาตรา 79 แห่งพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล)
 3. แก้ไข เปลี่ยนแปลง ลบ หรือทำลายข้อมูลโดยไม่มีสิทธิ (มาตรา 9 แห่งพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์)
 4. ดักรับข้อมูลที่อยู่ระหว่างการรับส่งภายในระบบ (มาตรา 8 แห่งพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์)
 5. ทดสอบเจาะระบบหรือโจมตีระบบโดยมิได้รับอนุญาตเป็นลายลักษณ์อักษร
 6. ส่งโปรแกรมอัตโนมัติ สคริปต์ หรือโปรแกรมเก็บข้อมูล (Crawler) เข้าสู่ระบบ
-7. ใช้บัญชีผู้ใช้งานหรือรหัส PIN ร่วมกับบุคคลอื่น
+7. ใช้บัญชีผู้ใช้งานหรือรหัสผ่านร่วมกับบุคคลอื่น
 8. บันทึกภาพหน้าจอหรือนำข้อมูลของผู้ป่วยไปใช้นอกเหนือจากวัตถุประสงค์ด้านการรักษาพยาบาล
 
 ---
@@ -187,7 +224,7 @@ export default function SafetyPolicy({ initialTab = 'public_privacy', onClose }:
 
 ## 11. กฎหมายที่ใช้บังคับ
 
-ข้อกำหนดและเงื่อนไขนี้อยู่ภายใต้บังคับแห่งกฎหมายไทย ข้อพิพาทใด ๆ ที่เกิดขึ้นให้อยู่ในเขตอำนาจของศาลไทยที่มีเขตอำนาจ
+ข้อกำหนดและเงื่อนไขนี้อยู่ภายใต้บังคับแห่งกฎหมายไทย
 
 ---
 
@@ -216,7 +253,7 @@ export default function SafetyPolicy({ initialTab = 'public_privacy', onClose }:
               นโยบายการคุ้มครองข้อมูลส่วนบุคคลและข้อกำหนดการใช้บริการ
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-450 font-normal font-thai leading-relaxed">
-              สอดคล้องตามเกณฑ์มาตรฐานกฎหมายคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล (PDPA) และมาตรฐานการรับรองคุณภาพห้องปฏิบัติการทางการแพทย์ (LA / ISO 15189)
+              สอดคล้องตามเกณฑ์มาตรฐานกฎหมายคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล (PDPA) และมาตรฐานการรับรองคุณภาพห้องปฏิบัติการทางการแพทย์
             </p>
           </div>
         </div>
@@ -230,391 +267,45 @@ export default function SafetyPolicy({ initialTab = 'public_privacy', onClose }:
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-        
-        {/* Navigation Sidebar (Vertical, Formal Institutional Menu) */}
-        <div className="lg:col-span-1 space-y-4">
-          
-          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-300/80 dark:border-slate-800 rounded-lg p-4 space-y-3">
-            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-2 border-b border-slate-200 dark:border-slate-800 pb-1.5 font-thai">
-              หน้าเว็บ (สาธารณะ)
-            </h3>
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => setActiveTab('public_privacy')}
-                className={`w-full text-left px-3 py-2.5 rounded text-xs font-bold font-thai transition flex items-center gap-2 cursor-pointer ${
-                  activeTab === 'public_privacy' 
-                    ? 'bg-slate-200 dark:bg-slate-800 text-[#0F2D52] dark:text-white font-extrabold border-l-2 border-[#0F2D52] dark:border-slate-400' 
-                    : 'text-slate-650 dark:text-slate-450 hover:bg-slate-100 hover:dark:bg-slate-850'
-                }`}
-              >
-                <Globe size={13} className="shrink-0 text-slate-500" />
-                <span>ประกาศความเป็นส่วนตัว</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('public_terms')}
-                className={`w-full text-left px-3 py-2.5 rounded text-xs font-bold font-thai transition flex items-center gap-2 cursor-pointer ${
-                  activeTab === 'public_terms' 
-                    ? 'bg-slate-200 dark:bg-slate-800 text-[#0F2D52] dark:text-white font-extrabold border-l-2 border-[#0F2D52] dark:border-slate-400' 
-                    : 'text-slate-650 dark:text-slate-450 hover:bg-slate-100 hover:dark:bg-slate-850'
-                }`}
-              >
-                <FileText size={13} className="shrink-0 text-slate-500" />
-                <span>ข้อกำหนดการใช้บริการ</span>
-              </button>
-            </div>
-          </div>
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-2 mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('public_privacy')}
+          className={`px-4 py-2 text-xs font-bold font-thai transition flex items-center gap-2 cursor-pointer ${
+            activeTab === 'public_privacy'
+              ? 'text-[#0F2D52] dark:text-white border-b-2 border-[#0F2D52] dark:border-slate-400'
+              : 'text-slate-650 dark:text-slate-450 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <Globe size={13} />
+          <span>ประกาศความเป็นส่วนตัว</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('public_terms')}
+          className={`px-4 py-2 text-xs font-bold font-thai transition flex items-center gap-2 cursor-pointer ${
+            activeTab === 'public_terms'
+              ? 'text-[#0F2D52] dark:text-white border-b-2 border-[#0F2D52] dark:border-slate-400'
+              : 'text-slate-650 dark:text-slate-450 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <FileText size={13} />
+          <span>ข้อกำหนดการใช้บริการ</span>
+        </button>
+      </div>
 
-          {/* Quick Metrics Infobox (Minimalized and elegant) */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 space-y-2 text-xs text-slate-600 dark:text-slate-400 font-thai">
-            <h4 className="font-bold text-[#0F2D52] dark:text-slate-300 flex items-center gap-1">
-              <Database size={13} />
-              <span>การคุ้มครองตามเวลาจริง</span>
-            </h4>
-            <p className="text-[11px] leading-relaxed">
-              เซิร์ฟเวอร์สำรองฐานข้อมูลใช้โครงสร้างกระจายความปลอดภัยในพื้นที่ภูมิภาคโอเชียเนียที่ได้มาตรฐานสูง
-            </p>
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[10px] text-slate-500 font-mono">
-              <span>ฐานข้อมูลผู้รับเวร:</span>
-              <span>{loadingSafetyMetrics ? 'ตรวจสอบ...' : `${safeRecordsCount} เรคคอร์ด`}</span>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Document Render Area (Lg: col-span-3, Minimal Page styled like elegant physical paper) */}
-        <div className="lg:col-span-3">
+      {/* Document Render Area */}
+      <div className="w-full">
           
           <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-6 sm:p-10 space-y-6 shadow-sm min-h-[500px]">
             
-            {activeTab === 'public_privacy' && (
-              <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
-                  <div className="space-y-1">
-                    <span className="text-[10px] text-slate-650 dark:text-slate-450 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                      เอกสารสำหรับเผยแพร่ต่อผู้รับบริการ
-                    </span>
-                    <h3 className="text-lg font-bold text-[#0F2D52] dark:text-white font-thai leading-tight">
-                      ประกาศความเป็นส่วนตัว (Privacy Notice)
-                    </h3>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard('privacy', docPrivacyNotice)}
-                    className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 hover:dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-300 dark:border-slate-700"
-                  >
-                    <Copy size={12} />
-                    <span>{copiedText === 'privacy' ? 'คัดลอกร่างกฎหมายสำเร็จ' : 'คัดลอกเนื้อหา'}</span>
-                  </button>
-                </div>
-
-                {/* Main Text Content - Rendered with Elegant Polish instead of raw markdown string */}
-                <div className="space-y-6 text-slate-800 dark:text-slate-200 animate-fade-in font-thai">
-                  <div className="p-4 bg-slate-50 dark:bg-slate-900 border-l-4 border-slate-400 dark:border-slate-600 rounded text-xs leading-relaxed">
-                    ประกาศความคุ้มครองข้อมูลส่วนบุคคล (Privacy Notice) สำหรับผู้ใช้บริการและผู้เข้าถึงระบบสารสนเทศประสานงานและส่งมอบเวรทางห้องปฏิบัติการ (Labsangkha Handover System) ของกลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ สังกัดสำนักงานปลัดกระทรวงสาธารณสุข
-                  </div>
-
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">1</span>
-                        ข้อมูลส่วนบุคคลที่จัดเก็บเพื่อการทำงานของห้องปฏิบัติการ
-                      </h4>
-                      <p className="mt-1.5 pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed text-left">
-                        เพื่อประโยชน์ในการประสานงานเวรทางการแพทย์และป้องกันความคลาดเคลื่อนในการส่งต่อการรักษา ระบบมีการบันทึกและรวบรวมข้อมูล ได้แก่ รหัสประจำตัวผู้ป่วยภายในโรงพยาบาล (HN), รหัสตัวเลขสิ่งส่งตรวจวิเคราะห์ (LN), ประเภทรายการสิ่งส่งตรวจตรวจวิเคราะห์, ข้อความบันทึกสิ่งส่งตรวจวิกฤต, และรายนามเจ้าหน้าที่ผู้ปฏิบัติหน้าที่ประจำเวร
-                      </p>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">2</span>
-                        วัตถุประสงค์และฐานทางกฎหมายในการประมวลผลข้อมูล
-                      </h4>
-                      <div className="mt-1.5 pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 space-y-2 leading-relaxed text-left">
-                        <p>ระบบขับเคลื่อนการประมวลผลข้อมูลเพื่อวัตถุประสงค์ในการวินิจฉัย การเฝ้าระวังสิ่งส่งตรวจวิกฤต และประสานงานส่งต่อผู้ป่วยระหว่างกะ/เวรอย่างมีความปลอดภัยและถูกต้องแม่นยำ โดยพึงอยู่ภายใต้ฐานทางกฎหมายดังนี้:</p>
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li><strong>ฐานความจำเป็นในการป้องกันหรือระงับอันตรายต่อชีวิต ร่างกาย หรือสุขภาพของบุคคล (Vital Interest)</strong> ตามมาตรา 26 (5)(ก) แห่ง พรบ. คุมครองข้อมูลส่วนบุคคล พ.ศ. 2562</li>
-                          <li><strong>ฐานความจำเป็นเพื่อการปฏิบัติหน้าที่ในการดำเนินภารกิจเพื่อประโยชน์สาธารณะของผู้ควบคุมข้อมูลส่วนบุคคล (Public Task)</strong> ตามมาตรา 26 (5)(ข) พรบ. คุมครองข้อมูลส่วนบุคคล พ.ศ. 2562</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">3</span>
-                        มาตรการจำกัดการแสดงผลแบบพรางตัวตนอัตโนมัติ (Data Masking)
-                      </h4>
-                      <div className="mt-1.5 pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 space-y-2 leading-relaxed text-left">
-                        <p>กลุ่มงานเทคนิคการแพทย์ ถือปฏิบัติมาตรการคุ้มครองความเป็นส่วนตัวขั้นสูง โดยใช้ระบบพรางรหัสข้อมูลผู้ป่วยอัตโนมัติก่อนแสดงผลสู่ภายนอก ดังนี้:</p>
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li>พรางตัวเลข HN และ ชื่อ-นามสกุล บนรายงานหน้าเว็บสาธารณะและในระบบสรุปสถิติทั่วไป</li>
-                          <li>พรางรหัสและซ่อนข้อมูลละเอียดของผู้รับบริการทุกรายในการแจ้งเตือนแบบย่อผ่านข้อความ LINE Notify หรือกลุ่มประสานภายนอก เพื่อรับประกันว่าจะไม่มีการเผยแพร่ความลับผู้ป่วยเด็ดขาด</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">4</span>
-                        ระยะเวลาการเก็บรักษาข้อมูลทางการแพทย์
-                      </h4>
-                      <div className="mt-1.5 pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 space-y-2 leading-relaxed text-left">
-                        <p>การบันทึกจัดเก็บสำรองข้อมูลเพื่อการติดตามความต่อเนื่องในการดูแลผู้ป่วย:</p>
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li>ข้อมูลสิ่งส่งตรวจวิกฤตและรหัสผู้ป่วย (HN/LN) จะถูกจัดเก็บสำรองในฐานข้อมูลที่ปลอดภัยเป็นระยะเวลาไม่เกิน 10 ปี เพื่อความต่อเนื่องทางการดูแลรักษาโรคตามระเบียบกระทรวงสาธารณสุข</li>
-                          <li>ข้อมูลสรุปรอบเวลาตรวจสอบเวรจะถูกเก็บรักษาไว้เป็นเวลาอย่างน้อย 3 ปี เพื่อประโยชน์รอบกระบวนการตรวจสอบคุณภาพและการรับรองมาตรฐานวิชาชีพเทคนิคการแพทย์ (LA/ISO 15189)</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">5</span>
-                        สิทธิ์ตามกฎหมายของเจ้าของข้อมูล (Data Subject Rights)
-                      </h4>
-                      <p className="mt-1.5 pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed text-left">
-                        ผู้รับบริการและเจ้าของข้อมูลส่วนบุคคลพึงรักษาไว้ซึ่งสิทธิ์ตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 รวมถึงสิทธิ์ในการขอนำเข้าสำเนา ตรวจสอบ ขอแก้ไขข้อมูลที่คลาดเคลื่อน และยื่นขอระงับใช้อันอาจนำมาซึ่งการละเมิดความเป็นส่วนตัว โดยสามารถประสานแจ้งความประสงค์อย่างเป็นทางการต่อผู้ควบคุมข้อมูลและเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคลของกลุ่มงานได้และจะดำเนินการตรวจสอบใน 30 วันทำการ
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'public_terms' && (
-              <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
-                  <div className="space-y-1">
-                    <span className="text-[10px] text-slate-650 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                      ข้อกำหนดการทำงานและวินัยคอมพิวเตอร์
-                    </span>
-                    <h3 className="text-lg font-bold text-[#0F2D52] dark:text-white font-thai leading-tight">
-                      ข้อกำหนดการใช้บริการระบบสารสนเทศ (Terms of Service)
-                    </h3>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard('terms', docTermsOfService)}
-                    className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 hover:dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-300 dark:border-slate-700"
-                  >
-                    <Copy size={12} />
-                    <span>{copiedText === 'terms' ? 'คัดลอกเงื่อนไขสำเร็จ' : 'คัดลอกเนื้อหา'}</span>
-                  </button>
-                </div>
-
-                {/* Main Text Content - Rendered with Elegant Polish instead of raw markdown string */}
-                <div className="space-y-6 text-slate-800 dark:text-slate-200 animate-fade-in font-thai">
-                  <div className="p-4 bg-slate-50 dark:bg-slate-900 border-l-4 border-slate-400 dark:border-slate-600 rounded text-xs space-y-1 leading-relaxed">
-                    <p className="font-bold text-[#0F2D52] dark:text-slate-300">ฉบับที่ 1.0 | ประกาศใช้เดือนมิถุนายน พุทธศักราช 2568</p>
-                    <p className="text-slate-550 dark:text-slate-450">อ้างอิงตาม: พระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์ พ.ศ. 2550 และที่แก้ไขเพิ่มเติม พ.ศ. 2560 · พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 · พระราชบัญญัติลิขสิทธิ์ พ.ศ. 2537</p>
-                  </div>
-
-                  <p className="text-xs sm:text-sm leading-relaxed text-slate-755 dark:text-slate-300 text-left">
-                    ข้อกำหนดและเงื่อนไขการใช้บริการฉบับนี้ จัดทำขึ้นเพื่อกำหนดสิทธิ หน้าที่ และความรับผิดชอบของผู้ใช้งานระบบสารสนเทศประสานการส่งมอบเวรทางห้องปฏิบัติการ การเข้าใช้งานระบบไม่ว่าด้วยวิธีการใด ถือว่าผู้ใช้งานได้อ่าน ทำความเข้าใจ และยอมรับที่จะปฏิบัติตามข้อกำหนดและเงื่อนไขนี้ทุกประการ
-                  </p>
-
-                  <hr className="border-slate-200 dark:border-slate-800" />
-
-                  <div className="space-y-6">
-                    {/* 1. Definitions */}
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">1</span>
-                        คำนิยาม
-                      </h4>
-                      <div className="pl-7 space-y-2 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed">
-                        <p>ในข้อกำหนดและเงื่อนไขนี้</p>
-                        <ol className="list-decimal pl-5 space-y-1.5">
-                          <li><strong>"ระบบ"</strong> หมายความว่า ระบบสารสนเทศประสานการส่งมอบเวรทางห้องปฏิบัติการ (Labsangkha Handover System)</li>
-                          <li><strong>"หน่วยงาน"</strong> หมายความว่า กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ</li>
-                          <li><strong>"ผู้ใช้งาน"</strong> หมายความว่า บุคคลผู้เข้าถึงหรือใช้งานระบบ ไม่ว่าจะในฐานะผู้เข้าชมทั่วไป บุคลากร หรือผู้ดูแลระบบ</li>
-                          <li><strong>"รหัส PIN"</strong> หมายความว่า รหัสยืนยันตัวบุคคลของผู้ส่งเวรซึ่งจัดเก็บ in รูปแบบที่เข้ารหัสแล้ว</li>
-                        </ol>
-                      </div>
-                    </div>
-
-                    {/* 2. เงื่อนไขการเข้าใช้บริการ */}
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">2</span>
-                        เงื่อนไขการเข้าใช้บริการ
-                      </h4>
-                      <p className="pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed text-left">
-                        ระบบนี้จัดทำขึ้นเพื่อสนับสนุนการปฏิบัติงานราชการของกลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ แม้ระบบจะเปิดให้เข้าถึงผ่านเครือข่ายอินเทอร์เน็ตสาธารณะ ผู้ใช้งานพึงใช้บริการเพื่อวัตถุประสงค์ในการปฏิบัติงานและการให้บริการทางการแพทย์เท่านั้น
-                      </p>
-                    </div>
-
-                    {/* 3. สิทธิการใช้งานจำแนกตามบทบาท TABLE */}
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">3</span>
-                        สิทธิการใช้งานจำแนกตามบทบาท
-                      </h4>
-                      <div className="pl-7 mt-2">
-                        <div className="overflow-x-auto border border-slate-250 dark:border-slate-800 rounded-lg">
-                          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-left text-xs">
-                            <thead className="bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold">
-                              <tr>
-                                <th className="px-4 py-3 whitespace-nowrap text-left font-thai">บทบาท</th>
-                                <th className="px-4 py-3 whitespace-nowrap text-left font-thai">การเข้าถึง</th>
-                                <th className="px-4 py-3 text-left font-thai">สิทธิการใช้งาน</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-150 dark:divide-slate-800 text-slate-650 dark:text-slate-355">
-                              <tr className="hover:bg-slate-50/50 hover:dark:bg-slate-900/50">
-                                <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 shrink-0 whitespace-nowrap align-top font-thai">ผู้เข้าชมทั่วไป (Public)</td>
-                                <td className="px-4 py-3 whitespace-nowrap align-top font-thai">ไม่ต้องเข้าสู่ระบบ</td>
-                                <td className="px-4 py-3 align-top font-thai pb-3">เรียกดูรายการส่งมอบเวรย้อนหลัง 3 วัน และส่งเวรโดยยืนยันด้วยรหัส PIN</td>
-                              </tr>
-                              <tr className="hover:bg-slate-50/50 hover:dark:bg-slate-900/50">
-                                <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 shrink-0 whitespace-nowrap align-top font-thai">บุคลากร (User)</td>
-                                <td className="px-4 py-3 whitespace-nowrap align-top font-thai">เข้าสู่ระบบด้วยบัญชีและรหัส PIN</td>
-                                <td className="px-4 py-3 align-top font-thai pb-3">เรียกดูประวัติการส่งมอบงานของตน และรับมอบงานเวร</td>
-                              </tr>
-                              <tr className="hover:bg-slate-50/50 hover:dark:bg-slate-900/50">
-                                <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 shrink-0 whitespace-nowrap align-top font-thai">ผู้ดูแลระบบ (Admin)</td>
-                                <td className="px-4 py-3 whitespace-nowrap align-top font-thai">เข้าสู่ระบบผ่านช่องทางเฉพาะ</td>
-                                <td className="px-4 py-3 align-top font-thai pb-3">จัดการบัญชีผู้ใช้งาน จัดการรายการส่งมอบเวรทั้งหมด ตั้งค่าระบบ และการเชื่อมต่อ LINE</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 4. หน้าที่และความรับผิดชอบของผู้ใช้งาน */}
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">4</span>
-                        หน้าที่และความรับผิดชอบของผู้ใช้งาน
-                      </h4>
-                      <div className="pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed text-left">
-                        <p className="mb-2">ผู้ใช้งานมีหน้าที่และความรับผิดชอบ ดังต่อไปนี้</p>
-                        <ol className="list-decimal pl-5 space-y-1.5">
-                          <li>รักษารหัสผ่านและรหัส PIN ไว้เป็นความลับ และไม่เปิดเผยแก่บุคคลอื่นไม่ว่ากรณีใด</li>
-                          <li>บันทึกข้อมูลการส่งมอบเวรและรายการงานให้ถูกต้อง ครบถ้วน และตรงตามความเป็นจริง เนื่องจากข้อมูลที่คลาดเคลื่อนอาจส่งผลกระทบต่อความปลอดภัยของผู้ป่วย</li>
-                          <li>ออกจากระบบทุกครั้งภายหลังการใช้งานบนอุปกรณ์ที่ใช้งานร่วมกับผู้อื่น</li>
-                          <li>รับผิดชอบต่อรายการส่งมอบเวรทั้งหมดที่ดำเนินการด้วยรหัส PIN ของตน</li>
-                          <li>แจ้งต่อผู้ดูแลระบบโดยทันที เมื่อพบความผิดปกติหรือสงสัยว่ารหัสผ่านหรือรหัส PIN ถูกนำไปใช้โดยไม่ได้รับอนุญาต</li>
-                          <li>ปฏิบัติตามนโยบายคุ้มครองข้อมูลส่วนบุคคลและนโยบายความมั่นคงปลอดภัยสารสนเทศของโรงพยาบาล</li>
-                        </ol>
-                      </div>
-                    </div>
-
-                    {/* 5. การรับมอบงานผ่านแอปพลิเคชัน LINE */}
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">5</span>
-                        การรับมอบงานผ่านแอปพลิเคชัน LINE
-                      </h4>
-                      <p className="pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed text-left">
-                        ระบบมีการส่งข้อความแจ้งเตือนในรูปแบบ Flex Message ไปยังกลุ่ม LINE ที่กำหนด ซึ่งผู้ใช้งานสามารถดำเนินการรับมอบงานผ่านปุ่มดำเนินการ การกดรับมอบงานดังกล่าวถือเป็นการยืนยันการรับมอบงานอย่างเป็นทางการ และระบบจะบันทึกไว้เป็นหลักฐานการรับมอบงาน ผู้ใช้งานพึงตรวจสอบรายละเอียดของงานทุกครั้งก่อนกดรับ เนื่องจากอาจเกี่ยวข้องกับความปลอดภัยของผู้ป่วย
-                      </p>
-                    </div>
-
-                    {/* 6. การกระทำอันเป็นข้อห้าม */}
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-red-100 dark:bg-red-950/20 text-[11px] font-bold text-red-650 dark:text-red-400">6</span>
-                        การกระทำอันเป็นข้อห้าม
-                      </h4>
-                      <div className="pl-7 space-y-3 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed text-left">
-                        <div className="p-3 bg-red-50/50 dark:bg-red-950/10 border-l-4 border-red-500 rounded text-red-900 dark:text-red-300 text-xs mb-3 font-bold">
-                          ห้ามมิให้ผู้ใช้งานกระทำการอย่างหนึ่งอย่างใด ดังต่อไปนี้ การฝ่าฝืนถือเป็นความผิดทางวินัย และอาจเป็นความผิดทางอาญาตามพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์ พ.ศ. 2550 และที่แก้ไขเพิ่มเติม และ/หรือพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562
-                        </div>
-                        <ol className="list-decimal pl-5 space-y-1.5">
-                          <li>เข้าถึงระบบโดยไม่ได้รับอนุญาต หรือใช้รหัส PIN หรือรหัสผ่านของผู้อื่น (มาตรา 5 และมาตรา 7 แห่งพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์)</li>
-                          <li>นำข้อมูลสุขภาพของผู้ป่วยออกจากระบบ หรือเปิดเผยต่อบุคคลผู้ไม่มีสิทธิ (มาตรา 79 แห่งพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล)</li>
-                          <li>แก้ไข เปลี่ยนแปลง ลบ หรือทำลายข้อมูลโดยไม่มีสิทธิ (มาตรา 9 แห่งพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์)</li>
-                          <li>ดักรับข้อมูลที่อยู่ระหว่างการรับส่งภายในระบบ (มาตรา 8 แห่งพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์)</li>
-                          <li>ทดสอบเจาะระบบหรือโจมตีระบบโดยมิได้รับอนุญาตเป็นลายลักษณ์อักษร</li>
-                          <li>ส่งโปรแกรมอัตโนมัติ สคริปต์ หรือโปรแกรมเก็บข้อมูล (Crawler) เข้าสู่ระบบ</li>
-                          <li>ใช้บัญชีผู้ใช้งานหรือรหัส PIN ร่วมกับบุคคลอื่น</li>
-                          <li>บันทึกภาพหน้าจอหรือนำข้อมูลของผู้ป่วยไปใช้นอกเหนือจากวัตถุประสงค์ด้านการรักษาพยาบาล</li>
-                        </ol>
-                      </div>
-                    </div>
-
-                    {/* 7. ทรัพย์สินทางปัญญา */}
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">7</span>
-                        ทรัพย์สินทางปัญญา
-                      </h4>
-                      <p className="pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed text-left">
-                        ซอฟต์แวร์ รหัสโปรแกรม การออกแบบส่วนติดต่อผู้ใช้ และเนื้อหาทั้งหมดของระบบ เป็นทรัพย์สินของกลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ ซึ่งได้รับความคุ้มครองตามพระราชบัญญัติลิขสิทธิ์ พ.ศ. 2537 ห้ามมิให้ทำซ้ำ ดัดแปลง หรือเผยแพร่โดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษร
-                      </p>
-                    </div>
-
-                    {/* 8. ข้อจำกัดความรับผิด */}
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">8</span>
-                        ข้อจำกัดความรับผิด
-                      </h4>
-                      <div className="pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed text-left">
-                        <p className="mb-2">หน่วยงานจะไม่รับผิดชอบต่อความเสียหายอันเกิดจากกรณีดังต่อไปนี้</p>
-                        <ol className="list-decimal pl-5 space-y-1">
-                          <li>การหยุดชะงักของระบบอันเนื่องมาจากการบำรุงรักษา หรือเหตุสุดวิสัย</li>
-                          <li>การเข้าถึงระบบโดยไม่ได้รับอนุญาตซึ่งเป็นผลจากความประมาทเลินเล่อของผู้ใช้งาน</li>
-                          <li>ความสูญหายของข้อมูลอันเนื่องมาจากความผิดพลาดในการใช้งานของผู้ใช้งาน</li>
-                        </ol>
-                      </div>
-                    </div>
-
-                    {/* 9. การระงับหรือยกเลิกการเข้าใช้งาน */}
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">9</span>
-                        การระงับหรือยกเลิกการเข้าใช้งาน
-                      </h4>
-                      <p className="pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed text-left">
-                        หน่วยงานสงวนสิทธิในการระงับหรือยกเลิกบัญชีผู้ใช้งานโดยไม่จำต้องแจ้งให้ทราบล่วงหน้า ในกรณีที่ผู้ใช้งานพ้นสภาพการเป็นบุคลากรของหน่วยงาน ฝ่าฝืนข้อกำหนดและเงื่อนไขนี้ หรือตรวจพบพฤติการณ์อันเป็นภัยต่อความมั่นคงปลอดภัยของระบบหรือข้อมูลของผู้ป่วย
-                      </p>
-                    </div>
-
-                    {/* 10. การแก้ไขเปลี่ยนแปลงข้อกำหนด */}
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">10</span>
-                        การแก้ไขเปลี่ยนแปลงข้อกำหนด
-                      </h4>
-                      <p className="pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed text-left">
-                        หน่วยงานอาจปรับปรุงแก้ไขข้อกำหนดและเงื่อนไขนี้เป็นครั้งคราว โดยจะแจ้งให้ผู้ใช้งานทราบผ่านระบบล่วงหน้าไม่น้อยกว่า 15 วันก่อนวันที่มีผลใช้บังคับ การใช้งานระบบต่อไปภายหลังวันที่มีผลใช้บังคับ ถือว่าผู้ใช้งานยอมรับข้อกำหนดที่ปรับปรุงแก้ไขแล้ว
-                      </p>
-                    </div>
-
-                    {/* 11. กฎหมายที่ใช้บังคับ */}
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-[#0F2D52] dark:text-slate-300">11</span>
-                        กฎหมายที่ใช้บังคับ
-                      </h4>
-                      <p className="pl-7 text-xs sm:text-sm text-slate-650 dark:text-slate-350 leading-relaxed text-left">
-                        ข้อกำหนดและเงื่อนไขนี้อยู่ภายใต้บังคับแห่งกฎหมายไทย ข้อพิพาทใด ๆ ที่เกิดขึ้นให้อยู่ในเขตอำนาจของศาลไทยที่มีเขตอำนาจ
-                      </p>
-                    </div>
-                  </div>
-
-                  <hr className="border-slate-200 dark:border-slate-800" />
-
-                  <div className="pt-2 text-xs text-slate-500 text-center italic leading-relaxed">
-                    <p>ประกาศ ณ เดือนมิถุนายน พุทธศักราช 2568</p>
-                    <p>กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ สังกัดสำนักงานปลัดกระทรวงสาธารณสุข กระทรวงสาธารณสุข</p>
-                  </div>
-                </div>
-              </div>
-            )}
+                {activeTab === 'public_privacy' && <PrivacyContent />}
+                {activeTab === 'public_terms' && <TermsContent />}
 
           </div>
 
         </div>
-
-      </div>
 
     </div>
   );

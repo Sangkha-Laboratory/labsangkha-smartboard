@@ -713,7 +713,7 @@ export default function HandoverForm({ currentUser }: { currentUser?: any }) {
                 placeholder="เลือกรายชื่อ"
               />
             </InputGroup>
-            <InputGroup label="PIN ยืนยัน" icon={<Lock size={14} />} required>
+            <InputGroup label="รหัสผ่านยืนยัน" icon={<Lock size={14} />} required>
               <input 
                 type="password" 
                 placeholder="ระบุรหัสผ่าน"

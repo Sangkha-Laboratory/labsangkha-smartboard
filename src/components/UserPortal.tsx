@@ -1335,7 +1335,7 @@ export default function UserPortal({
                   )}
 
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider">รหัสผ่านเดิม / Old Password (PIN)</label>
+                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider">รหัสผ่านเดิม / Old Password</label>
                     <input 
                       type="password"
                       value={oldPassword}
@@ -1346,7 +1346,7 @@ export default function UserPortal({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider">รหัสผ่านใหม่ / New Password (PIN)</label>
+                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider">รหัสผ่านใหม่ / New Password</label>
                     <input 
                       type="password"
                       value={newPassword}

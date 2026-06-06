@@ -32,10 +32,9 @@ export default function Hero() {
                 งานต่อเนื่อง ปลอดภัย ผู้รับเวรมั่นใจ
               </span>
             </h1>
-            <p className="text-[11px] sm:text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 md:mb-6 leading-relaxed max-w-lg">
+            <p className="thai-font text-[11px] sm:text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 md:mb-6 leading-relaxed max-w-lg">
               บันทึกและส่งต่อข้อมูลสำคัญในการปฏิบัติงานระหว่างเวร<br className="block sm:hidden" />
-              เพื่อความต่อเนื่องและคุณภาพงานบริการ<br className="block sm:hidden" />
-              {" "}ทางห้องปฏิบัติการ
+              ต่อเนื่อง ปลอดภัย ไร้รอยต่อ
             </p>
  
             {/* CTA Buttons - Matching requested design */}
