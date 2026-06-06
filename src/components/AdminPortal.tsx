@@ -127,6 +127,105 @@ export default function AdminPortal({
   const [handoverToDelete, setHandoverToDelete] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Edit Handover States
+  const [isEditHandoverMode, setIsEditHandoverMode] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editHandoverDate, setEditHandoverDate] = useState('');
+  const [editDivision, setEditDivision] = useState('');
+  const [editShift, setEditShift] = useState('');
+  const [editStatus, setEditStatus] = useState('');
+  const [editSenderId, setEditSenderId] = useState('');
+  const [editReceiverId, setEditReceiverId] = useState('');
+  const [editReceiverLineName, setEditReceiverLineName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [isSavingHandover, setIsSavingHandover] = useState(false);
+  const [editHandoverError, setEditHandoverError] = useState<string | null>(null);
+
+  const startEditingHandover = () => {
+    if (!selectedHandover) return;
+    setEditTitle(selectedHandover.title || '');
+    setEditHandoverDate(selectedHandover.handover_date || '');
+    setEditDivision(selectedHandover.division || '');
+    setEditShift(selectedHandover.shift || selectedHandover.category?.split('|')[0] || '');
+    setEditStatus(selectedHandover.status || 'Pending');
+    setEditSenderId(selectedHandover.sender_id || '');
+    setEditReceiverId(selectedHandover.receiver_id || '');
+    setEditReceiverLineName(selectedHandover.receiver_line_name || '');
+    setEditDescription(selectedHandover.description || '');
+    setEditHandoverError(null);
+    setIsEditHandoverMode(true);
+  };
+
+  const handleSaveHandover = async () => {
+    if (!selectedHandover) return;
+    if (!editTitle.trim()) {
+      setEditHandoverError('กรุณากรอกหัวข้อรายละเอียดการส่งงาน');
+      return;
+    }
+    if (!editDivision.trim()) {
+      setEditHandoverError('กรุณาเลือกแผนก');
+      return;
+    }
+
+    setIsSavingHandover(true);
+    setEditHandoverError(null);
+
+    try {
+      const updatePayload: any = {
+        title: editTitle,
+        handover_date: editHandoverDate,
+        division: editDivision,
+        shift: editShift,
+        status: editStatus,
+        sender_id: editSenderId || null,
+        receiver_id: editReceiverId || null,
+        receiver_line_name: editReceiverLineName || null,
+        description: editDescription,
+      };
+
+      // If category has shift in it (hybrid model legacy fallback)
+      const currentCategory = selectedHandover.category || '';
+      if (currentCategory.includes('|')) {
+        const parts = currentCategory.split('|');
+        parts[0] = editShift;
+        updatePayload.category = parts.join('|');
+      }
+
+      const { error } = await supabase
+        .from('handovers')
+        .update(updatePayload)
+        .eq('id', selectedHandover.id);
+
+      if (error) throw error;
+
+      // Update local state is matching so UI refreshes seamlessly
+      const updatedItem = {
+        ...selectedHandover,
+        ...updatePayload,
+        sender: editSenderId ? (usersList.find(u => u.id === editSenderId) || selectedHandover.sender) : null,
+        receiver: editReceiverId ? (usersList.find(u => u.id === editReceiverId) || selectedHandover.receiver) : null,
+      };
+
+      setSelectedHandover(updatedItem);
+      setIsEditHandoverMode(false);
+      
+      // Refresh the main grid handovers
+      await fetchDashboardData();
+
+    } catch (err: any) {
+      console.error('Error updating handover:', err);
+      setEditHandoverError('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + (err.message || ''));
+    } finally {
+      setIsSavingHandover(false);
+    }
+  };
+
+  const closeHandoverDetail = () => {
+    setSelectedHandover(null);
+    setIsEditHandoverMode(false);
+    setEditHandoverError(null);
+  };
+
   // Pagination States
   const [historyPage, setHistoryPage] = useState(1);
   const [usersPage, setUsersPage] = useState(1);
@@ -1846,7 +1945,16 @@ export default function AdminPortal({
                 />
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">ระบุวันที่ส่งเวร</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">ระบุวันที่ส่งเวร</label>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryDateFilter(new Date().toISOString().split('T')[0])}
+                      className="text-[9px] font-bold text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-md hover:bg-brand-blue/20 transition-all cursor-pointer"
+                    >
+                      วันนี้
+                    </button>
+                  </div>
                   <div className="relative custom-datepicker">
                     <input
                       type="date"
@@ -3174,108 +3282,294 @@ export default function AdminPortal({
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 w-full max-w-2xl shadow-2xl overflow-y-auto flex flex-col max-h-[86vh]"
             >
-              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between font-thai">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-brand-blue/10 dark:bg-brand-blue/20 rounded-xl text-brand-blue flex-shrink-0">
-                    <ClipboardList size={22} />
+                  <div className="p-2.5 bg-brand-blue/10 dark:bg-brand-blue/20 rounded-xl text-brand-blue flex-shrink-0 animate-fadeIn">
+                    {isEditHandoverMode ? <Edit2 size={22} /> : <ClipboardList size={22} />}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-base font-black text-[#0f2d52] dark:text-white leading-none">รายละเอียดการส่งมอบเวร</h3>
+                    <h3 className="text-base font-black text-[#0f2d52] dark:text-white leading-none">
+                      {isEditHandoverMode ? 'แก้ไขข้อมูลการส่ง-รับเวร' : 'รายละเอียดการส่งมอบเวร'}
+                    </h3>
                     <p className="text-[10px] text-slate-400 font-mono font-bold mt-1 truncate">ID: {selectedHandover.id}</p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setSelectedHandover(null)}
+                  onClick={closeHandoverDetail}
                   className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all border border-slate-100 dark:border-slate-800"
                 >
                   <X size={18} />
                 </button>
               </div>
 
-              <div className="p-6 overflow-y-auto space-y-6">
-                <div>
-                  <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold border w-fit block mb-1.5 ${
-                    selectedHandover.division === 'Central Lab' ? 'text-brand-blue border-brand-blue/20 bg-brand-blue/5' : selectedHandover.division === 'Blood Bank' ? 'text-violet-500 border-violet-500/20 bg-violet-50 dark:bg-violet-950/20' : 'text-slate-500 border-slate-200 bg-slate-50'
-                  }`}>
-                    {selectedHandover.division}
-                  </span>
-                  <h4 className="text-base font-black text-[#0f2d52] dark:text-white leading-snug">{selectedHandover.title}</h4>
-                </div>
+              {isEditHandoverMode ? (
+                /* --- EDIT MODE VIEW --- */
+                <div className="p-6 overflow-y-auto space-y-5 font-thai">
+                  {editHandoverError && (
+                    <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-2xl text-[13px] font-black flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse.shrink-0" />
+                      {editHandoverError}
+                    </div>
+                  )}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl">
-                  <div>
-                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">วันที่ระบุเวร</span>
-                    <p className="text-xs font-black text-[#0f2d52] dark:text-slate-250 mt-1">{formatThaiDate(selectedHandover.handover_date)}</p>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block ml-1">
+                      หัวข้อส่งมอบงาน / บันทึกเวร
+                    </label>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="ระบุหัวข้อหลัก..."
+                      className="w-full px-4 py-3 bg-[#F8FAFC] dark:bg-slate-950 border border-slate-150 dark:border-slate-800 rounded-xl outline-none text-[13px] font-bold text-slate-800 dark:text-white"
+                    />
                   </div>
-                  <div>
-                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">ถูกบันทึกเมื่อ</span>
-                    <p className="text-xs font-black text-[#0f2d52] dark:text-slate-250 mt-1">{formatTimeStr(selectedHandover.created_at)}</p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block ml-1">
+                        งาน / แผนก
+                      </label>
+                      <select
+                        value={editDivision}
+                        onChange={(e) => setEditDivision(e.target.value)}
+                        className="w-full px-4 py-3 bg-[#F8FAFC] dark:bg-slate-950 border border-slate-150 dark:border-slate-800 rounded-xl outline-none text-[13px] font-bold text-slate-800 dark:text-white cursor-pointer"
+                      >
+                        <option value="Central Lab">Central Lab</option>
+                        <option value="Blood Bank">Blood Bank</option>
+                        <option value="Microbiology">Microbiology</option>
+                        <option value="Pathology">Pathology</option>
+                        <option value="Immunology">Immunology</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block ml-1">
+                        เวรปฏิบัติงาน (Shift)
+                      </label>
+                      <input
+                        type="text"
+                        value={editShift}
+                        onChange={(e) => setEditShift(e.target.value)}
+                        placeholder="เช่น เช้า, บ่าย, ดึก, กลางวัน"
+                        className="w-full px-4 py-3 bg-[#F8FAFC] dark:bg-slate-950 border border-slate-150 dark:border-slate-800 rounded-xl outline-none text-[13px] font-bold text-slate-800 dark:text-white"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">ปฏิบัติงาน (Shift)</span>
-                    <p className="text-xs font-black text-[#0f2d52] dark:text-slate-250 mt-1">เวร{selectedHandover.shift || selectedHandover.category?.split('|')[0] || 'ไม่ระบุ'}</p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block ml-1">
+                        วันที่ระบุเวร
+                      </label>
+                      <input
+                        type="date"
+                        value={editHandoverDate}
+                        onChange={(e) => setEditHandoverDate(e.target.value)}
+                        className="w-full px-4 py-3 bg-[#F8FAFC] dark:bg-slate-950 border border-slate-150 dark:border-slate-800 rounded-xl outline-none text-[13px] font-bold text-slate-800 dark:text-white cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block ml-1">
+                        สถานะใบงาน
+                      </label>
+                      <select
+                        value={editStatus}
+                        onChange={(e) => setEditStatus(e.target.value)}
+                        className="w-full px-4 py-3 bg-[#F8FAFC] dark:bg-slate-950 border border-slate-150 dark:border-slate-800 rounded-xl outline-none text-[13px] font-bold text-slate-800 dark:text-white cursor-pointer"
+                      >
+                        <option value="Pending">Pending (รอผู้ตอบรับเวร)</option>
+                        <option value="Accepted">Accepted (ตอบรับเวรสำเร็จ)</option>
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">สถานะใบงาน</span>
-                    <p className="mt-1">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-black inline-block ${selectedHandover.status === 'Pending' ? 'bg-[#facc15] text-slate-950' : 'bg-green-500 text-white'}`}>
-                        {selectedHandover.status === 'Pending' ? 'รอผู้ตอบรับเวร' : 'ตอบรับเวรสำเร็จ'}
-                      </span>
-                    </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block ml-1">
+                        เจ้าหน้าที่ผู้ส่งมอบงาน
+                      </label>
+                      <select
+                        value={editSenderId}
+                        onChange={(e) => setEditSenderId(e.target.value)}
+                        className="w-full px-4 py-3 bg-[#F8FAFC] dark:bg-slate-950 border border-slate-150 dark:border-slate-800 rounded-xl outline-none text-[13px] font-bold text-slate-800 dark:text-white cursor-pointer"
+                      >
+                        <option value="">-- ไม่ระบุ (System / LINE Webhook) --</option>
+                        {usersList.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.full_name} ({u.role})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block ml-1">
+                        เจ้าหน้าที่ผู้รับส่งเวร
+                      </label>
+                      <select
+                        value={editReceiverId}
+                        onChange={(e) => setEditReceiverId(e.target.value)}
+                        className="w-full px-4 py-3 bg-[#F8FAFC] dark:bg-slate-950 border border-slate-150 dark:border-slate-800 rounded-xl outline-none text-[13px] font-bold text-slate-800 dark:text-white cursor-pointer"
+                      >
+                        <option value="">-- ยังไม่มีการตอบรับเวร --</option>
+                        {usersList.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.full_name} ({u.role})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block ml-1">
+                      ชื่อแสดงตัวตนบน LINE (ผู้รับเวรผ่าน Webhook / LIFF)
+                    </label>
+                    <input
+                      type="text"
+                      value={editReceiverLineName}
+                      onChange={(e) => setEditReceiverLineName(e.target.value)}
+                      placeholder="ระบุกรณีผู้ใช้ตอบรับงานผ่าน LINE เท่านั้น..."
+                      className="w-full px-4 py-3 bg-[#F8FAFC] dark:bg-slate-950 border border-slate-150 dark:border-slate-800 rounded-xl outline-none text-[13px] font-bold text-slate-800 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block ml-1">
+                      รายละเอียดการส่งเวร (Full Description)
+                    </label>
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      placeholder="ระบุรายละเอียดทางคลินิก, ข้อมูลผู้ป่วย, อาการสิ่งตรวจสิ่งแวดล้อมต่างๆ..."
+                      rows={4}
+                      className="w-full px-4 py-3 bg-[#F8FAFC] dark:bg-slate-950 border border-slate-150 dark:border-slate-800 rounded-xl outline-none text-[13px] font-bold text-slate-800 dark:text-white leading-relaxed resize-none"
+                    />
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">รายละเอียดส่งเวร (Full Description)</span>
-                  <div className="p-4 bg-slate-50/50 dark:bg-slate-900 border border-slate-100 dark:border-slate-850 rounded-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-350 font-bold whitespace-pre-wrap min-h-[100px]">
-                    {selectedHandover.description || 'ไม่มีรายละเอียดเพิ่มเติม'}
+              ) : (
+                /* --- READ ONLY VIEW (CURRENT) --- */
+                <div className="p-6 overflow-y-auto space-y-6">
+                  <div>
+                    <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold border w-fit block mb-1.5 ${
+                      selectedHandover.division === 'Central Lab' ? 'text-brand-blue border-brand-blue/20 bg-brand-blue/5' : selectedHandover.division === 'Blood Bank' ? 'text-violet-500 border-violet-500/20 bg-violet-50 dark:bg-violet-950/20' : 'text-slate-500 border-slate-200 bg-slate-50'
+                    }`}>
+                      {selectedHandover.division}
+                    </span>
+                    <h4 className="text-base font-black text-[#0f2d52] dark:text-white leading-snug">{selectedHandover.title}</h4>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-brand-blue/5 dark:bg-brand-blue/10 border border-brand-blue/10 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-brand-blue flex items-center justify-center text-white text-xs font-black shrink-0">
-                      ST
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl">
+                    <div>
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">วันที่ระบุเวร</span>
+                      <p className="text-xs font-black text-[#0f2d52] dark:text-slate-250 mt-1">{formatThaiDate(selectedHandover.handover_date)}</p>
                     </div>
                     <div>
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">เจ้าหน้าที่ผู้ส่งมอบงาน</span>
-                      <p className="text-xs font-black text-[#0f2d52] dark:text-white mt-0.5">{selectedHandover.sender?.full_name || 'System'}</p>
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">ถูกบันทึกเมื่อ</span>
+                      <p className="text-xs font-black text-[#0f2d52] dark:text-slate-250 mt-1">{formatTimeStr(selectedHandover.created_at)}</p>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">ปฏิบัติงาน (Shift)</span>
+                      <p className="text-xs font-black text-[#0f2d52] dark:text-slate-250 mt-1">เวร{selectedHandover.shift || selectedHandover.category?.split('|')[0] || 'ไม่ระบุ'}</p>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">สถานะใบงาน</span>
+                      <p className="mt-1">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black inline-block ${selectedHandover.status === 'Pending' ? 'bg-[#facc15] text-slate-950' : 'bg-green-500 text-white'}`}>
+                          {selectedHandover.status === 'Pending' ? 'รอผู้ตอบรับเวร' : 'ตอบรับเวรสำเร็จ'}
+                        </span>
+                      </p>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-green-50/50 dark:bg-green-950/15 border border-green-500/10 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-green-500 flex items-center justify-center text-white text-xs font-black shrink-0">
-                      RE
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">รายละเอียดส่งเวร (Full Description)</span>
+                    <div className="p-4 bg-slate-50/50 dark:bg-slate-900 border border-slate-100 dark:border-slate-850 rounded-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-350 font-bold whitespace-pre-wrap min-h-[100px]">
+                      {selectedHandover.description || 'ไม่มีรายละเอียดเพิ่มเติม'}
                     </div>
-                    <div>
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">เจ้าหน้าที่ผู้รับส่งเวร</span>
-                      <p className="text-xs font-black text-green-600 dark:text-green-400 mt-0.5">{selectedHandover.receiver?.full_name || selectedHandover.receiver_line_name || 'ยังไม่มีการยืนยันการรับเวร'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-brand-blue/5 dark:bg-brand-blue/10 border border-brand-blue/10 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-brand-blue flex items-center justify-center text-white text-xs font-black shrink-0">
+                        ST
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">เจ้าหน้าที่ผู้ส่งมอบงาน</span>
+                        <p className="text-xs font-black text-[#0f2d52] dark:text-white mt-0.5">{selectedHandover.sender?.full_name || 'System'}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-green-50/50 dark:bg-green-950/15 border border-green-500/10 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-green-500 flex items-center justify-center text-white text-xs font-black shrink-0">
+                        RE
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">เจ้าหน้าที่ผู้รับส่งเวร</span>
+                        <p className="text-xs font-black text-green-600 dark:text-green-400 mt-0.5">{selectedHandover.receiver?.full_name || selectedHandover.receiver_line_name || 'ยังไม่มีการยืนยันการรับเวร'}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHandoverToDelete(selectedHandover);
-                    setIsDeleteConfirmOpen(true);
-                  }}
-                  className="px-4 h-10 bg-red-50 dark:bg-red-950/20 hover:bg-red-100/80 dark:hover:bg-red-950/30 text-red-500 rounded-xl text-xs font-black border border-red-200/50 dark:border-red-950/50 transition-all flex items-center gap-1.5"
-                >
-                  <Trash2 size={13} />
-                  <span>ลบข้อมูลจากประวัติ</span>
-                </button>
+              <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900 font-thai">
+                {isEditHandoverMode ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditHandoverMode(false)}
+                      className="px-4 h-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-black transition-all"
+                    >
+                      ยกเลิก
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => setSelectedHandover(null)}
-                  className="px-5 h-10 bg-[#0f2d52] hover:bg-[#081f3d] text-white rounded-xl text-xs font-black transition-all"
-                >
-                  ปิดหน้ารายละเอียด
-                </button>
+                    <button
+                      type="button"
+                      disabled={isSavingHandover}
+                      onClick={handleSaveHandover}
+                      className="px-5 h-10 bg-brand-blue hover:bg-blue-600 disabled:bg-slate-300 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5"
+                    >
+                      {isSavingHandover ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHandoverToDelete(selectedHandover);
+                        setIsDeleteConfirmOpen(true);
+                      }}
+                      className="px-4 h-10 bg-red-50 dark:bg-red-950/20 hover:bg-red-100/80 dark:hover:bg-red-950/30 text-red-500 rounded-xl text-xs font-black border border-red-200/50 dark:border-red-950/50 transition-all flex items-center gap-1.5"
+                    >
+                      <Trash2 size={13} />
+                      <span>ลบข้อมูลจากประวัติ</span>
+                    </button>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={startEditingHandover}
+                        className="px-4 h-10 bg-amber-50 dark:bg-amber-950/20 hover:bg-amber-100 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-black border border-amber-200/50 dark:border-amber-950/50 transition-all flex items-center gap-1.5"
+                      >
+                        <Edit2 size={13} />
+                        <span>แก้ไขข้อมูล</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={closeHandoverDetail}
+                        className="px-5 h-10 bg-[#0f2d52] hover:bg-[#081f3d] text-white rounded-xl text-xs font-black transition-all"
+                      >
+                        ปิดหน้ารายละเอียด
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </motion.div>
           </div>

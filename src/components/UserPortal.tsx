@@ -629,12 +629,6 @@ export default function UserPortal({
         {/* Top bar */}
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 rounded-xl text-[#0f2d52] dark:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            >
-              <Menu size={18} />
-            </button>
             
             <div className="hidden xs:block">
               <nav className="text-[12px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
@@ -1228,7 +1222,7 @@ export default function UserPortal({
               </div>
 
               {/* List of announcements */}
-              <div className="max-w-4xl space-y-4">
+              <div className="w-full space-y-4">
                 {announcements.length === 0 ? (
                   <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 text-center text-slate-400 font-bold text-xs uppercase tracking-wider">
                     ไม่มีข่าวสารประชาสัมพันธ์ในขณะนี้

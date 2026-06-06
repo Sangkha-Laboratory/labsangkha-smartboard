@@ -68,6 +68,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
 
   // Task & Handover data
   const [targetId, setTargetId] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState('');
   const [batchTasks, setBatchTasks] = useState<BatchTask[]>([]);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [targetHandover, setTargetHandover] = useState<any | null>(null);
@@ -77,6 +78,107 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
   const [acceptedTasksList, setAcceptedTasksList] = useState<BatchTask[]>([]);
   const [usersMap, setUsersMap] = useState<Record<string, string>>({});
   const [recentHandovers, setRecentHandovers] = useState<any[]>([]);
+
+  // User list for LIFF Login
+  const [usersList, setUsersList] = useState<{ id: string; full_name: string }[]>([]);
+  // Logged-in state for LIFF
+  const [liffLoggedInUser, setLiffLoggedInUser] = useState<{ id: string; full_name: string } | null>(() => {
+    const saved = localStorage.getItem('liff_logged_in_user');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return null;
+  });
+
+  // Login form status
+  const [loginReceiverId, setLoginReceiverId] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoginDropdownOpen, setIsLoginDropdownOpen] = useState(false);
+  const [loginSearchTerm, setLoginSearchTerm] = useState('');
+
+  const filteredLoginUsers = usersList.filter(u =>
+    u.full_name.toLowerCase().includes(loginSearchTerm.toLowerCase())
+  );
+
+  const handleLiffLogout = () => {
+    setLiffLoggedInUser(null);
+    localStorage.removeItem('liff_logged_in_user');
+    setLoginReceiverId('');
+    setLoginPassword('');
+    setLoginSearchTerm('');
+  };
+
+  const handleLiffLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!loginReceiverId) {
+      setLoginError('กรุณาเลือกผู้ใช้งาน');
+      return;
+    }
+    if (!loginPassword) {
+      setLoginError('กรุณาระบุรหัสผ่าน');
+      return;
+    }
+
+    setIsLoggingIn(true);
+    setLoginError(null);
+
+    try {
+      // Fetch user record
+      const { data: userRecord, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', loginReceiverId)
+        .single();
+
+      if (fetchError || !userRecord) {
+        throw new Error('ไม่พบข้อมูลผู้ใช้งาน');
+      }
+
+      const isHashed = userRecord.sender_pass?.startsWith('$') || (userRecord.sender_pass?.length || 0) > 32;
+      
+      // Attempt auth
+      if (userRecord.email && isHashed) {
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: userRecord.email,
+          password: loginPassword
+        });
+        
+        if (authError) {
+          const { data: isValid, error: rpcError } = await supabase.rpc('verify_user_password', {
+            p_user_id: userRecord.id,
+            p_password: loginPassword
+          });
+          if (rpcError || !isValid) {
+            throw new Error('รหัสผ่านไม่ถูกต้อง');
+          }
+        }
+      } else if (isHashed) {
+        const { data: isValid, error: rpcError } = await supabase.rpc('verify_user_password', {
+          p_user_id: userRecord.id,
+          p_password: loginPassword
+        });
+        if (rpcError || !isValid) {
+          throw new Error('รหัสผ่านไม่ถูกต้อง');
+        }
+      } else {
+        if (userRecord.sender_pass !== loginPassword) {
+          throw new Error('รหัสผ่านไม่ถูกต้อง');
+        }
+      }
+
+      // Success
+      const loggedIn = { id: userRecord.id, full_name: userRecord.full_name };
+      setLiffLoggedInUser(loggedIn);
+      localStorage.setItem('liff_logged_in_user', JSON.stringify(loggedIn));
+    } catch (err: any) {
+      console.error(err);
+      setLoginError(err.message || 'รหัสผ่านไม่ถูกต้อง');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
   useEffect(() => {
     // Helper to extract parameters from URL query, hash, or LINE LIFF storage
@@ -206,6 +308,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
           usersData.forEach(u => {
             m[u.id] = u.full_name;
           });
+          setUsersList(usersData as { id: string; full_name: string }[]);
         }
         setUsersMap(m);
 
@@ -307,10 +410,32 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
     });
   };
 
+  const handleSelectAllPending = () => {
+    if (isSubmitting) return;
+    const pendingTasks = batchTasks.filter(t => t.status === 'Pending');
+    const pendingIds = pendingTasks.map(t => t.id);
+    
+    const allChecked = pendingIds.length > 0 && pendingIds.every(id => selectedTaskIds.has(id));
+    
+    if (allChecked) {
+      setSelectedTaskIds(prev => {
+        const next = new Set(prev);
+        pendingIds.forEach(id => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedTaskIds(prev => {
+        const next = new Set(prev);
+        pendingIds.forEach(id => next.add(id));
+        return next;
+      });
+    }
+  };
+
   const handleConfirmAccept = async () => {
     if (isSubmitting) return;
 
-    const currentUserName = liffProfile?.displayName || mockProfileName;
+    const currentUserName = liffLoggedInUser?.full_name || '';
     if (!currentUserName.trim()) {
       alert("กรุณาระบุชื่อผู้รับงานก่อนทำรายการ");
       return;
@@ -339,17 +464,13 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
           const original = batchTasks.find(bt => bt.id === t.id);
           const tTitle = original ? original.title : t.title;
           const acceptor = t.receiver_line_name || 'เจ้าหน้าที่ท่านอื่น';
-          return `- "${maskSensitiveData(tTitle, false)}" ถูกรับไปแล้วโดยคุณ ${acceptor}`;
+          return `- "${tTitle}" ถูกรับไปแล้วโดยคุณ ${acceptor}`;
         }).join('\n');
         throw new Error(`ขออภัย งานที่คุณเลือกบางรายการได้รับการตอบรับไปแล้วก่อนหน้านี้:\n${descriptions}\n\nกรุณารีเฟรชโปรแกรมเพื่ออัปเดตข้อมูล`);
       }
 
-      // Find matching user UUID if name is registered
-      let receiverId: string | null = null;
-      const matchedUserId = Object.keys(usersMap).find(key => usersMap[key] === currentUserName);
-      if (matchedUserId) {
-        receiverId = matchedUserId;
-      }
+      // Use logged in user ID directly
+      const receiverId = liffLoggedInUser?.id || null;
 
       const nowStr = new Date().toISOString();
       const updatedList: BatchTask[] = [];
@@ -441,8 +562,11 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
   const getAvatarLetter = (name: string) => name ? name.trim().slice(0, 1) : '?';
 
   if (!targetId) {
-    const pendingRecent = recentHandovers.filter(item => item.status === 'Pending');
-    const acceptedRecent = recentHandovers.filter(item => item.status !== 'Pending');
+    const filteredHandovers = dateFilter
+      ? recentHandovers.filter(item => item.handover_date === dateFilter)
+      : recentHandovers;
+    const pendingRecent = filteredHandovers.filter(item => item.status === 'Pending');
+    const acceptedRecent = filteredHandovers.filter(item => item.status !== 'Pending');
     const currentUserName = liffProfile?.displayName || mockProfileName;
 
     const handleRefresh = async () => {
@@ -489,7 +613,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
           </div>
 
           {/* Profile Banner */}
-          <div className="bg-gradient-to-r from-[#EFF6FF] to-[#DBEAFE] border-b border-[#BFDBFE] px-5 py-3.5 flex items-center gap-3">
+          <div className="bg-gradient-to-r from-[#EFF6FF] to-[#DBEAFE] border-b border-[#BFDBFE] px-5 py-3.5 flex items-center gap-3 font-thai">
             <div className="w-9 h-9 rounded-full bg-[#2B8BE8] flex items-center justify-center font-bold text-white text-sm shrink-0">
               {getAvatarLetter(currentUserName)}
             </div>
@@ -498,49 +622,40 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
                 <span className="text-[13px] font-bold text-[#1E40AF] truncate">
                   {currentUserName}
                 </span>
-                {isEmulated && (
-                  <button 
-                    onClick={() => setShowNameEditor(!showNameEditor)}
-                    className="text-[9px] bg-blue-100/80 hover:bg-blue-200 text-blue-700 px-1.5 py-0.5 rounded font-black border border-blue-200/50 shrink-0"
-                  >
-                    แก้ไขชื่อจำลอง
-                  </button>
-                )}
+                <button 
+                  onClick={handleLiffLogout}
+                  className="text-[9px] bg-red-50 hover:bg-red-100 text-red-650 px-1.5 py-0.5 rounded font-bold border border-red-200/30 shrink-0"
+                >
+                  ออกจากระบบ
+                </button>
               </div>
               <div className="text-[10.5px] text-[#3B82F6] font-medium mt-0.5 flex items-center gap-1">
                 <ShieldCheck size={11} className="text-blue-500 shrink-0" />
-                <span>{isEmulated ? 'ใช้งานโหมดจำลอง (Emulated)' : 'เชื่อมข้อมูลจาก LINE สำเร็จ'}</span>
+                <span>เข้าสู่ระบบผ่านรหัสผ่านสำนักงานสำเร็จ</span>
               </div>
             </div>
           </div>
 
-          {/* Name Editor Popup if Emulated */}
-          {isEmulated && showNameEditor && (
-            <div className="bg-blue-50/50 border-b border-[#BFDBFE] px-5 py-3 animate-fadeIn">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">
-                ระบุชื่อของคุณเพื่อจำลองล็อกอินรับเวร
-              </label>
-              <div className="flex gap-2">
-                <input 
-                  type="text"
-                  value={mockProfileName}
-                  onChange={(e) => setMockProfileName(e.target.value)}
-                  placeholder="พิมพ์ชื่อ-นามสกุล..."
-                  className="flex-1 px-3 py-1.5 text-xs border border-blue-200 rounded-xl outline-none bg-white font-semibold"
-                />
-                <button 
-                  onClick={() => setShowNameEditor(false)}
-                  className="px-3.5 py-1.5 bg-[#2B8BE8] text-white rounded-xl text-xs font-bold"
-                >
-                  ตกลง
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Main List Area */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             
+            {/* Filter Control */}
+            <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-2">
+              <input
+                type="date"
+                className="flex-1 text-xs font-bold bg-slate-50 p-2 rounded-lg border-none text-slate-700 outline-none"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
+                className="text-[10px] font-bold bg-[#2B8BE8] text-white px-3 py-2 rounded-lg hover:bg-[#1E6FC7] transition-all"
+              >
+                วันนี้
+              </button>
+            </div>
+
             {/* 1. Pending Section */}
             <div>
               <div className="flex items-center gap-1.5 mb-2.5">
@@ -711,8 +826,145 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
     );
   }
 
+  // ─── FORCE LIFF DATABASE LOGIN FIRST ───────────────────────────────────
+  if (!liffLoggedInUser) {
+    return (
+      <div className="min-h-screen bg-[#DAEAF7] flex items-start justify-center p-0 sm:py-8 sm:px-4 font-sans text-[#1A1A2E]">
+        <div className="w-full max-w-md bg-white sm:rounded-[2.5rem] shadow-2xl overflow-hidden min-h-screen sm:min-h-[790px] flex flex-col relative border border-transparent sm:border-gray-100 animate-fadeIn">
+          
+          {/* Top visual graphic / Header banner */}
+          <div className="bg-[#2B8BE8] text-white px-6 py-9 text-center relative overflow-hidden shrink-0">
+            {/* Ambient glows */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-200/10 rounded-full blur-2xl" />
+            <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-blue-300/10 rounded-full blur-xl" />
+            
+            <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center mx-auto mb-4 border border-white/20 shadow-inner">
+              <ShieldCheck size={32} className="text-white" />
+            </div>
+            
+            <h1 className="text-xl font-black tracking-tight font-thai">เข้าสู่ระบบรับเวร LIFF</h1>
+            <p className="text-xs text-white/80 font-medium font-thai mt-1">กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ</p>
+          </div>
+
+          {/* Form container */}
+          <form onSubmit={handleLiffLogin} className="flex-1 px-6 py-8 flex flex-col justify-between">
+            <div className="space-y-6">
+              {/* Select User Dropdown */}
+              <div className="space-y-2 relative">
+                <label className="text-[10px] font-extrabold text-[#6B7280] uppercase tracking-widest block ml-1 font-thai">
+                  เลือกรายชื่อเจ้าหน้าที่
+                </label>
+                
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsLoginDropdownOpen(!isLoginDropdownOpen)}
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-gray-100 rounded-2xl outline-none text-[13px] font-bold text-left flex items-center justify-between shadow-sm font-thai min-h-[46px]"
+                  >
+                    <span className={loginReceiverId ? 'text-slate-800' : 'text-slate-400 font-normal'}>
+                      {loginReceiverId ? (usersList.find(u => u.id === loginReceiverId)?.full_name) : 'เลือกชื่อของคุณ...'}
+                    </span>
+                    <span className="text-gray-400">▼</span>
+                  </button>
+
+                  {/* Dropdown list */}
+                  {isLoginDropdownOpen && (
+                    <div className="absolute z-50 left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden animate-fadeIn max-h-[220px] w-full">
+                      <div className="p-2 border-b border-gray-50">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="ค้นชื่อ..."
+                            value={loginSearchTerm}
+                            onChange={(e) => setLoginSearchTerm(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#F8FAFC] border-none rounded-xl outline-none text-xs font-semibold placeholder:text-gray-400 font-thai"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="max-h-[160px] overflow-y-auto py-1">
+                        {filteredLoginUsers.length > 0 ? (
+                          filteredLoginUsers.map((user) => (
+                            <button
+                              key={user.id}
+                              type="button"
+                              onClick={() => {
+                                setLoginReceiverId(user.id);
+                                setIsLoginDropdownOpen(false);
+                              }}
+                              className={`w-full px-4 py-2 text-left text-xs font-semibold hover:bg-sky-50 transition-colors block ${
+                                loginReceiverId === user.id ? 'text-blue-600 bg-sky-50/50' : 'text-slate-700'
+                              }`}
+                            >
+                              {user.full_name}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-4 text-xs text-gray-400 text-center font-thai">
+                            ไม่พบรายชื่อ
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Password Input */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-extrabold text-[#6B7280] uppercase tracking-widest block ml-1 font-thai">
+                  รหัสผ่าน
+                </label>
+                <input
+                  type="password"
+                  placeholder="ใส่รหัสผ่านของคุณ"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-gray-100 rounded-[1.25rem] outline-none text-[13px] font-[900] shadow-sm tracking-widest placeholder:tracking-normal placeholder:font-normal font-thai"
+                />
+              </div>
+
+              {loginError && (
+                <div className="p-3 bg-red-50 text-red-650 text-xs font-bold rounded-xl border border-red-100 flex items-center gap-2 leading-snug font-thai">
+                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                   <span>{loginError}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8 space-y-3 pb-4">
+              <button
+                type="submit"
+                disabled={isLoggingIn || !loginReceiverId || !loginPassword}
+                className="w-full h-12 bg-[#2B8BE8] hover:bg-[#1E6FC7] disabled:bg-[#E5E7EB] disabled:text-[#6B7280] text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/10 cursor-pointer text-sm font-thai"
+              >
+                {isLoggingIn ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    กำลังเข้าสู่ระบบ...
+                  </>
+                ) : (
+                  'เข้าสู่ระบบเพื่อดำเนินการต่อ'
+                )}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => window.location.href = '/'}
+                className="w-full h-11 bg-[#F0F6FC] text-[#1A1A2E] font-bold rounded-xl hover:bg-slate-100 transition-colors text-xs flex items-center justify-center gap-2 font-thai"
+              >
+                กลับสู่หน้าจอสมาร์ทบอร์ดหลัก
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    );
+  }
+
   const pendingCount = batchTasks.filter(item => item.status === 'Pending').length;
-  const currentUserName = liffProfile?.displayName || mockProfileName;
+  const currentUserName = liffLoggedInUser?.full_name || '';
 
   return (
     <div className="min-h-screen bg-[#DAEAF7] flex items-start justify-center p-0 sm:py-8 sm:px-4 font-sans text-[#1A1A2E]">
@@ -752,18 +1004,16 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
                   <span className="text-[13px] font-bold text-[#1E40AF]">
                     {currentUserName}
                   </span>
-                  {isEmulated && (
-                    <button 
-                      onClick={() => setShowNameEditor(!showNameEditor)}
-                      className="text-[10px] bg-blue-100/80 hover:bg-blue-200 text-blue-700 px-1.5 py-0.5 rounded font-black border border-blue-200/50"
-                    >
-                      แก้ไขชื่อจำลอง
-                    </button>
-                  )}
+                  <button 
+                    onClick={handleLiffLogout}
+                    className="text-[9.5px] bg-red-50 hover:bg-red-100 text-red-650 px-1.5 py-0.5 rounded font-bold border border-red-200/30 shrink-0"
+                  >
+                    ออกจากระบบ
+                  </button>
                 </div>
                 <div className="text-[10.5px] text-[#3B82F6] font-medium mt-0.5 flex items-center gap-1">
                   <ShieldCheck size={11} className="text-blue-500 shrink-0" />
-                  {isEmulated ? 'เข้าใช้งานในฐานะจำลอง (Emulated Profile)' : 'ยืนยันตัวตนจาก LINE โดยอัตโนมัติ'}
+                  <span>เข้าสู่ระบบผ่านรหัสผ่านสำนักงานสำเร็จ</span>
                 </div>
               </div>
             </div>
@@ -876,7 +1126,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
                     {/* Task Info */}
                     <div className="flex-1 min-w-0 pr-12">
                       <h4 className="text-[13.5px] font-extrabold text-[#1A1A2E] leading-snug">
-                        {maskSensitiveData(task.title, false)}
+                        {task.title}
                       </h4>
                       <div className="inline-flex items-center gap-1 mt-1.5 bg-[#F0F6FC] border border-[#E5E7EB] px-2.5 py-0.5 rounded-full text-[10.5px] font-bold text-[#6B7280]">
                         {task.category}
@@ -884,7 +1134,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
 
                       {task.description && (
                         <p className="text-[11.5px] text-[#6B7280] mt-1.5 leading-relaxed font-medium">
-                          {maskSensitiveData(task.description, false)}
+                          {task.description}
                         </p>
                       )}
 
@@ -909,8 +1159,17 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
 
             {/* Footer buttons */}
             <div className="bg-gradient-to-t from-white via-white to-transparent pt-6 pb-6 px-4 sticky bottom-0 z-10 flex flex-col gap-3 border-t border-gray-150/40">
-              <div className="text-center text-[11.5px] text-[#6B7280] font-bold">
-                เลือกแล้ว <span className="text-[#2B8BE8] font-black">{selectedTaskIds.size} งาน</span> จาก {pendingCount} งานที่รอรับ
+              <div className="flex items-center justify-between text-[11.5px] text-[#6B7280] font-bold px-2">
+                <span>เลือกแล้ว <span className="text-[#2B8BE8] font-black">{selectedTaskIds.size} งาน</span> จาก {pendingCount} งานที่รอรับ</span>
+                {pendingCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleSelectAllPending}
+                    className="text-[#2B8BE8] hover:text-[#1E6FC7] font-black transition-colors underline cursor-pointer"
+                  >
+                    {batchTasks.filter(t => t.status === 'Pending').every(t => selectedTaskIds.has(t.id)) ? 'ยกเลิกทั้งหมด' : 'เลือกทั้งหมด'}
+                  </button>
+                )}
               </div>
               <button 
                 onClick={handleConfirmAccept}
@@ -954,7 +1213,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
                 {acceptedTasksList.map((task) => (
                   <div key={task.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center gap-2">
                     <CheckCircle2 size={14} className="text-[#16A34A] shrink-0" />
-                    <span className="truncate">{maskSensitiveData(task.title, false)}</span>
+                    <span className="truncate">{task.title}</span>
                     <span className="ml-auto font-mono text-[9px] bg-sky-50 text-sky-600 border border-sky-200/50 rounded px-1">{task.task_number}</span>
                   </div>
                 ))}

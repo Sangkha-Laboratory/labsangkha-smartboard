@@ -48,7 +48,7 @@ GRANT EXECUTE ON FUNCTION handover_sys.get_active_line_group() TO anon, authenti
 
 
 -- 3. accept_handover_from_line(p_handover_id uuid, p_line_display_name text, p_line_user_id text)
--- → UPDATE handovers SET status='ACCEPTED', receiver_line_name, receiver_id
+-- → UPDATE handovers SET status='Accepted', receiver_line_name, receiver_id
 CREATE OR REPLACE FUNCTION handover_sys.accept_handover_from_line(
     p_handover_id uuid, 
     p_line_display_name text, 
@@ -76,10 +76,10 @@ BEGIN
     FROM handover_sys.handovers
     WHERE id = p_handover_id;
 
-    -- Update each task's status to 'ACCEPTED'
+    -- Update each task's status to 'Accepted'
     IF v_tasks IS NOT NULL AND jsonb_typeof(v_tasks) = 'array' THEN
         FOR v_task IN SELECT * FROM jsonb_array_elements(v_tasks) LOOP
-            v_task := jsonb_set(v_task, '{status}', '"ACCEPTED"'::jsonb);
+            v_task := jsonb_set(v_task, '{status}', '"Accepted"'::jsonb);
             v_task := jsonb_set(v_task, '{accepted_by_name}', to_jsonb(p_line_display_name));
             v_updated_tasks := v_updated_tasks || v_task;
         END LOOP;
@@ -88,7 +88,7 @@ BEGIN
     END IF;
 
     UPDATE handover_sys.handovers
-    SET status = 'ACCEPTED',
+    SET status = 'Accepted',
         receiver_id = v_receiver_id,
         receiver_line_name = p_line_display_name,
         tasks = v_updated_tasks,
@@ -123,8 +123,8 @@ GRANT EXECUTE ON FUNCTION handover_sys.get_task_number(uuid) TO anon, authentica
 
 
 -- 5. accept_one_task(p_handover_id uuid, p_task_index int, p_line_display_name text, p_line_user_id text)
--- → UPDATE tasks[p_task_index].status = 'ACCEPTED'
--- → IF all tasks ACCEPTED → UPDATE handover.status = 'ACCEPTED'
+-- → UPDATE tasks[p_task_index].status = 'Accepted'
+-- → IF all tasks Accepted → UPDATE handover.status = 'Accepted'
 -- → returns json: { all_done: boolean, remaining: int, task_title: text }
 CREATE OR REPLACE FUNCTION handover_sys.accept_one_task(
     p_handover_id uuid, 
@@ -172,7 +172,7 @@ BEGIN
     v_task_title := v_tasks->p_task_index->>'title';
 
     -- Update the specific task status
-    v_tasks := jsonb_set(v_tasks, array[p_task_index::text, 'status'], '"ACCEPTED"'::jsonb);
+    v_tasks := jsonb_set(v_tasks, array[p_task_index::text, 'status'], '"Accepted"'::jsonb);
     v_tasks := jsonb_set(v_tasks, array[p_task_index::text, 'accepted_by_name'], to_jsonb(p_line_display_name));
 
     -- Count remaining pending tasks (ignoring case for comparison)
@@ -182,11 +182,11 @@ BEGIN
         END IF;
     END LOOP;
 
-    -- If no pending tasks remain, set handover status to ACCEPTED
+    -- If no pending tasks remain, set handover status to Accepted
     IF v_remaining_count = 0 THEN
         v_all_done := true;
         UPDATE handover_sys.handovers
-        SET status = 'ACCEPTED',
+        SET status = 'Accepted',
             receiver_id = v_receiver_id,
             receiver_line_name = p_line_display_name,
             tasks = v_tasks,
@@ -195,7 +195,7 @@ BEGIN
     ELSE
         UPDATE handover_sys.handovers
         SET tasks = v_tasks
-        WHERE id = p_handover_id;
+    WHERE id = p_handover_id;
     END IF;
 
     RETURN json_build_object(

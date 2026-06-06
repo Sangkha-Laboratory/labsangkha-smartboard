@@ -213,9 +213,21 @@ export default function App() {
     if (savedLocalUser) {
       try {
         const u = JSON.parse(savedLocalUser);
-        setLocalUserProfile(u);
-        if (u.role === 'admin') {
-          setIsAdmin(true);
+        const lastActiveStr = localStorage.getItem('sangkha_session_last_active');
+        const lastActive = lastActiveStr ? parseInt(lastActiveStr, 10) : 0;
+        const now = Date.now();
+        const timeoutLimit = 30 * 60 * 1000; // 30 minutes
+
+        if (lastActive > 0 && (now - lastActive > timeoutLimit)) {
+          console.warn('Session expired due to inactivity. Clearing session.');
+          clearAuthSession();
+        } else {
+          setLocalUserProfile(u);
+          if (u.role === 'admin') {
+            setIsAdmin(true);
+          }
+          // Reset session active timestamp for current interactions
+          localStorage.setItem('sangkha_session_last_active', String(now));
         }
       } catch (e) {
         console.error('Error parsing saved local user:', e);
@@ -380,7 +392,51 @@ export default function App() {
     setShowContact(false);
     setShowSafety(false);
     setIsAdmin(false);
+    localStorage.removeItem('sangkha_session_last_active');
   };
+
+  // Session Timeout logic: Automatically logout after 30 minutes of inactivity
+  useEffect(() => {
+    if (!activeUser) return;
+
+    // Initialize/update active timestamp right away on login/detection
+    localStorage.setItem('sangkha_session_last_active', String(Date.now()));
+
+    const handleActivity = () => {
+      const currentTime = Date.now();
+      const lastSavedStr = localStorage.getItem('sangkha_session_last_active');
+      const lastSaved = lastSavedStr ? parseInt(lastSavedStr, 10) : 0;
+      
+      // Prevent rapid localStorage writes, write at most once every 5 seconds
+      if (currentTime - lastSaved > 5000) {
+        localStorage.setItem('sangkha_session_last_active', String(currentTime));
+      }
+    };
+
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    activityEvents.forEach(event => {
+      window.addEventListener(event, handleActivity);
+    });
+
+    const interval = setInterval(() => {
+      const lastSavedStr = localStorage.getItem('sangkha_session_last_active');
+      const lastSaved = lastSavedStr ? parseInt(lastSavedStr, 10) : 0;
+      const currentTime = Date.now();
+      const timeoutLimit = 30 * 60 * 1000; // 30 minutes in ms
+
+      if (lastSaved > 0 && (currentTime - lastSaved > timeoutLimit)) {
+        console.warn('Session has been idle for 30 minutes. Logging out.');
+        handleLogout();
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => {
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+      clearInterval(interval);
+    };
+  }, [activeUser]);
 
   const urlParams = new URLSearchParams(window.location.search);
   const currentView = urlParams.get('view') || '';
@@ -573,8 +629,8 @@ export default function App() {
               <Hero />
               
               {/* Row 2: Main Content */}
-              <div className="w-[92%] max-w-[1280px] mx-auto px-4 mt-6 sm:-mt-[30px] relative z-[1]">
-                <div id="handover-section" className="grid grid-cols-1 xl:grid-cols-[35%_1fr] gap-5 xl:items-stretch flex-1 min-h-0">
+              <div className="w-full mt-6 sm:-mt-[30px] relative z-[1]">
+                <div id="handover-section" className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-5 items-stretch flex-1 min-h-0">
                   {/* Sidebar Area - Handover Form (Left/Side) */}
                   <div className="flex flex-col">
                     <HandoverForm currentUser={activeUser} />

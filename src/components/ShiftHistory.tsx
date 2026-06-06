@@ -51,6 +51,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
   const [modalNotifyError, setModalNotifyError] = useState<string | null>(null);
   const [modalNotifySuccess, setModalNotifySuccess] = useState(false);
   const [receiverName, setReceiverName] = useState('');
+  const [receiverPin, setReceiverPin] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [mobileSearch, setMobileSearch] = useState('');
@@ -392,6 +393,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
     setModalNotifyError(null);
     setModalNotifySuccess(false);
     setIsModalOpen(true);
+    setReceiverPin('');
   };
 
   const handleAccept = async () => {
@@ -399,11 +401,59 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
       setModalNotifyError('กรุณาเลือกชื่อผู้รับงาน');
       return;
     }
+    if (!receiverPin) {
+      setModalNotifyError('กรุณาระบุรหัสผ่านเพื่อยืนยันตัวตน');
+      return;
+    }
     
     setIsLoading(true);
     setModalNotifyError(null);
 
     try {
+      // 0. Fetch user record first to decide auth strategy
+      const { data: userRecord, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', receiverName)
+        .single();
+
+      if (fetchError || !userRecord) {
+        throw new Error('ไม่พบข้อมูลผู้ใช้งาน');
+      }
+
+      const isHashed = userRecord.sender_pass?.startsWith('$') || (userRecord.sender_pass?.length || 0) > 32;
+      
+      // Attempt authentication
+      if (userRecord.email && isHashed) {
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: userRecord.email,
+          password: receiverPin
+        });
+        
+        if (authError) {
+          const { data: isValid, error: rpcError } = await supabase.rpc('verify_user_password', {
+            p_user_id: userRecord.id,
+            p_password: receiverPin
+          });
+          if (rpcError || !isValid) {
+            throw new Error('รหัสผ่านไม่ถูกต้อง');
+          }
+        }
+      } else if (isHashed) {
+        const { data: isValid, error: rpcError } = await supabase.rpc('verify_user_password', {
+          p_user_id: userRecord.id,
+          p_password: receiverPin
+        });
+        if (rpcError || !isValid) {
+          throw new Error('รหัสผ่านไม่ถูกต้อง');
+        }
+      } else {
+        if (userRecord.sender_pass !== receiverPin) {
+          throw new Error('รหัสผ่านไม่ถูกต้อง');
+        }
+      }
+
+      // 1. Proceed with updating the database
       const { error, status } = await supabase
         .from('handovers')
         .update({ 
@@ -458,6 +508,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
         setIsModalOpen(false);
         setSelectedId(null);
         setReceiverName('');
+        setReceiverPin('');
         setModalNotifySuccess(false);
       }, 1000);
     } catch (err: any) {
@@ -1063,6 +1114,20 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                     </div>
                   </div>
 
+                  {/* ระบุรหัสผ่าน */}
+                  <div>
+                    <label className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 block ml-1 font-thai">
+                      ระบุรหัสผ่าน
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="ใส่รหัสผ่านของคุณ"
+                      value={receiverPin}
+                      onChange={(e) => setReceiverPin(e.target.value)}
+                      className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-gray-300 rounded-[1.25rem] outline-none text-[13px] font-[900] shadow-sm tracking-widest placeholder:tracking-normal placeholder:font-normal dark:text-white font-thai"
+                    />
+                  </div>
+
                   {modalNotifyError && (
                     <div className="p-2.5 bg-red-50 dark:bg-rose-950/20 text-red-600 dark:text-rose-400 text-[10.5px] font-black rounded-xl border border-red-100 dark:border-rose-900/30 flex items-center gap-1.5 leading-snug">
                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
@@ -1087,7 +1152,7 @@ export default function ShiftHistory({ forceUncensored = false }: { forceUncenso
                       onClick={() => {
                         handleAccept();
                       }}
-                      disabled={!receiverName || isLoading}
+                      disabled={!receiverName || !receiverPin || isLoading}
                       className="flex-1 py-2.5 text-xs font-bold text-white bg-brand-blue hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-lg shadow-brand-blue/10 dark:shadow-none"
                     >
                       {isLoading ? 'กำลังประมวลผล...' : 'ยืนยันรับงาน'}
