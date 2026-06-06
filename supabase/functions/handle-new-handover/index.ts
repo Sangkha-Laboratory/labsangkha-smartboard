@@ -139,14 +139,242 @@ Deno.serve(async (req) => {
 
       console.log(`Sending support ticket to destination: ${targetGroupId} (${destinationType})`);
 
-      const categoryTheme = categoryId === "bug" ? "🐛 พบข้อผิดพลาด (Bug)" : 
-                            categoryId === "feature" ? "💡 แนะนำเพิ่มฟีเจอร์" : 
-                            categoryId === "account" ? "🔑 บัญชี/รหัสผ่าน" : "⚙️ ปัญหาทั่วไป";
+      // Theme Configuration based on Category
+      let headerBg = "#6B7280";
+      let badgeBg = "#F3F4F6";
+      let badgeTextColor = "#4B5563";
+      let badgeLabel = "⚙️ ทั่วไป";
+      let messageBg = "#F9FAFB";
+      let messageBorderColor = "#E5E7EB";
+      let messageTextColor = "#1F2937";
+      let iconUrl = "https://img.icons8.com/ios-filled/100/ffffff/support.png";
 
-      // Create a clean, elegant Plain Text message for LINE
-      const textMessage = {
-        type: "text",
-        text: `📥 ตั๋วแจ้งปัญหาระบบใหม่ (Support Ticket)\n\n📌 รหัสตั๋ว: ${ticketId}\n👤 ผู้ส่งเรื่อง: คุณ ${callerName}\n🏢 หน่วยงาน: ${department}\n📂 ประเภท: ${categoryTheme}\n\n💬 รายละเอียด:\n"${userMessage}"\n\n🕒 วันที่-เวลา: ${new Date().toLocaleString('th-TH')}\n\n🔧 ผู้ดูแลระบบกรุณาตรวจสอบในระบบ Admin Portal ครับ`
+      if (categoryId === "bug") {
+        headerBg = "#EF4444";
+        badgeBg = "#FEE2E2";
+        badgeTextColor = "#EF4444";
+        badgeLabel = "🐛 BUG";
+        messageBg = "#FEF2F2";
+        messageBorderColor = "#FCA5A5";
+        messageTextColor = "#991B1B";
+        iconUrl = "https://img.icons8.com/ios-filled/100/ffffff/bug.png";
+      } else if (categoryId === "feature") {
+        headerBg = "#3B82F6";
+        badgeBg = "#DBEAFE";
+        badgeTextColor = "#3B82F6";
+        badgeLabel = "💡 SUGGEST";
+        messageBg = "#EFF6FF";
+        messageBorderColor = "#93C5FD";
+        messageTextColor = "#1E40AF";
+        iconUrl = "https://img.icons8.com/ios-filled/100/ffffff/idea.png";
+      } else if (categoryId === "account") {
+        headerBg = "#8B5CF6";
+        badgeBg = "#F3E8FF";
+        badgeTextColor = "#8B5CF6";
+        badgeLabel = "🔑 ACCOUNT";
+        messageBg = "#FAF5FF";
+        messageBorderColor = "#D8B4FE";
+        messageTextColor = "#5B21B6";
+        iconUrl = "https://img.icons8.com/ios-filled/100/ffffff/user-credentials.png";
+      }
+
+      const formattedDate = new Date().toLocaleDateString('th-TH', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+      const formattedTime = new Date().toLocaleTimeString('th-TH', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }) + " น.";
+
+      const flexMessage = {
+        type: "flex",
+        altText: `📥 ตั๋วแจ้งใหม่ [${badgeLabel}] จากคุณ ${callerName}`,
+        contents: {
+          type: "bubble",
+          size: "mega",
+          body: {
+            type: "box",
+            layout: "vertical",
+            paddingAll: "xl",
+            backgroundColor: "#ffffff",
+            contents: [
+              // Header line with badge and metadata
+              {
+                type: "box",
+                layout: "horizontal",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "vertical",
+                    width: "48px",
+                    height: "48px",
+                    backgroundColor: headerBg,
+                    cornerRadius: "12px",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    contents: [
+                      {
+                        type: "image",
+                        url: iconUrl,
+                        size: "24px",
+                        aspectMode: "fit"
+                      }
+                    ]
+                  },
+                  {
+                    type: "box",
+                    layout: "vertical",
+                    margin: "md",
+                    flex: 1,
+                    contents: [
+                      {
+                        type: "text",
+                        text: "ตั๋วแจ้งปัญหาของระบบ",
+                        size: "xs",
+                        color: "#9CA3AF"
+                      },
+                      {
+                        type: "text",
+                        text: ticketId,
+                        size: "md",
+                        weight: "bold",
+                        color: "#1E293B",
+                        adjustMode: "shrink-to-fit"
+                      }
+                    ]
+                  },
+                  {
+                    type: "box",
+                    layout: "vertical",
+                    alignItems: "flex-end",
+                    contents: [
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        backgroundColor: badgeBg,
+                        cornerRadius: "20px",
+                        paddingStart: "md",
+                        paddingEnd: "md",
+                        paddingTop: "xs",
+                        paddingBottom: "xs",
+                        contents: [
+                          {
+                            type: "text",
+                            text: badgeLabel,
+                            size: "xxs",
+                            weight: "bold",
+                            color: badgeTextColor
+                          }
+                        ]
+                      },
+                      {
+                        type: "text",
+                        text: `${formattedDate} • ${formattedTime}`,
+                        size: "xxs",
+                        color: "#9CA3AF",
+                        margin: "xs"
+                      }
+                    ]
+                  }
+                ]
+              },
+              // Info panel
+              {
+                type: "box",
+                layout: "vertical",
+                margin: "lg",
+                backgroundColor: "#F8FAFC",
+                cornerRadius: "12px",
+                paddingAll: "md",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    contents: [
+                      {
+                        type: "text",
+                        text: "ผู้ส่งเรื่อง:",
+                        size: "xs",
+                        color: "#64748B",
+                        width: "60px"
+                      },
+                      {
+                        type: "text",
+                        text: callerName,
+                        weight: "bold",
+                        size: "xs",
+                        color: "#334155",
+                        wrap: true
+                      }
+                    ]
+                  },
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    margin: "sm",
+                    contents: [
+                      {
+                        type: "text",
+                        text: "หน่วยงาน:",
+                        size: "xs",
+                        color: "#64748B",
+                        width: "60px"
+                      },
+                      {
+                        type: "text",
+                        text: department,
+                        weight: "bold",
+                        size: "xs",
+                        color: "#334155",
+                        wrap: true
+                      }
+                    ]
+                  }
+                ]
+              },
+              // Message Section Label
+              {
+                type: "text",
+                text: "รายละเอียดปัญหา/ข้อเสนอแนะ:",
+                size: "xxs",
+                color: "#64748B",
+                weight: "bold",
+                margin: "md"
+              },
+              // Message Box
+              {
+                type: "box",
+                layout: "vertical",
+                margin: "xs",
+                paddingAll: "md",
+                backgroundColor: messageBg,
+                cornerRadius: "8px",
+                borderColor: messageBorderColor,
+                borderWidth: "1px",
+                contents: [
+                  {
+                    type: "text",
+                    text: maskSensitiveData(userMessage),
+                    size: "xs",
+                    color: messageTextColor,
+                    wrap: true
+                  }
+                ]
+              },
+              // Footer advice
+              {
+                type: "text",
+                text: "💡 ผู้ดูแลระบบกรุณาตอบรับผู้ใช้งานหลังตรวจสอบและดำเนินการแก้ไขเรียบร้อยแล้วในระบบ Admin Portal",
+                size: "xxs",
+                color: "#94A3B8",
+                margin: "md",
+                wrap: true
+              }
+            ]
+          }
+        }
       };
 
       const lineAccessToken = Deno.env.get("LINE_CHANNEL_ACCESS_TOKEN");
@@ -165,7 +393,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           to: targetGroupId,
-          messages: [textMessage]
+          messages: [flexMessage]
         })
       });
 
