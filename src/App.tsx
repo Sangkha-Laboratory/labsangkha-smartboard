@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import AnnouncementBar from './components/AnnouncementBar';
 import Hero from './components/Hero';
@@ -395,27 +395,29 @@ export default function App() {
     localStorage.removeItem('sangkha_session_last_active');
   };
 
+  const lastActiveRef = useRef<number>(Date.now());
+
   // Session Timeout logic: Automatically logout after 30 minutes of inactivity
   useEffect(() => {
     if (!activeUser) return;
 
-    // Initialize/update active timestamp right away on login/detection
-    localStorage.setItem('sangkha_session_last_active', String(Date.now()));
+    const initialNow = Date.now();
+    lastActiveRef.current = initialNow;
+    localStorage.setItem('sangkha_session_last_active', String(initialNow));
 
     const handleActivity = () => {
       const currentTime = Date.now();
-      const lastSavedStr = localStorage.getItem('sangkha_session_last_active');
-      const lastSaved = lastSavedStr ? parseInt(lastSavedStr, 10) : 0;
-      
-      // Prevent rapid localStorage writes, write at most once every 5 seconds
-      if (currentTime - lastSaved > 5000) {
+      // Only write to localStorage at most once every 10 seconds to eliminate disk and state bottleneck
+      if (currentTime - lastActiveRef.current > 10000) {
+        lastActiveRef.current = currentTime;
         localStorage.setItem('sangkha_session_last_active', String(currentTime));
       }
     };
 
-    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    // Use mousedown, click, keydown, scroll, touchstart (more intentional & performant than mousemove)
+    const activityEvents = ['mousedown', 'keydown', 'click', 'scroll', 'touchstart'];
     activityEvents.forEach(event => {
-      window.addEventListener(event, handleActivity);
+      window.addEventListener(event, handleActivity, { passive: true });
     });
 
     const interval = setInterval(() => {
@@ -571,6 +573,7 @@ export default function App() {
             setShowManual(true);
             setShowContact(false);
             setShowSafety(false);
+            window.scrollTo({ top: 0, behavior: 'instant' });
           }}
           isManualActive={showManual}
           onContactClick={() => {
@@ -579,6 +582,7 @@ export default function App() {
             setShowManual(false);
             setShowContact(true);
             setShowSafety(false);
+            window.scrollTo({ top: 0, behavior: 'instant' });
           }}
           isContactActive={showContact}
           onSafetyClick={() => {
@@ -646,8 +650,14 @@ export default function App() {
                  <div className="mt-4 sm:mt-6">
                    <SupportSection 
                      vertical={false} 
-                     onManualClick={() => setShowManual(true)} 
-                     onContactClick={() => setShowContact(true)} 
+                     onManualClick={() => {
+                        setShowManual(true);
+                        window.scrollTo({ top: 0, behavior: "instant" });
+                      }} 
+                     onContactClick={() => {
+                        setShowContact(true);
+                        window.scrollTo({ top: 0, behavior: "instant" });
+                      }} 
                      onSafetyClick={() => {
                        setSafetyTab('public_privacy');
                        setIsAdminPortal(false);

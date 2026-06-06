@@ -8,17 +8,17 @@ import {
   Send, 
   CheckCircle, 
   AlertCircle, 
-  Users, 
   ShieldAlert, 
   HelpCircle, 
   ArrowLeft,
   MessageCircle,
   Hash,
-  Activity,
   UserCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
+import { writeLog } from '../lib/logger';
+import { getActiveConfig } from '../config';
 
 interface ContactTeamProps {
   onClose: () => void;
@@ -73,11 +73,7 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
     fetchAdmins();
   }, []);
 
-  const fallbackAdmins = [
-    { id: 'sm', full_name: 'คุณสมิตา สิงห์สด', role: 'admin', email: 'samita.sings@gmail.com', is_active: true, custom_tag: 'นักเทคนิคการแพทย์ / ผู้รับผิดชอบระบบ (โทร 085-613-7211)' }
-  ];
 
-  const finalAdmins = adminsList.length > 0 ? adminsList : fallbackAdmins;
 
   const getInitials = (name: string) => {
     const parts = name.split('.').filter(Boolean);
@@ -86,20 +82,83 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
     return subParts[0]?.slice(0, 2) || "AD";
   };
 
-  const handleSubmitting = (e: React.FormEvent) => {
+  const handleSubmitting = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ticketForm.name || !ticketForm.message) return;
 
     setIsSubmitting(true);
-    
-    // Simulate API Submission
-    setTimeout(() => {
-      const generatedId = 'TKT-' + Math.floor(100000 + Math.random() * 90000);
-      setTicketId(generatedId);
-      setIsSubmitting(false);
-      setSubmitSuccess(true);
-      
-      // Save to localStorage so users can see we persist it
+    const generatedId = 'TKT-' + Math.floor(100000 + Math.random() * 90000);
+    const currentTimestamp = new Date().toISOString();
+
+    try {
+      // 1. Method 1: Save directly to Supabase table
+      // We attempt inserting into a dedicated table called 'support_tickets'.
+      // If that fails (due to table not created/migrated or permissions), we fall back 
+      // dynamically to writing a high-reliability row to 'system_logs' via writeLog.
+      const { error: dbError } = await supabase
+        .from('support_tickets')
+        .insert([{
+          id: generatedId,
+          name: ticketForm.name,
+          department: ticketForm.department,
+          category: ticketForm.category,
+          message: ticketForm.message,
+          created_at: currentTimestamp
+        }]);
+
+      if (dbError) {
+        console.warn('Could not insert to support_tickets table directly, trying log fallback:', dbError.message);
+        // Fallback: Write beautiful log to the database system_logs table so admins can see it under category "SUPPORT_TICKET"
+        await writeLog(
+          'CRITICAL',
+          'SUPPORT_TICKET',
+          `ตั๋วแจ้งปัญหาระบบใหม่ (${generatedId}): ${ticketForm.name} - ${ticketForm.message}`,
+          {
+            ticket_id: generatedId,
+            name: ticketForm.name,
+            department: ticketForm.department,
+            category: ticketForm.category,
+            message: ticketForm.message
+          }
+        );
+      } else {
+        await writeLog(
+          'INFO',
+          'SUPPORT_TICKET',
+          `บันทึกตั๋วแจ้งปัญหา (${generatedId}) ลงตาราง support_tickets สำเร็จ`,
+          { ticket_id: generatedId }
+        );
+      }
+
+      // 2. Method 2: Send to LINE Admin group
+      // Fetch active environment setting and send payload to handle-new-handover Edge Function
+      const activeConfig = getActiveConfig();
+      const functionUrl = `${activeConfig.supabaseUrl}/functions/v1/handle-new-handover`;
+
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${activeConfig.supabaseAnonKey}`,
+          'apikey': activeConfig.supabaseAnonKey
+        },
+        body: JSON.stringify({
+          action: 'support_ticket',
+          ticket_id: generatedId,
+          caller_name: ticketForm.name,
+          department: ticketForm.department,
+          category: ticketForm.category,
+          message: ticketForm.message
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Edge Function returned non-ok for LINE Notification:', response.status);
+      } else {
+        console.log('LINE notification triggered successfully!');
+      }
+
+      // Save to localStorage as well so users can see we persist it
       const savedTickets: SupportTicket[] = JSON.parse(localStorage.getItem('support_tickets') || '[]');
       const newTicket: SupportTicket = {
         id: generatedId,
@@ -112,6 +171,9 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
       savedTickets.unshift(newTicket);
       localStorage.setItem('support_tickets', JSON.stringify(savedTickets));
 
+      setTicketId(generatedId);
+      setSubmitSuccess(true);
+
       // Reset form
       setTicketForm({
         name: '',
@@ -119,26 +181,54 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
         category: 'bug',
         message: ''
       });
-    }, 1200);
+
+    } catch (err: any) {
+      console.error('Error submitting support ticket:', err);
+      // Fallback: Save to localStorage anyway so they get success indication
+      const savedTickets: SupportTicket[] = JSON.parse(localStorage.getItem('support_tickets') || '[]');
+      const newTicket: SupportTicket = {
+        id: generatedId,
+        name: ticketForm.name,
+        department: ticketForm.department,
+        category: ticketForm.category,
+        message: ticketForm.message,
+        timestamp: new Date().toLocaleString('th-TH')
+      };
+      savedTickets.unshift(newTicket);
+      localStorage.setItem('support_tickets', JSON.stringify(savedTickets));
+
+      setTicketId(generatedId);
+      setSubmitSuccess(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const faqs = [
     {
       q: '1. กรณีลืมรหัสผ่านหรือต้องการเปลี่ยนรหัสผ่าน ทำอย่างไร?',
-      a: 'ตอบ: ให้คลิกที่ปุ่มลืมรหัสผ่าน (ถ้ามี) หรือ แชทแจ้งแอดมิน สมิตา สิงห์สด (โทร 085-613-7211) เพื่อให้ระบบความดันดำเนินการตั้งรหัสผ่านใหม่ให้'
+      a: 'ตอบ: แจ้งหัวหน้างานหรือติดต่อผู้ดูแลระบบเพื่อดำเนินการตั้งรหัสผ่านใหม่'
     },
     {
       q: '2. หากไม่มีชื่อในระบบเพื่อทำการส่งเวร ต้องทำอย่างไร?',
-      a: 'ตอบ: ให้ติดต่อผู้รับผิดชอบระบบ แอดมิน สมิตา สิงห์สด เพื่อทำการเพิ่มชื่อและกำหนดรหัสผ่านเริ่มต้นให้ท่านเข้าใช้งานได้ทันที'
+      a: 'ตอบ: แจ้งหัวหน้างานหรือติดต่อผู้ดูแล เพื่อทำการเพิ่มชื่อและกำหนดรหัสผ่านเริ่มต้นให้ท่านเข้าใช้งานได้ทันที'
     },
     {
       q: '3. สามารถแก้ไขข้อมูลการส่งเวรย้อนหลังได้หรือไม่?',
-      a: 'ตอบ: สามารถทำได้เฉพาะตัวผู้ส่งเวรเป็นผู้แก้ไขเองเท่านั้น เพื่อรักษาความถูกต้องและการสอบกลับได้ของประวัติการส่งเวร'
+      a: 'ตอบ: ผู้ใช้งานทั่วไปจะไม่สามารถเข้าไปแก้ไขหรือลบรายการที่กดยืนยันส่งไปแล้วได้ด้วยตนเอง ทั้งนี้เพื่อป้องกันการแก้ไขข้อมูลย้อนหลัง หากพบว่าส่งข้อมูลผิดพลาด ต้องแจ้งให้ผู้ดูแลระบบ (Admin) เป็นผู้ดำเนินการแก้ไขหรือลบรายการนั้นให้แทน'
+    },
+    {
+      q: '4. หากกดรับงานไปแล้ว แต่พบว่ากดรับผิดคน หรือต้องการยกเลิกสถานะให้กลับมาเป็น "รอรับเวร" (Pending) ทำได้หรือไม่?',
+      a: 'ตอบ: ผู้ใช้งานทั่วไปไม่สามารถกดยกเลิกหรือเปลี่ยนสถานะกลับได้ด้วยตนเอง หากต้องการแก้ไขสถานะงาน จะต้องแจ้งให้ Admin เป็นผู้ดำเนินการลบโพสต์ที่ผิดพลาดหรือแก้ไขสถานะ'
+    },
+    {
+      q: '5. ต้องการแนบรูปภาพหรือไฟล์เอกสารเป็นหลักฐานไปพร้อมกับการส่งเวร ทำได้หรือไม่?',
+      a: 'ตอบ: ในเวอร์ชันปัจจุบัน ระบบยังไม่รองรับการแนบไฟล์หรือรูปภาพประกอบการส่งมอบเวร'
     }
   ];
 
   return (
-    <div className="bg-[#f8fafc] dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen py-6 px-4 md:px-8 max-w-7xl mx-auto space-y-6">
+    <div className="bg-transparent text-slate-800 dark:text-slate-100 min-h-screen py-6 px-4 md:px-8 max-w-4xl mx-auto space-y-6">
       
       {/* Header Banner */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-[2.2rem] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm relative overflow-hidden transition-all duration-300">
@@ -158,9 +248,6 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
               <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">Technical Helpdesk</span>
             </div>
             <h2 className="text-xl md:text-2xl font-[900] text-[#0f2d52] dark:text-white tracking-tight font-thai">ติดต่อทีมงานและศูนย์สนับสนุนเทคนิค</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-bold mt-1 font-thai leading-relaxed">
-              แจ้งปัญหาการเขียนฟอร์มระบบส่งเวร, ขอเพิ่มผู้ใช้ หรือปัญหาทางเทคนิค LIS โรงพยาบาลสังขะ
-            </p>
           </div>
         </div>
 
@@ -173,111 +260,16 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left Column: Direct Contacts & Channels */}
-        <div className="space-y-6 lg:col-span-1">
-          
-          {/* Quick Contact Info */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-[2rem] p-6 space-y-5 shadow-sm">
-            <h3 className="text-base font-black text-[#0f2d52] dark:text-white font-thai uppercase tracking-wider flex items-center gap-2">
-              <Users className="text-[#0f2d52] dark:text-indigo-400" size={16} />
-              <span>ช่องทางติดต่อและนโยบายเกณฑ์งานจริง</span>
-            </h3>
-
-            <div className="space-y-4 text-sm font-bold font-thai">
-              {/* Main Admin Contact */}
-              <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-850/40 border border-slate-100 dark:border-slate-800 rounded-xl">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                  <UserCheck size={15} />
-                </div>
-                <div>
-                  <p className="text-[#0f2d52] dark:text-slate-200 font-extrabold text-[13px] sm:text-sm">ผู้รับผิดชอบหลัก/แอดมินกลุ่มงาน</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ติดต่อปรับปรุงสิทธิ์ เช่น เพิ่มชื่อหรือแก้ไขรหัสผ่าน</p>
-                  <p className="text-sm text-brand-blue dark:text-blue-400 font-black mt-1">คุณสมิตา สิงห์สด (085-613-7211)</p>
-                  <p className="text-[11px] text-slate-400 font-medium mt-1">ตำแหน่ง: นักเทคนิคการแพทย์ / ผู้รับผิดชอบระบบ</p>
-                </div>
-              </div>
-
-              {/* Downtime Protocol info */}
-              <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-850/40 border border-slate-100 dark:border-slate-800 rounded-xl">
-                <div className="w-8 h-8 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-400 flex items-center justify-center shrink-0">
-                  <Activity size={15} />
-                </div>
-                <div>
-                  <p className="text-[#0f2d52] dark:text-slate-200 font-extrabold text-[13px] sm:text-sm">เน็ตเวิร์กล่ม (Downtime Protocol)</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-450 mt-1 font-medium leading-relaxed">
-                    ระบบส่งเวรนี้ทำงานแยกเป็นอิสระ (Independent) จากระบบ HIS LIS หลัก หากระบบเน็ตโรงพยาบาลล่มหรือคอมพัง ให้ใช้เน็ตโทรศัพท์เคลื่อนที่ผ่าน mobile device เพื่อจัดการส่งเวรต่อได้ปกติ
-                  </p>
-                </div>
-              </div>
-
-              {/* Account Security Policy */}
-              <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-850/40 border border-slate-100 dark:border-slate-800 rounded-xl">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                  <Mail size={15} />
-                </div>
-                <div>
-                  <p className="text-[#0f2d52] dark:text-slate-200 font-extrabold text-[13px] sm:text-sm">ความปลอดภัยบัญชีใช้งาน</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-450 mt-1 font-medium leading-relaxed">
-                    ห้ามแชร์รหัสผ่านร่วมกันเด็ดขาด, กำหนดตั้งค่ารหัสผ่านใหม่ทุก ๆ 3 เดือน และต้องกดออกจากระบบ (Log out) ทุกครั้งหลังใช้งานเสร็จเเพื่อความปลอดภัย
-                  </p>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Admin Team List */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-[2rem] p-6 space-y-4 shadow-sm font-thai">
-            <h3 className="text-base font-black text-[#0f2d52] dark:text-white uppercase tracking-wider flex items-center gap-2">
-              <UserCheck className="text-indigo-600 dark:text-indigo-400" size={16} />
-              <span>ทีมสตาฟผู้ดูแลระบบ (Sangkha Admins)</span>
-            </h3>
-
-            <div className="space-y-3">
-              {finalAdmins.map((admin, index) => {
-                const initials = getInitials(admin.full_name);
-                const isOnline = admin.is_active !== false;
-                const email = admin.email || 'sangkha.medtech@gmail.com';
-                const tagColor = 'text-slate-400 dark:text-slate-500 text-xs font-bold';
-                
-                return (
-                  <div key={admin.id || index} className="flex items-center justify-between p-2.5 hover:bg-slate-50 dark:hover:bg-slate-850/30 rounded-xl transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-800">
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center font-black text-[#0f2d52] dark:text-white text-xs">
-                          {initials}
-                        </div>
-                        <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 ${isOnline ? 'bg-emerald-500' : 'bg-slate-350'}`} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-[#0f2d52] dark:text-slate-100">{admin.full_name}</p>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 font-bold">{email}</p>
-                      </div>
-                    </div>
-                    <span className={`px-2 py-0.5 text-xs font-black rounded-md ${tagColor}`}>
-                      {admin.custom_tag || (admin.role === 'admin' ? 'System Tech' : 'Staff')}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-        </div>
-
-        {/* Right Columns: Interactive Support Ticket Form & FAQ */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
           
           {/* Submit Help Request / Support Ticket Form */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-[2rem] p-6 md:p-8 space-y-5 shadow-sm font-thai">
             <div>
               <h3 className="text-xl font-black text-[#0f2d52] dark:text-white mb-1 tracking-tight flex items-center gap-2">
                 <MessageSquare className="text-indigo-600 dark:text-indigo-400 animate-pulse" size={18} />
-                <span>ส่งข้อความขอความช่วยเหลือทางเทคนิค (Create Support Ticket)</span>
+                <span>แจ้งปัญหาทางเทคนิค (Create Support Ticket)</span>
               </h3>
-              <p className="text-sm text-slate-400 font-bold">แจ้งปัญหา บอท LINE ขัดข้อง บัญชีล็อค หรือมีอุปสรรคการกรอกส่งเวร เพื่อให้ทีมงานติดต่อกลับผ่านเบอร์โทรหรือตั๋วในระบบ</p>
+              <p className="text-sm text-slate-400 font-bold">แจ้งปัญหา บอท LINE ขัดข้อง, บัญชีล็อค หรือมีอุปสรรคการบันทึกข้อมูลส่งเวร</p>
             </div>
 
             <AnimatePresence mode="wait">
@@ -294,14 +286,14 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
                     {/* Input 1: User Name / Caller */}
                     <div className="space-y-1.5">
                       <label className="text-sm font-extrabold text-[#0f2d52] dark:text-slate-300">
-                        ผู้ส่งเรื่องแจ้งปัญหา / เบอร์ติดต่อกลับ <span className="text-red-500">*</span>
+                        ผู้ส่งเรื่องแจ้งปัญหา <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         required
                         value={ticketForm.name}
                         onChange={(e) => setTicketForm({...ticketForm, name: e.target.value})}
-                        placeholder="ระบุชื่อจริง ทนพ. และเบอร์โทรต่อ เช่น ทนพ.สมศักดิ์ เบอร์ต่อ 1420"
+                        placeholder="ระบุชื่อ-นามสกุล"
                         className="w-full px-3 h-10 bg-slate-50 dark:bg-slate-800 border border-transparent dark:border-slate-800 rounded-xl text-sm font-bold text-[#0f2d52] dark:text-white outline-none focus:bg-white focus:border-indigo-500/30 dark:focus:bg-slate-850 dark:focus:border-indigo-500/20 transition-all placeholder:text-slate-350"
                       />
                     </div>
@@ -309,7 +301,7 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
                     {/* Selector 1: Department/Division */}
                     <div className="space-y-1.5">
                       <label className="text-sm font-extrabold text-[#0f2d52] dark:text-slate-300">
-                        แผนก / ฝ่ายผู้ส่งเวรสังกัด
+                        หน่วยงาน
                       </label>
                       <select
                         value={ticketForm.department}
@@ -318,9 +310,6 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
                       >
                         <option value="Central Lab">Central Lab</option>
                         <option value="Blood Bank">Blood Bank</option>
-                        <option value="Microbiology">Microbiology</option>
-                        <option value="Pathology">Pathology</option>
-                        <option value="Other">Other</option>
                       </select>
                     </div>
                   </div>
@@ -333,9 +322,9 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
                       </label>
                       <div className="flex gap-2">
                         {([
-                          { id: 'bug', label: 'บั๊ก / มีข้อผิดพลาดในระบบ', color: 'border-red-500/20 hover:bg-red-50/20 text-red-600' },
-                          { id: 'feature', label: 'ฟีเจอร์ที่อยากเสนอแนะ', color: 'border-blue-500/20 hover:bg-blue-50/20 text-blue-600' },
-                          { id: 'account', label: 'ปัญหาเกี่ยวกับรหัสผ่าน', color: 'border-purple-500/20 hover:bg-purple-50/20 text-purple-600' }
+                          { id: 'bug', label: 'พบข้อผิดพลาดของระบบ (Bug)', color: 'border-red-500/20 hover:bg-red-50/20 text-red-600' },
+                          { id: 'feature', label: 'ข้อเสนอแนะ / เพิ่มฟีเจอร์ใหม่', color: 'border-blue-500/20 hover:bg-blue-50/20 text-blue-600' },
+                          { id: 'account', label: 'ปัญหาเกี่ยวกับบัญชีและรหัสผ่าน', color: 'border-purple-500/20 hover:bg-purple-50/20 text-purple-600' }
                         ] as const).map(cat => (
                           <button
                             key={cat.id}
@@ -355,7 +344,7 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
 
                     <div className="space-y-1.5 flex flex-col justify-end">
                       <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 leading-snug">
-                        💡 ข้อแนะนำ: ตั๋วที่แจ้งปัญหานอกเวลากรุณากรอกเบอร์โทรกลับ และสามารถประสานแอดมินกลุ่มงานสังขะโดยตรงเมื่อเป็นกรณีเรื้อรังที่ขัดขวางการส่งข้อมูลรักษาผู้ป่วยฉุกเฉิน
+                        💡 ข้อแนะนำ: ข้อแนะนำ: ในกรณีฉุกเฉินที่มีผลกระทบต่อการแสดงผลข้อมูลผู้ป่วย สามารถประสานงานผู้ดูแลระบบ (Admin) ได้โดยตรง
                       </p>
                     </div>
                   </div>
@@ -363,14 +352,14 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
                   {/* Textarea: Description Content of Issue */}
                   <div className="space-y-1.5">
                     <label className="text-sm font-extrabold text-[#0f2d52] dark:text-slate-300">
-                      พรรณนารายละเอียดปัญหาที่พบ / ข้อแนะความช่วย (MESSAGE DESCRIPTION) <span className="text-red-500">*</span>
+                      รายละเอียดปัญหาหรืออาการที่พบ (Description) <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       required
                       rows={4}
                       value={ticketForm.message}
                       onChange={(e) => setTicketForm({...ticketForm, message: e.target.value})}
-                      placeholder="ระบุรายละเอียดอาการที่พบ เช่น ข้อมูลเคสตกหล่นเมื่ออัปเดต, ไอออนไลน์ไม่ส่งการแจ้งเตือน, ปุ่มอนุมัติแก้ไขกดไม่ได้ในเครื่องแท็บเล็ต ฯลฯ"
+                      placeholder="ระบุรายละเอียดหรืออาการที่พบ เช่น ข้อมูลเคสตกหล่นหลังอัปเดต, ระบบ LINE ไม่ส่งข้อความแจ้งเตือน, หรือปุ่มคำสั่งกดใช้งานไม่ได้บนแท็บเล็ต"
                       className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-transparent dark:border-slate-800 rounded-xl text-sm font-bold text-[#0f2d52] dark:text-white outline-none focus:bg-white focus:border-indigo-500/30 dark:focus:bg-slate-850 dark:focus:border-indigo-500/20 transition-all placeholder:text-slate-350 resize-none leading-relaxed font-thai"
                     />
                   </div>
@@ -469,8 +458,6 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
             </div>
 
           </div>
-
-        </div>
 
       </div>
 

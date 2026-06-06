@@ -62,6 +62,307 @@ Deno.serve(async (req) => {
 
     console.log("Received payload for handle-new-handover:", JSON.stringify(payload));
 
+    // Handle support tickets being submitted
+    if (payload.action === "support_ticket") {
+      console.log("Processing support_ticket notification...");
+      const ticketId = payload.ticket_id || `TKT-${Math.floor(100000 + Math.random() * 90000)}`;
+      const callerName = payload.caller_name || "ไม่ระบุชื่อ";
+      const department = payload.department || "Central Lab";
+      const categoryId = payload.category || "bug";
+      const userMessage = payload.message || "-";
+
+      let categoryLabel = "พบข้อผิดพลาดของระบบ (Bug)";
+      let badgeColor = "#EF4444"; // Red for bug
+      let badgeBg = "#FEE2E2";
+
+      if (categoryId === "feature") {
+        categoryLabel = "ข้อเสนอแนะ / เพิ่มฟีเจอร์ใหม่";
+        badgeColor = "#3B82F6"; // Blue
+        badgeBg = "#DBEAFE";
+      } else if (categoryId === "account") {
+        categoryLabel = "ปัญหาเกี่ยวกับบัญชีและรหัสผ่าน";
+        badgeColor = "#8B5CF6"; // Purple
+        badgeBg = "#F3E8FF";
+      } else if (categoryId === "other") {
+        categoryLabel = "ปัญหาทางเทคนิคอื่นๆ";
+        badgeColor = "#6B7280"; // Gray
+        badgeBg = "#F3F4F6";
+      }
+
+      // Lazy load Supabase config
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || Deno.env.get("VITE_SUPABASE_URL");
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("VITE_SUPABASE_ANON_KEY");
+      
+      if (!supabaseUrl || !supabaseServiceKey) {
+        return new Response(JSON.stringify({ success: false, error: "Missing Supabase configuration." }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const supabaseClientForTicket = createClient(supabaseUrl, supabaseServiceKey, {
+        db: { schema: "handover_sys" }
+      });
+
+      // Fetch active LINE destination: Prioritize LINE_ADMIN_USER_ID (personal) or LINE_ADMIN_GROUP_ID (admin group)
+      let targetGroupId = Deno.env.get("LINE_ADMIN_USER_ID") || Deno.env.get("LINE_ADMIN_GROUP_ID");
+      let destinationType = "บัญชีส่วนตัว Admin/กลุ่มตั้งค่าเฉพาะ";
+
+      if (!targetGroupId) {
+        destinationType = "กลุ่มไลน์ผู้ใช้ทั่วไป (Fallback)";
+        try {
+          const { data: rpcData } = await supabaseClientForTicket.rpc("get_active_line_group");
+          if (rpcData) {
+            targetGroupId = rpcData;
+          } else {
+            const { data: selectData } = await supabaseClientForTicket
+              .from("line_groups")
+              .select("group_id")
+              .eq("is_active", true)
+              .order("joined_at", { ascending: false })
+              .limit(1);
+            if (selectData && selectData.length > 0) {
+              targetGroupId = selectData[0].group_id;
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching fallback group ID for ticket notification:", e);
+        }
+      }
+
+      if (!targetGroupId) {
+        return new Response(JSON.stringify({ success: false, error: "No destination found (Please configure LINE_ADMIN_USER_ID or set up an active LINE group)." }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      console.log(`Sending support ticket to destination: ${targetGroupId} (${destinationType})`);
+
+      // Create a gorgeous Flex Message for the ticket
+      const flexMessage = {
+        type: "flex",
+        altText: `📥 ตั๋วแจ้งใหม่: [${categoryLabel}] จากคุณ ${callerName}`,
+        contents: {
+          type: "bubble",
+          size: "mega",
+          header: {
+            type: "box",
+            layout: "horizontal",
+            backgroundColor: "#0F2D52",
+            paddingAll: "lg",
+            contents: [
+              {
+                type: "box",
+                layout: "vertical",
+                width: "40px",
+                height: "40px",
+                backgroundColor: "#ffffff20",
+                cornerRadius: "10px",
+                justifyContent: "center",
+                alignItems: "center",
+                contents: [
+                  {
+                    type: "image",
+                    url: "https://img.icons8.com/ios-filled/100/ffffff/support.png",
+                    size: "24px",
+                    aspectMode: "fit"
+                  }
+                ]
+              },
+              {
+                type: "box",
+                layout: "vertical",
+                margin: "md",
+                flex: 1,
+                contents: [
+                  {
+                    type: "text",
+                    text: ticketId,
+                    size: "md",
+                    weight: "bold",
+                    color: "#ffffff"
+                  },
+                  {
+                    type: "text",
+                    text: "TECHNICAL SUPPORT TICKET",
+                    size: "xxs",
+                    color: "#A5B4FC",
+                    weight: "bold",
+                    spacing: "md"
+                  }
+                ]
+              },
+              {
+                type: "box",
+                layout: "vertical",
+                alignItems: "flex-end",
+                justifyContent: "center",
+                contents: [
+                  {
+                    type: "text",
+                    text: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + " น.",
+                    size: "xs",
+                    color: "#A5B4FC",
+                    weight: "bold"
+                  }
+                ]
+              }
+            ]
+          },
+          body: {
+            type: "box",
+            layout: "vertical",
+            paddingAll: "xl",
+            backgroundColor: "#ffffff",
+            contents: [
+              {
+                type: "box",
+                layout: "horizontal",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "vertical",
+                    backgroundColor: badgeBg,
+                    cornerRadius: "20px",
+                    paddingStart: "md",
+                    paddingEnd: "md",
+                    paddingTop: "xs",
+                    paddingBottom: "xs",
+                    contents: [
+                      {
+                        type: "text",
+                        text: categoryLabel,
+                        size: "xxs",
+                        weight: "bold",
+                        color: badgeColor
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                type: "box",
+                layout: "vertical",
+                margin: "lg",
+                backgroundColor: "#F8FAFC",
+                cornerRadius: "12px",
+                paddingAll: "md",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    contents: [
+                      {
+                        type: "text",
+                        text: "ผู้ส่งเรื่อง:",
+                        size: "xs",
+                        color: "#94A3B8",
+                        width: "70px"
+                      },
+                      {
+                        type: "text",
+                        text: callerName,
+                        weight: "bold",
+                        size: "xs",
+                        color: "#1E293B",
+                        wrap: true
+                      }
+                    ]
+                  },
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    margin: "sm",
+                    contents: [
+                      {
+                        type: "text",
+                        text: "หน่วยงาน:",
+                        size: "xs",
+                        color: "#94A3B8",
+                        width: "70px"
+                      },
+                      {
+                        type: "text",
+                        text: department,
+                        weight: "bold",
+                        size: "xs",
+                        color: "#1E293B"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                type: "text",
+                text: "รายละเอียดปัญหา/ข้อความแจ้ง:",
+                size: "xxs",
+                color: "#64748B",
+                weight: "bold",
+                margin: "lg"
+              },
+              {
+                type: "box",
+                layout: "vertical",
+                margin: "xs",
+                paddingAll: "md",
+                backgroundColor: categoryId === "bug" ? "#FEF2F2" : categoryId === "feature" ? "#EFF6FF" : "#FAF5FF",
+                cornerRadius: "8px",
+                borderColor: categoryId === "bug" ? "#FCA5A5" : categoryId === "feature" ? "#93C5FD" : "#D8B4FE",
+                borderWidth: "1px",
+                contents: [
+                  {
+                    type: "text",
+                    text: maskSensitiveData(userMessage),
+                    size: "xs",
+                    color: categoryId === "bug" ? "#991B1B" : categoryId === "feature" ? "#1E40AF" : "#5B21B6",
+                    wrap: true,
+                    style: "normal"
+                  }
+                ]
+              },
+              {
+                type: "text",
+                text: "💡 ผู้ดูแลระบบกรุณาตอบรับผู้ใช้งานหลังตรวจสอบและดำเนินการแก้ไขเรียบร้อยแล้ว",
+                size: "xxs",
+                color: "#64748B",
+                margin: "md",
+                wrap: true
+              }
+            ]
+          }
+        }
+      };
+
+      const lineAccessToken = Deno.env.get("LINE_CHANNEL_ACCESS_TOKEN");
+      if (!lineAccessToken) {
+        return new Response(JSON.stringify({ success: false, error: "Missing LINE access token for ticket notification." }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const lineResponse = await fetch("https://api.line.me/v2/bot/message/push", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${lineAccessToken}`
+        },
+        body: JSON.stringify({
+          to: targetGroupId,
+          messages: [flexMessage]
+        })
+      });
+
+      const lineData = await lineResponse.text();
+      console.log("LINE ticket push outcome:", lineResponse.status, lineData);
+
+      return new Response(JSON.stringify({ success: true, lineResult: lineData }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     // Handle interactive LIFF task updates
     if (payload.action === "task_accepted") {
       console.log("Processing task_accepted update notification...");

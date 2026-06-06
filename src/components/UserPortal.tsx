@@ -975,7 +975,6 @@ export default function UserPortal({
                     ระบบรับมอบเวร และ ส่งเวรทั้งหมด
                   </h1>
                   <p className="text-sm text-slate-400 font-bold mt-1">
-                    ทำรายการส่งมอบเวรใหม่ที่แถบด้านซ้าย และสามารถตรวจสอบ/รับมอบงานได้ที่แถบประวัติด้านขวา (ข้อมูลเซนเซอร์คนไข้จะถูกยกเลิกในแถบนี้)
                   </p>
                 </div>
               </div>
@@ -1016,9 +1015,8 @@ export default function UserPortal({
                 <div>
                   <h1 className="text-2xl font-[900] text-[#0f2d52] dark:text-white tracking-tight leading-tight flex items-center gap-2">
                     <ClipboardList className="text-brand-blue" size={24} />
-                    บันทึกการส่งงานของฉัน / My Handovers
+                    บันทึกการส่งงานของฉัน
                   </h1>
-                  <p className="text-sm text-slate-400 font-bold mt-1">คัดลอกเฉพาะกิจกรรมการทำธุรกรรมของคุณเพื่อดูความปลอดภัย ยืนยัน และสืบค้นอย่างง่ายดาย</p>
                 </div>
               </div>
 
@@ -1216,7 +1214,7 @@ export default function UserPortal({
               <div>
                 <h1 className="text-2xl font-[900] text-[#0f2d52] dark:text-white tracking-tight leading-tight flex items-center gap-2">
                   <Megaphone className="text-brand-blue" size={24} />
-                  ข่าวสารประชาสัมพันธ์ / Laboratory Announcements
+                  ข่าวสารประชาสัมพันธ์
                 </h1>
                 <p className="text-xs text-slate-400 font-bold mt-1">ประกาศสำคัญ ข่าวคุณภาพ กฎข้อควรปฏิบัติ และการแจ้งเตือนจากทางหัวหน้าห้องปฏิบัติการ</p>
               </div>
@@ -1284,14 +1282,13 @@ export default function UserPortal({
             <motion.div 
               initial={{ opacity: 0, y: 10 }} 
               animate={{ opacity: 1, y: 0 }} 
-              className="space-y-6 max-w-2xl"
+              className="space-y-6 max-w-2xl mx-auto"
             >
               <div>
                 <h1 className="text-2xl font-[900] text-[#0f2d52] dark:text-white tracking-tight leading-tight flex items-center gap-2">
                   <Key className="text-brand-blue" size={24} />
-                  แก้ไขรหัสผ่านผู้ใช้งาน / Change Password
+                  แก้ไขรหัสผ่านผู้ใช้งาน
                 </h1>
-                <p className="text-xs text-slate-400 font-bold mt-1">อัปเดตและรักษาความปลอดภัยบัญชีปฏิบัติการ กลุ่มงานเทคนิคการแพทย์</p>
               </div>
 
               <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-6">
