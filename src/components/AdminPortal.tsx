@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CustomSelect } from './CustomSelect';
 import { getAnnouncements, saveAnnouncement, deleteAnnouncement, Announcement, subscribeToAnnouncements } from '../lib/announcements';
 import AdminLogViewer from './AdminLogViewer';
+import AdminTicketsViewer from './AdminTicketsViewer';
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -1203,6 +1204,7 @@ export default function AdminPortal({
           <MobileNavItem icon={<ClipboardList size={18} />} label="History" active={activeTab === 'Handovers'} onClick={() => setActiveTab('Handovers')} />
           <MobileNavItem icon={<Users size={18} />} label="Users" active={activeTab === 'Users'} onClick={() => setActiveTab('Users')} />
           <MobileNavItem icon={<Megaphone size={18} />} label="News" active={activeTab === 'Announcements'} onClick={() => setActiveTab('Announcements')} />
+          <MobileNavItem icon={<HelpCircle size={18} />} label="Tickets" active={activeTab === 'Tickets'} onClick={() => setActiveTab('Tickets')} />
           <MobileNavItem icon={<Settings size={18} />} label="Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} />
           <MobileNavItem icon={<Activity size={18} />} label="Logs" active={activeTab === 'Logs'} onClick={() => setActiveTab('Logs')} />
           <MobileNavItem icon={<LogOut size={18} />} label="Exit" active={false} onClick={onLogout} color="text-red-500" />
@@ -1256,6 +1258,7 @@ export default function AdminPortal({
           <div className="pt-6">
             {isSidebarOpen && <p className="text-[12px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2 mb-2 p-1">Content</p>}
             <NavItem icon={<Megaphone size={18} />} label="Announcements" active={activeTab === 'Announcements'} onClick={() => setActiveTab('Announcements')} collapsed={!isSidebarOpen} />
+            <NavItem icon={<HelpCircle size={18} />} label="Support Tickets" active={activeTab === 'Tickets'} onClick={() => setActiveTab('Tickets')} collapsed={!isSidebarOpen} />
             <NavItem icon={<Settings size={18} />} label="LINE Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} collapsed={!isSidebarOpen} />
             <NavItem icon={<Activity size={18} />} label="System Logs" active={activeTab === 'Logs'} onClick={() => setActiveTab('Logs')} collapsed={!isSidebarOpen} />
           </div>
@@ -3258,6 +3261,8 @@ export default function AdminPortal({
               </div>
             )}
           </div>
+        ) : activeTab === 'Tickets' ? (
+          <AdminTicketsViewer />
         ) : activeTab === 'Logs' ? (
           <AdminLogViewer />
         ) : (

@@ -130,32 +130,34 @@ export default function ContactTeam({ onClose }: ContactTeamProps) {
         );
       }
 
-      // 2. Method 2: Send to LINE Admin group
-      // Fetch active environment setting and send payload to handle-new-handover Edge Function
-      const activeConfig = getActiveConfig();
-      const functionUrl = `${activeConfig.supabaseUrl}/functions/v1/handle-new-handover`;
+      // 2. Method 2: Send support ticket to Edge Function to trigger LINE notify
+      try {
+        const activeConfig = getActiveConfig();
+        const functionUrl = `${activeConfig.supabaseUrl}/functions/v1/handle-new-handover`;
 
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${activeConfig.supabaseAnonKey}`,
-          'apikey': activeConfig.supabaseAnonKey
-        },
-        body: JSON.stringify({
-          action: 'support_ticket',
-          ticket_id: generatedId,
-          caller_name: ticketForm.name,
-          department: ticketForm.department,
-          category: ticketForm.category,
-          message: ticketForm.message
-        })
-      });
-
-      if (!response.ok) {
-        console.error('Edge Function returned non-ok for LINE Notification:', response.status);
-      } else {
-        console.log('LINE notification triggered successfully!');
+        fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeConfig.supabaseAnonKey}`,
+            'apikey': activeConfig.supabaseAnonKey
+          },
+          body: JSON.stringify({
+            action: 'support_ticket',
+            ticket_id: generatedId,
+            caller_name: ticketForm.name,
+            department: ticketForm.department,
+            category: ticketForm.category,
+            message: ticketForm.message
+          })
+        }).then(res => {
+          if (!res.ok) console.error('Edge Function LINE notification returned non-ok:', res.status);
+          else console.log('LINE notification dispatched correctly via Edge Function.');
+        }).catch(err => {
+          console.error('Failed to trigger LINE notification:', err);
+        });
+      } catch (lineErr) {
+        console.warn('Unable to setup LINE notification dispatch:', lineErr);
       }
 
       // Save to localStorage as well so users can see we persist it

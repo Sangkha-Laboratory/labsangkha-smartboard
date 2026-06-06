@@ -139,198 +139,14 @@ Deno.serve(async (req) => {
 
       console.log(`Sending support ticket to destination: ${targetGroupId} (${destinationType})`);
 
-      // Create a gorgeous Flex Message for the ticket
-      const flexMessage = {
-        type: "flex",
-        altText: `📥 ตั๋วแจ้งใหม่: [${categoryLabel}] จากคุณ ${callerName}`,
-        contents: {
-          type: "bubble",
-          size: "mega",
-          header: {
-            type: "box",
-            layout: "horizontal",
-            backgroundColor: "#0F2D52",
-            paddingAll: "lg",
-            contents: [
-              {
-                type: "box",
-                layout: "vertical",
-                width: "40px",
-                height: "40px",
-                backgroundColor: "#ffffff20",
-                cornerRadius: "10px",
-                justifyContent: "center",
-                alignItems: "center",
-                contents: [
-                  {
-                    type: "image",
-                    url: "https://img.icons8.com/ios-filled/100/ffffff/support.png",
-                    size: "24px",
-                    aspectMode: "fit"
-                  }
-                ]
-              },
-              {
-                type: "box",
-                layout: "vertical",
-                margin: "md",
-                flex: 1,
-                contents: [
-                  {
-                    type: "text",
-                    text: ticketId,
-                    size: "md",
-                    weight: "bold",
-                    color: "#ffffff"
-                  },
-                  {
-                    type: "text",
-                    text: "TECHNICAL SUPPORT TICKET",
-                    size: "xxs",
-                    color: "#A5B4FC",
-                    weight: "bold"
-                  }
-                ]
-              },
-              {
-                type: "box",
-                layout: "vertical",
-                alignItems: "flex-end",
-                justifyContent: "center",
-                contents: [
-                  {
-                    type: "text",
-                    text: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + " น.",
-                    size: "xs",
-                    color: "#A5B4FC",
-                    weight: "bold"
-                  }
-                ]
-              }
-            ]
-          },
-          body: {
-            type: "box",
-            layout: "vertical",
-            paddingAll: "xl",
-            backgroundColor: "#ffffff",
-            contents: [
-              {
-                type: "box",
-                layout: "horizontal",
-                contents: [
-                  {
-                    type: "box",
-                    layout: "vertical",
-                    backgroundColor: badgeBg,
-                    cornerRadius: "20px",
-                    paddingStart: "md",
-                    paddingEnd: "md",
-                    paddingTop: "xs",
-                    paddingBottom: "xs",
-                    contents: [
-                      {
-                        type: "text",
-                        text: categoryLabel,
-                        size: "xxs",
-                        weight: "bold",
-                        color: badgeColor
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                type: "box",
-                layout: "vertical",
-                margin: "lg",
-                backgroundColor: "#F8FAFC",
-                cornerRadius: "12px",
-                paddingAll: "md",
-                contents: [
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    contents: [
-                      {
-                        type: "text",
-                        text: "ผู้ส่งเรื่อง:",
-                        size: "xs",
-                        color: "#94A3B8",
-                        width: "70px"
-                      },
-                      {
-                        type: "text",
-                        text: callerName,
-                        weight: "bold",
-                        size: "xs",
-                        color: "#1E293B",
-                        wrap: true
-                      }
-                    ]
-                  },
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    margin: "sm",
-                    contents: [
-                      {
-                        type: "text",
-                        text: "หน่วยงาน:",
-                        size: "xs",
-                        color: "#94A3B8",
-                        width: "70px"
-                      },
-                      {
-                        type: "text",
-                        text: department,
-                        weight: "bold",
-                        size: "xs",
-                        color: "#1E293B"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                type: "text",
-                text: "รายละเอียดปัญหา/ข้อความแจ้ง:",
-                size: "xxs",
-                color: "#64748B",
-                weight: "bold",
-                margin: "lg"
-              },
-              {
-                type: "box",
-                layout: "vertical",
-                margin: "xs",
-                paddingAll: "md",
-                backgroundColor: categoryId === "bug" ? "#FEF2F2" : categoryId === "feature" ? "#EFF6FF" : "#FAF5FF",
-                cornerRadius: "8px",
-                borderColor: categoryId === "bug" ? "#FCA5A5" : categoryId === "feature" ? "#93C5FD" : "#D8B4FE",
-                borderWidth: "1px",
-                contents: [
-                  {
-                    type: "text",
-                    text: maskSensitiveData(userMessage),
-                    size: "xs",
-                    color: categoryId === "bug" ? "#991B1B" : categoryId === "feature" ? "#1E40AF" : "#5B21B6",
-                    wrap: true,
-                    style: "normal"
-                  }
-                ]
-              },
-              {
-                type: "text",
-                text: "💡 ผู้ดูแลระบบกรุณาตอบรับผู้ใช้งานหลังตรวจสอบและดำเนินการแก้ไขเรียบร้อยแล้ว",
-                size: "xxs",
-                color: "#64748B",
-                margin: "md",
-                wrap: true
-              }
-            ]
-          }
-        }
+      const categoryTheme = categoryId === "bug" ? "🐛 พบข้อผิดพลาด (Bug)" : 
+                            categoryId === "feature" ? "💡 แนะนำเพิ่มฟีเจอร์" : 
+                            categoryId === "account" ? "🔑 บัญชี/รหัสผ่าน" : "⚙️ ปัญหาทั่วไป";
+
+      // Create a clean, elegant Plain Text message for LINE
+      const textMessage = {
+        type: "text",
+        text: `📥 ตั๋วแจ้งปัญหาระบบใหม่ (Support Ticket)\n\n📌 รหัสตั๋ว: ${ticketId}\n👤 ผู้ส่งเรื่อง: คุณ ${callerName}\n🏢 หน่วยงาน: ${department}\n📂 ประเภท: ${categoryTheme}\n\n💬 รายละเอียด:\n"${userMessage}"\n\n🕒 วันที่-เวลา: ${new Date().toLocaleString('th-TH')}\n\n🔧 ผู้ดูแลระบบกรุณาตรวจสอบในระบบ Admin Portal ครับ`
       };
 
       const lineAccessToken = Deno.env.get("LINE_CHANNEL_ACCESS_TOKEN");
@@ -349,7 +165,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           to: targetGroupId,
-          messages: [flexMessage]
+          messages: [textMessage]
         })
       });
 
