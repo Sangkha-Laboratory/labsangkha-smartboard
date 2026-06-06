@@ -63,8 +63,8 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
     }
     return "สมศักดิ์ มีสุข";
   });
+
   const [showNameEditor, setShowNameEditor] = useState(false);
-  const [showPermissionGuide, setShowPermissionGuide] = useState(false);
 
   // Task & Handover data
   const [targetId, setTargetId] = useState<string | null>(null);
@@ -1042,37 +1042,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
               </div>
             )}
 
-            {/* LINE Permission Info/Helper Box */}
-            <div className="bg-amber-50/70 border-b border-amber-200/60 px-5 py-3 flex flex-col gap-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-amber-800 text-[11.5px] font-bold">
-                  <Info size={13} className="text-amber-600 shrink-0" />
-                  <span>มีปัญหาปุ่มกดยอมรับไม่ได้ หรือชื่อไลน์ไม่แสดง?</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowPermissionGuide(!showPermissionGuide)}
-                  className="text-[10px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded transition-colors"
-                >
-                  {showPermissionGuide ? 'ซ่อนแนะนำ' : 'ดูวิธีแก้ไข'}
-                </button>
-              </div>
-              
-              {showPermissionGuide && (
-                <div className="text-[11px] text-amber-900 font-medium leading-relaxed mt-1 border-t border-amber-200/40 pt-2 animate-fadeIn">
-                  <p className="font-extrabold text-amber-850 mb-1">💡 วิธีแก้ไขกรณีเผลอกด "ยกเลิก" หรือไม่ได้ติ๊กสิทธิ์อนุญาตตอนเข้าแอปครั้งแรก:</p>
-                  <ol className="list-decimal list-inside space-y-1 pl-1 text-slate-700 text-[11px]">
-                    <li>กดปุ่ม <span className="font-bold">"..." (3 จุด)</span> ที่มุมขวาบนสุดของหน้าเจอนี้</li>
-                    <li>เลือกเมนู <span className="font-bold">"ตั้งค่า" (Settings)</span> หรือ <span className="font-bold">"สิทธิ์การอนุญาต" (Permissions)</span></li>
-                    <li>กดเปิดสวิตช์หัวข้อ <span className="font-bold">"ข้อมูลโปรไฟล์หลัก" (Profile)</span> ให้เป็นสีเขียว</li>
-                    <li>กดปิดหน้าเจอนี้แล้วกดปุ่มลิงก์เข้ามาใหม่อีกครั้งเพื่อแสดงชื่อที่ถูกต้อง</li>
-                  </ol>
-                  <div className="mt-2 bg-white/80 p-2 rounded border border-amber-200/30 text-[10.5px] text-amber-800 leading-normal">
-                    ✨ <span className="font-bold">ระบบอัปเดตแก้ไขสมบูรณ์แล้ว:</span> หากลืมเปิดสิทธิ์ ไม่ต้องกังวลว่าระบบจะขึ้นข้อผิดพลาด <span className="font-mono text-[10px] bg-red-50 text-red-600 px-1 rounded">invalid input syntax for type uuid</span> อีกต่อไป ระบบจะใช้ชื่อโปรไฟล์แทนให้อย่างเสถียรและปลอดภัย!
-                  </div>
-                </div>
-              )}
-            </div>
+
 
             {/* Meta Band */}
             <div className="bg-[#F0F6FC] border-b border-[#E5E7EB] px-5 py-3 flex gap-4 items-center">
