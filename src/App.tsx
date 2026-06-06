@@ -629,7 +629,7 @@ export default function App() {
               <Hero />
               
               {/* Row 2: Main Content */}
-              <div className="w-full mt-6 sm:-mt-[30px] relative z-[1]">
+              <div className="w-[92%] max-w-[1280px] mx-auto px-4 mt-6 sm:-mt-[30px] relative z-[1]">
                 <div id="handover-section" className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-5 items-stretch flex-1 min-h-0">
                   {/* Sidebar Area - Handover Form (Left/Side) */}
                   <div className="flex flex-col">

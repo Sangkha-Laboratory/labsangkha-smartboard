@@ -18,7 +18,7 @@ export default function Hero() {
 
   return (
     <div className="bg-transparent pt-7 sm:pt-0 pb-1 sm:pb-3 overflow-hidden relative">
-      <div className="w-full mx-auto relative">
+      <div className="w-[92%] max-w-[1280px] mx-auto relative">
         <div className="grid lg:grid-cols-2 gap-4 lg:gap-8 items-center px-4">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
