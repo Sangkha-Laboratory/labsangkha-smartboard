@@ -54,7 +54,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
   
   // Emulation Name Editor
   const [mockProfileName, setMockProfileName] = useState(() => {
-    const saved = localStorage.getItem('sangkha_handover_local_user');
+    const saved = sessionStorage.getItem('sangkha_handover_local_user');
     if (saved) {
       try {
         const u = JSON.parse(saved);
@@ -83,21 +83,21 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
   const [usersList, setUsersList] = useState<{ id: string; full_name: string }[]>([]);
   // Logged-in state for LIFF
   const [liffLoggedInUser, setLiffLoggedInUser] = useState<{ id: string; full_name: string } | null>(() => {
-    const saved = localStorage.getItem('liff_logged_in_user');
-    const lastActiveStr = localStorage.getItem('liff_session_last_active');
+    const saved = sessionStorage.getItem('liff_logged_in_user');
+    const lastActiveStr = sessionStorage.getItem('liff_session_last_active');
     if (saved) {
       const now = Date.now();
       const timeoutLimit = 15 * 60 * 1000; // 15 minutes
       if (lastActiveStr) {
         const lastActive = parseInt(lastActiveStr, 10);
         if (now - lastActive > timeoutLimit) {
-          localStorage.removeItem('liff_logged_in_user');
-          localStorage.removeItem('liff_session_last_active');
+          sessionStorage.removeItem('liff_logged_in_user');
+          sessionStorage.removeItem('liff_session_last_active');
           return null;
         }
       }
       try {
-        localStorage.setItem('liff_session_last_active', String(now));
+        sessionStorage.setItem('liff_session_last_active', String(now));
         return JSON.parse(saved);
       } catch (e) {}
     }
@@ -120,8 +120,8 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
 
   const handleLiffLogout = () => {
     setLiffLoggedInUser(null);
-    localStorage.removeItem('liff_logged_in_user');
-    localStorage.removeItem('liff_session_last_active');
+    sessionStorage.removeItem('liff_logged_in_user');
+    sessionStorage.removeItem('liff_session_last_active');
     setLoginReceiverId('');
     setLoginPassword('');
     setLoginSearchTerm('');
@@ -188,8 +188,8 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
       // Success
       const loggedIn = { id: userRecord.id, full_name: userRecord.full_name };
       setLiffLoggedInUser(loggedIn);
-      localStorage.setItem('liff_logged_in_user', JSON.stringify(loggedIn));
-      localStorage.setItem('liff_session_last_active', String(Date.now()));
+      sessionStorage.setItem('liff_logged_in_user', JSON.stringify(loggedIn));
+      sessionStorage.setItem('liff_session_last_active', String(Date.now()));
       setIsLoginModalOpen(false);
       setLoginError(null);
     } catch (err: any) {
@@ -316,7 +316,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
     if (!liffLoggedInUser) return;
 
     const resetTimer = () => {
-      localStorage.setItem('liff_session_last_active', String(Date.now()));
+      sessionStorage.setItem('liff_session_last_active', String(Date.now()));
     };
 
     // Listeners to refresh session expiration on interaction
@@ -328,8 +328,8 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
 
     // Periodic check interval (every 10 seconds)
     const intervalId = setInterval(() => {
-      const saved = localStorage.getItem('liff_logged_in_user');
-      const lastActiveStr = localStorage.getItem('liff_session_last_active');
+      const saved = sessionStorage.getItem('liff_logged_in_user');
+      const lastActiveStr = sessionStorage.getItem('liff_session_last_active');
       if (saved && lastActiveStr) {
         const lastActive = parseInt(lastActiveStr, 10);
         const now = Date.now();
