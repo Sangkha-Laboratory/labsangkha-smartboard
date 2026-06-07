@@ -699,7 +699,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             <ShieldCheck size={24} className="text-white" />
           </div>
           <h3 className="text-base font-black tracking-tight font-thai">เข้าสู่ระบบรับเวร LIFF</h3>
-          <p className="text-[10px] text-white/80 font-medium font-thai">กลุ่มงานเทคนิคการแพทย์ สังขะ</p>
+          <p className="text-[10px] text-white/80 font-medium font-thai">กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ</p>
         </div>
 
         {/* Login form body */}
