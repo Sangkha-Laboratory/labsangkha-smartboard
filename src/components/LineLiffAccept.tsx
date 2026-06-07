@@ -84,8 +84,22 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
   // Logged-in state for LIFF
   const [liffLoggedInUser, setLiffLoggedInUser] = useState<{ id: string; full_name: string } | null>(() => {
     const saved = localStorage.getItem('liff_logged_in_user');
+    const lastActiveStr = localStorage.getItem('liff_session_last_active');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      const now = Date.now();
+      const timeoutLimit = 15 * 60 * 1000; // 15 minutes
+      if (lastActiveStr) {
+        const lastActive = parseInt(lastActiveStr, 10);
+        if (now - lastActive > timeoutLimit) {
+          localStorage.removeItem('liff_logged_in_user');
+          localStorage.removeItem('liff_session_last_active');
+          return null;
+        }
+      }
+      try {
+        localStorage.setItem('liff_session_last_active', String(now));
+        return JSON.parse(saved);
+      } catch (e) {}
     }
     return null;
   });
@@ -107,6 +121,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
   const handleLiffLogout = () => {
     setLiffLoggedInUser(null);
     localStorage.removeItem('liff_logged_in_user');
+    localStorage.removeItem('liff_session_last_active');
     setLoginReceiverId('');
     setLoginPassword('');
     setLoginSearchTerm('');
@@ -174,6 +189,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
       const loggedIn = { id: userRecord.id, full_name: userRecord.full_name };
       setLiffLoggedInUser(loggedIn);
       localStorage.setItem('liff_logged_in_user', JSON.stringify(loggedIn));
+      localStorage.setItem('liff_session_last_active', String(Date.now()));
       setIsLoginModalOpen(false);
       setLoginError(null);
     } catch (err: any) {
@@ -294,6 +310,46 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
         setIsEmulated(true);
       });
   }, []);
+
+  // Track session timer & user activity for the 15-minute session timeout
+  useEffect(() => {
+    if (!liffLoggedInUser) return;
+
+    const resetTimer = () => {
+      localStorage.setItem('liff_session_last_active', String(Date.now()));
+    };
+
+    // Listeners to refresh session expiration on interaction
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('keydown', resetTimer);
+    window.addEventListener('click', resetTimer);
+    window.addEventListener('scroll', resetTimer);
+    window.addEventListener('touchstart', resetTimer);
+
+    // Periodic check interval (every 10 seconds)
+    const intervalId = setInterval(() => {
+      const saved = localStorage.getItem('liff_logged_in_user');
+      const lastActiveStr = localStorage.getItem('liff_session_last_active');
+      if (saved && lastActiveStr) {
+        const lastActive = parseInt(lastActiveStr, 10);
+        const now = Date.now();
+        const timeoutLimit = 15 * 60 * 1000; // 15 minutes
+        if (now - lastActive > timeoutLimit) {
+          console.warn("LIFF session timed out due to 15-minute inactivity");
+          handleLiffLogout();
+        }
+      }
+    }, 10000);
+
+    return () => {
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('keydown', resetTimer);
+      window.removeEventListener('click', resetTimer);
+      window.removeEventListener('scroll', resetTimer);
+      window.removeEventListener('touchstart', resetTimer);
+      clearInterval(intervalId);
+    };
+  }, [liffLoggedInUser]);
 
   // Fetch handover tasks
   useEffect(() => {
@@ -583,7 +639,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             </div>
             <div className="text-[10px] text-emerald-600 font-bold mt-0.5 flex items-center gap-1">
               <ShieldCheck size={11} className="text-emerald-500 shrink-0" />
-              <span>ยืนยันตัวตนในระบบ รพ. แล้ว</span>
+              <span>ยืนยันตัวตนในระบบเรียบร้อยแล้ว</span>
             </div>
           </div>
         </div>
@@ -597,10 +653,10 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             </div>
             <div className="min-w-0 font-thai">
               <div className="text-[12.5px] font-extrabold text-[#1E40AF]">
-                ยังไม่ได้ระบุตัวตนโรงพยาบาล
+                ยังไม่ได้ยืนยันตัวตนกลุ่มงาน
               </div>
               <div className="text-[10px] text-amber-600 font-semibold leading-none mt-0.5">
-                กรุณาเข้าสู่ระบบ รพ. ก่อนกดรับเวรภารกิจ
+                กรุณาเข้าสู่ระบบกลุ่มงานก่อนกดรับเวรภารกิจ
               </div>
             </div>
           </div>
@@ -613,7 +669,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             }}
             className="text-[11px] bg-[#2B8BE8] hover:bg-[#1E6FC7] text-white px-3 py-1.5 rounded-xl font-bold border-none shrink-0 cursor-pointer shadow-sm active:scale-95 transition-all font-thai"
           >
-            เข้าสู่ระบบ รพ.
+            เข้าสู่ระบบกลุ่มงาน
           </button>
         </div>
       );
@@ -643,7 +699,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             <ShieldCheck size={24} className="text-white" />
           </div>
           <h3 className="text-base font-black tracking-tight font-thai">เข้าสู่ระบบรับเวร LIFF</h3>
-          <p className="text-[10px] text-white/80 font-medium font-thai">กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ</p>
+          <p className="text-[10px] text-white/80 font-medium font-thai">กลุ่มงานเทคนิคการแพทย์ สังขะ</p>
         </div>
 
         {/* Login form body */}
@@ -743,7 +799,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
                   กำลังเข้าสู่ระบบ...
                 </>
               ) : (
-                'เข้าสู่ระบบ รพ.'
+                'เข้าสู่ระบบกลุ่มงาน'
               )}
             </button>
             <button
@@ -803,7 +859,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
               </div>
               <div>
                 <h1 className="text-[15px] font-extrabold leading-tight">พอร์ทัลรับเวร LINE LIFF</h1>
-                <p className="text-[11px] text-[#6B7280] font-medium leading-none mt-0.5">กลุ่มงานเทคนิคการแพทย์ รพ.สังขะ</p>
+                <p className="text-[11px] text-[#6B7280] font-medium leading-none mt-0.5">กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ</p>
               </div>
             </div>
             
@@ -821,144 +877,150 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
           {renderProfileBanner(currentUserName)}
 
           {/* Main List Area */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-            
-            {/* Filter Control */}
-            <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-2">
-              <input
-                type="date"
-                className="flex-1 text-xs font-bold bg-slate-50 p-2 rounded-lg border-none text-slate-700 outline-none"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
-                className="text-[10px] font-bold bg-[#2B8BE8] text-white px-3 py-2 rounded-lg hover:bg-[#1E6FC7] transition-all"
-              >
-                วันนี้
-              </button>
-            </div>
-
-            {/* 1. Pending Section */}
-            <div>
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-red-600">งานรอส่งมอบ-รับเวร ({pendingRecent.length})</h2>
+          {liffLoggedInUser ? (
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              
+              {/* Filter Control */}
+              <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-2">
+                <input
+                  type="date"
+                  className="flex-1 text-xs font-bold bg-slate-50 p-2 rounded-lg border-none text-slate-700 outline-none"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
+                  className="text-[10px] font-bold bg-[#2B8BE8] text-white px-3 py-2 rounded-lg hover:bg-[#1E6FC7] transition-all"
+                >
+                  วันนี้
+                </button>
               </div>
 
-              {pendingRecent.length === 0 ? (
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-center text-xs text-gray-500 font-medium">
-                  ไม่มีงานรอส่งมอบในขณะนี้ 🎉 ทุกรายการถูกรับทั้งหมดแล้ว
+              {/* 1. Pending Section */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-red-600">งานรอส่งมอบ-รับเวร ({pendingRecent.length})</h2>
                 </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {pendingRecent.map((item) => {
-                    const originalSender = usersMap[item.sender_id] || item.sender_name || 'เจ้าหน้าที่รพ.';
-                    const dateFormatted = new Date(item.created_at).toLocaleDateString('th-TH', { 
-                      day: '2-digit', 
-                      month: '2-digit',
-                      year: '2-digit'
-                    });
-                    const timeFormatted = new Date(item.created_at).toLocaleTimeString('th-TH', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    });
 
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => setTargetId(item.id)}
-                        className="w-full text-left bg-white border border-red-100 hover:border-[#2B8BE8] p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-3 group"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase">
-                              {item.task_number || 'LAB-TASK'}
-                            </span>
-                            <span className="bg-[#FEF3C7] text-[#D97706] px-2 py-0.5 rounded-md text-[10px] font-bold">
-                              เวร{item.shift || 'ไม่ระบุ'}
-                            </span>
+                {pendingRecent.length === 0 ? (
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-center text-xs text-gray-500 font-medium">
+                    ไม่มีงานรอส่งมอบในขณะนี้ 🎉 ทุกรายการถูกรับทั้งหมดแล้ว
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {pendingRecent.map((item) => {
+                      const originalSender = usersMap[item.sender_id] || item.sender_name || 'เจ้าหน้าที่กลุ่มงาน';
+                      const dateFormatted = new Date(item.created_at).toLocaleDateString('th-TH', { 
+                        day: '2-digit', 
+                        month: '2-digit',
+                        year: '2-digit'
+                      });
+                      const timeFormatted = new Date(item.created_at).toLocaleTimeString('th-TH', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      });
+
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => setTargetId(item.id)}
+                          className="w-full text-left bg-white border border-red-100 hover:border-[#2B8BE8] p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-3 group"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase">
+                                {item.task_number || 'LAB-TASK'}
+                              </span>
+                              <span className="bg-[#FEF3C7] text-[#D97706] px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                เวร{item.shift || 'ไม่ระบุ'}
+                              </span>
+                            </div>
+                            
+                            <h3 className="font-bold text-[13.5px] leading-snug text-slate-800 truncate mb-1">
+                              {maskSensitiveData(item.title, !!liffLoggedInUser)}
+                            </h3>
+                            
+                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-[#6B7280] font-medium">
+                              <span className="text-blue-600 font-semibold">{item.division}</span>
+                              <span>•</span>
+                              <span>โดย: {originalSender}</span>
+                              <span>•</span>
+                              <span className="text-slate-400">{dateFormatted} {timeFormatted} น.</span>
+                            </div>
                           </div>
-                          
-                          <h3 className="font-bold text-[13.5px] leading-snug text-slate-800 truncate mb-1">
-                            {item.title}
-                          </h3>
-                          
-                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-[#6B7280] font-medium">
-                            <span className="text-blue-600 font-semibold">{item.division}</span>
-                            <span>•</span>
-                            <span>โดย: {originalSender}</span>
-                            <span>•</span>
-                            <span className="text-slate-400">{dateFormatted} {timeFormatted} น.</span>
+
+                          <div className="w-8 h-8 rounded-full bg-red-50 group-hover:bg-blue-50 text-red-500 group-hover:text-[#2B8BE8] flex items-center justify-center shrink-0 transition-colors">
+                            <ChevronRight size={16} />
                           </div>
-                        </div>
-
-                        <div className="w-8 h-8 rounded-full bg-red-50 group-hover:bg-blue-50 text-red-500 group-hover:text-[#2B8BE8] flex items-center justify-center shrink-0 transition-colors">
-                          <ChevronRight size={16} />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* 2. Recently Done Section */}
-            <div className="pt-2">
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-600">รายการส่งเวรล่าสุด ({acceptedRecent.length})</h2>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {acceptedRecent.length === 0 ? (
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center text-xs text-gray-400 font-medium">
-                  ไม่มีประวัติงานช่วงเร็วๆ นี้
+              {/* 2. Recently Done Section */}
+              <div className="pt-2">
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-600">รายการส่งเวรล่าสุด ({acceptedRecent.length})</h2>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {acceptedRecent.slice(0, 8).map((item) => {
-                    const originalSender = usersMap[item.sender_id] || item.sender_name || 'เจ้าหน้าที่รพ.';
-                    const originalReceiver = usersMap[item.receiver_id] || item.receiver_line_name || item.receiver_id || 'ผู้รับเวรแล้ว';
 
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => setTargetId(item.id)}
-                        className="w-full text-left bg-slate-50/70 hover:bg-white border border-slate-105 hover:border-slate-300 p-3 rounded-xl transition-all flex items-center justify-between gap-3 group"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9.5px] font-bold">
-                              {item.task_number || 'LAB-DONE'}
-                            </span>
-                            <span className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded text-[9.5px] font-bold flex items-center gap-0.5">
-                              <Check size={9} /> รับเวรแล้ว
-                            </span>
-                          </div>
-                          
-                          <h4 className="font-bold text-[12.5px] leading-snug text-slate-700 truncate mb-0.5">
-                            {item.title}
-                          </h4>
-                          
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] text-[#8C93A3] font-medium">
-                            <span className="text-slate-600 font-semibold">{item.division}</span>
-                            <span>•</span>
-                            <span>ผู้รับเวร: {originalReceiver}</span>
-                          </div>
-                        </div>
+                {acceptedRecent.length === 0 ? (
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center text-xs text-gray-400 font-medium">
+                    ไม่มีประวัติงานช่วงเร็วๆ นี้
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {acceptedRecent.slice(0, 8).map((item) => {
+                      const originalSender = usersMap[item.sender_id] || item.sender_name || 'เจ้าหน้าที่กลุ่มงาน';
+                      const originalReceiver = usersMap[item.receiver_id] || item.receiver_line_name || item.receiver_id || 'ผู้รับเวรแล้ว';
 
-                        <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-slate-200 text-slate-400 group-hover:text-slate-600 flex items-center justify-center shrink-0 transition-colors">
-                          <ChevronRight size={14} />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => setTargetId(item.id)}
+                          className="w-full text-left bg-slate-50/70 hover:bg-white border border-slate-105 hover:border-slate-300 p-3 rounded-xl transition-all flex items-center justify-between gap-3 group"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9.5px] font-bold">
+                                {item.task_number || 'LAB-DONE'}
+                              </span>
+                              <span className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded text-[9.5px] font-bold flex items-center gap-0.5">
+                                <Check size={9} /> รับเวรแล้ว
+                              </span>
+                            </div>
+                            
+                            <h4 className="font-bold text-[12.5px] leading-snug text-slate-700 truncate mb-0.5">
+                              {maskSensitiveData(item.title, !!liffLoggedInUser)}
+                            </h4>
+                            
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] text-[#8C93A3] font-medium">
+                              <span className="text-slate-600 font-semibold">{item.division}</span>
+                              <span>•</span>
+                              <span>ผู้รับเวร: {originalReceiver}</span>
+                            </div>
+                          </div>
+
+                          <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-slate-200 text-slate-400 group-hover:text-slate-600 flex items-center justify-center shrink-0 transition-colors">
+                            <ChevronRight size={14} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-
-          </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-6 text-center text-xs font-bold text-gray-500 flex-col gap-3">
+              <ShieldCheck size={48} className="text-slate-300" />
+              กรุณาเข้าสู่ระบบกลุ่มงาน เพื่อดูรายการส่งเวร
+            </div>
+          )}
 
           {/* Footer Navigation */}
           <div className="bg-white border-t border-[#E5E7EB] p-4">
@@ -969,8 +1031,6 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
               <ChevronLeft size={14} /> กลับสู่หน้าจอสมาร์ทบอร์ดหลัก
             </button>
           </div>
-
-          {isLoginModalOpen && renderLoginModal()}
 
         </div>
       </div>
@@ -1094,67 +1154,75 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             </div>
 
             {/* Task list body */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
-              {batchTasks.map((task) => {
-                const isTaken = task.status !== 'Pending';
-                const isCurrentlySelected = selectedTaskIds.has(task.id);
+            {liffLoggedInUser ? (
+              <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+                {batchTasks.map((task) => {
+                  const isTaken = task.status !== 'Pending';
+                  const isCurrentlySelected = selectedTaskIds.has(task.id);
 
-                return (
-                  <div 
-                    key={task.id}
-                    onClick={() => toggleTaskSelection(task.id, isTaken)}
-                    className={`border rounded-2xl p-4 flex gap-3 items-start transition-all cursor-pointer relative ${
-                      isTaken 
-                        ? 'border-[#16A34A]/20 bg-[#FAFFFE] opacity-75' 
-                        : isCurrentlySelected 
-                        ? 'border-[#2B8BE8] bg-[#EFF6FF] ring-2 ring-[#2B8BE8]/10' 
-                        : 'border-[#E5E7EB] bg-white hover:border-gray-350'
-                    }`}
-                  >
-                    {/* Checkbox */}
-                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-                      isTaken 
-                        ? 'bg-[#16A34A] border-[#16A34A] text-white' 
-                        : isCurrentlySelected 
-                        ? 'bg-[#2B8BE8] border-[#2B8BE8] text-white' 
-                        : 'border-[#E5E7EB] bg-white'
-                    }`}>
-                      {(isCurrentlySelected || isTaken) && <Check size={12} strokeWidth={3} />}
-                    </div>
-
-                    {/* Task Info */}
-                    <div className="flex-1 min-w-0 pr-12">
-                      <h4 className="text-[13.5px] font-extrabold text-[#1A1A2E] leading-snug">
-                        {task.title}
-                      </h4>
-                      <div className="inline-flex items-center gap-1 mt-1.5 bg-[#F0F6FC] border border-[#E5E7EB] px-2.5 py-0.5 rounded-full text-[10.5px] font-bold text-[#6B7280]">
-                        {task.category}
+                  return (
+                    <div 
+                      key={task.id}
+                      onClick={() => toggleTaskSelection(task.id, isTaken)}
+                      className={`border rounded-2xl p-4 flex gap-3 items-start transition-all cursor-pointer relative ${
+                        isTaken 
+                          ? 'border-[#16A34A]/20 bg-[#FAFFFE] opacity-75' 
+                          : isCurrentlySelected 
+                          ? 'border-[#2B8BE8] bg-[#EFF6FF] ring-2 ring-[#2B8BE8]/10' 
+                          : 'border-[#E5E7EB] bg-white hover:border-gray-350'
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                        isTaken 
+                          ? 'bg-[#16A34A] border-[#16A34A] text-white' 
+                          : isCurrentlySelected 
+                          ? 'bg-[#2B8BE8] border-[#2B8BE8] text-white' 
+                          : 'border-[#E5E7EB] bg-white'
+                      }`}>
+                        {(isCurrentlySelected || isTaken) && <Check size={12} strokeWidth={3} />}
                       </div>
 
-                      {task.description && (
-                        <p className="text-[11.5px] text-[#6B7280] mt-1.5 leading-relaxed font-medium">
-                          {task.description}
-                        </p>
-                      )}
-
-                      {isTaken && (
-                        <div className="text-[11px] text-[#16A34A] font-semibold mt-2.5 flex items-center gap-1 bg-[#DCFCE7]/30 border border-[#86EFAC]/20 px-2 py-1 rounded-lg">
-                          <CheckCircle2 size={12} />
-                          {task.receiver_name || task.receiver_id} รับงานแล้ว • {task.accepted_at ? new Date(task.accepted_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '13:42'} น.
+                      {/* Task Info */}
+                      <div className="flex-1 min-w-0 pr-12">
+                        <h4 className="text-[13.5px] font-extrabold text-[#1A1A2E] leading-snug">
+                          {maskSensitiveData(task.title, !!liffLoggedInUser)}
+                        </h4>
+                        <div className="inline-flex items-center gap-1 mt-1.5 bg-[#F0F6FC] border border-[#E5E7EB] px-2.5 py-0.5 rounded-full text-[10.5px] font-bold text-[#6B7280]">
+                          {task.category}
                         </div>
+
+                        {task.description && (
+                          <p className="text-[11.5px] text-[#6B7280] mt-1.5 leading-relaxed font-medium">
+                            {maskSensitiveData(task.description, !!liffLoggedInUser)}
+                          </p>
+                        )}
+
+                        {isTaken && (
+                          <div className="text-[11px] text-[#16A34A] font-semibold mt-2.5 flex items-center gap-1 bg-[#DCFCE7]/30 border border-[#86EFAC]/20 px-2 py-1 rounded-lg">
+                            <CheckCircle2 size={12} />
+                            {task.receiver_name || task.receiver_id} รับงานแล้ว • {task.accepted_at ? new Date(task.accepted_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '13:42'} น.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Top Right Taken Indicator Badge */}
+                      {isTaken && (
+                        <span className="absolute top-3 right-3 flex items-center gap-1 bg-[#DCFCE7] border border-[#86EFAC] rounded-full px-2.5 py-0.5 text-[10px] font-extrabold text-[#16A34A] shadow-sm leading-none">
+                          รับแล้ว
+                        </span>
                       )}
                     </div>
+                  );
+                })}
+              </div>
+            ) : (
+               <div className="flex-1 flex items-center justify-center p-6 text-center text-xs font-bold text-gray-500 flex-col gap-3">
+                 <ShieldCheck size={48} className="text-slate-300" />
+                 กรุณาเข้าสู่ระบบกลุ่มงาน เพื่อรับงาน
+               </div>
+            )}
 
-                    {/* Top Right Taken Indicator Badge */}
-                    {isTaken && (
-                      <span className="absolute top-3 right-3 flex items-center gap-1 bg-[#DCFCE7] border border-[#86EFAC] rounded-full px-2.5 py-0.5 text-[10px] font-extrabold text-[#16A34A] shadow-sm leading-none">
-                        รับแล้ว
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
 
             {/* Footer buttons */}
             <div className="bg-gradient-to-t from-white via-white to-transparent pt-6 pb-6 px-4 sticky bottom-0 z-10 flex flex-col gap-3 border-t border-gray-150/40">
