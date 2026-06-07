@@ -145,7 +145,7 @@ export default function HandoverManual({ onClose }: HandoverManualProps) {
           <div className="space-y-4">
             <div className="bg-rose-500/5 border border-rose-500/10 rounded-xl p-3.5 text-sm text-rose-600 dark:text-rose-400 font-black flex items-center gap-2">
               <AlertTriangle size={15} className="shrink-0" />
-              <span>การส่งข้อมูลทุกชิ้นจำเป็นต้องมีการยืนยันรหัสผ่านเสมอ เพื่อยืนยันว่าไม่มีการลงนามส่งแทนกัน</span>
+              <span>การส่งข้อมูลทุกชิ้นจำเป็นต้องมีการยืนยันรหัสผ่านเสมอ</span>
             </div>
 
             <div className="space-y-4 pt-1">
@@ -153,7 +153,7 @@ export default function HandoverManual({ onClose }: HandoverManualProps) {
                 <span className="px-2 py-0.5 rounded bg-brand-blue/10 dark:bg-blue-400/15 text-brand-blue dark:text-blue-400 text-[10px] font-black uppercase">ส่วนที่ 1</span>
                 <h4 className="text-sm font-extrabold text-slate-850 dark:text-white">ข้อมูลพื้นฐานของเวร</h4>
                 <p className="text-sm text-slate-500 font-bold leading-relaxed">
-                  ระบุข้อมูลพื้นฐาน วันที่รับ/ส่งเวร ซึ่งระบบจะตั้งค่าเริ่มต้นเป็นวันที่ปัจจุบันโดยอัตโนมัติ จากนั้นให้เลือกหน่วยงานผู้รับผิดชอบ (Central Lab หรือ Blood Bank) และเลือกกะที่ต้องการจะส่งผลัด (เวรเช้า, เวรบ่าย, หรือ เวรดึก)
+                  ระบุข้อมูลพื้นฐาน วันที่รับ/ส่งเวร ซึ่งระบบจะตั้งค่าเริ่มต้นเป็นวันที่ปัจจุบันโดยอัตโนมัติ จากนั้นให้เลือกหน่วยงานผู้รับผิดชอบ (Central Lab หรือ Blood Bank) และเลือกเวรที่ต้องการจะส่งต่องาน (เวรเช้า, เวรบ่าย, หรือ เวรดึก)
                 </p>
               </div>
 
