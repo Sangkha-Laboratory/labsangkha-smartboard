@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
       // Create a clean, simple text message for LINE
       const textMessage = {
         type: "text",
-        text: `📥 ตั๋วแจ้งปัญหาระบบ\nรหัส: ${ticketId}\nประเภท: ${categoryHeader}\nผู้ส่ง: ${callerName}\nห้องแล็บ: ${department}\n\nข้อความ: "${maskSensitiveData(userMessage)}"\n\n🕒 ${new Date().toLocaleString('th-TH')}\n🔧 ผู้ดูแลระบบกรุณาตรวจสอบใน Admin Portal`
+        text: `📥 ตั๋วแจ้งปัญหาระบบ\nรหัส: ${ticketId}\nประเภท: ${categoryHeader}\nผู้ส่ง: ${callerName}\nห้องแล็บ: ${department}\n\nข้อความ: "${maskSensitiveData(userMessage)}"\n\n🕒 ${new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })}\n🔧 ผู้ดูแลระบบกรุณาตรวจสอบใน Admin Portal`
       };
 
       const lineAccessToken = Deno.env.get("LINE_CHANNEL_ACCESS_TOKEN");
@@ -315,7 +315,7 @@ Deno.serve(async (req) => {
                 },
                 {
                   type: "text",
-                  text: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + " น.",
+                  text: new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok', hour12: false }).format(new Date()) + " น.",
                   size: "xs",
                   color: "#6B7280",
                   align: "end"
@@ -533,7 +533,7 @@ Deno.serve(async (req) => {
                 },
                 {
                   type: "text",
-                  text: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + " น.",
+                  text: new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok', hour12: false }).format(new Date()) + " น.",
                   size: "xxs",
                   color: "#9CA3AF",
                   margin: "md"
@@ -659,8 +659,8 @@ Deno.serve(async (req) => {
     const date = d.getDate();
     const month = monthNames[d.getMonth()];
     const thaiYear = d.getFullYear() + 543;
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const hours = new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok', hour12: false }).format(d).split(':')[0];
+    const minutes = new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok', hour12: false }).format(d).split(':')[1];
     
     const formattedDate = `${date} ${month} ${thaiYear}`;
     const formattedTime = `${hours}:${minutes}`;

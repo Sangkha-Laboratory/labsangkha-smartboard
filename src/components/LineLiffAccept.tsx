@@ -915,11 +915,13 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
                       const dateFormatted = new Date(item.created_at).toLocaleDateString('th-TH', { 
                         day: '2-digit', 
                         month: '2-digit',
-                        year: '2-digit'
+                        year: '2-digit',
+                        timeZone: 'Asia/Bangkok'
                       });
                       const timeFormatted = new Date(item.created_at).toLocaleTimeString('th-TH', { 
                         hour: '2-digit', 
-                        minute: '2-digit' 
+                        minute: '2-digit',
+                        timeZone: 'Asia/Bangkok'
                       });
 
                       return (
@@ -1148,7 +1150,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
               <div className="flex flex-col">
                 <span className="text-[10px] text-[#6B7280] font-semibold uppercase tracking-wider leading-none">เวลาส่ง</span>
                 <span className="text-[12.5px] font-extrabold text-[#1A1A2E] mt-1">
-                  {targetHandover?.created_at ? new Date(targetHandover.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '13:30'} น.
+                  {targetHandover?.created_at ? new Date(targetHandover.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' }) : '13:30'} น.
                 </span>
               </div>
             </div>
@@ -1201,7 +1203,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
                         {isTaken && (
                           <div className="text-[11px] text-[#16A34A] font-semibold mt-2.5 flex items-center gap-1 bg-[#DCFCE7]/30 border border-[#86EFAC]/20 px-2 py-1 rounded-lg">
                             <CheckCircle2 size={12} />
-                            {task.receiver_name || task.receiver_id} รับงานแล้ว • {task.accepted_at ? new Date(task.accepted_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '13:42'} น.
+                            {task.receiver_name || task.receiver_id} รับงานแล้ว • {task.accepted_at ? new Date(task.accepted_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' }) : '13:42'} น.
                           </div>
                         )}
                       </div>
@@ -1288,7 +1290,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             </div>
 
             <div className="text-[11px] text-[#6B7280] font-bold mt-6 mb-8">
-              {currentUserName} • {new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น. • {isEmulated ? 'WEBSITE' : 'LINE'}
+              {currentUserName} • {new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' })} น. • {isEmulated ? 'WEBSITE' : 'LINE'}
             </div>
 
             <button 
