@@ -90,6 +90,8 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
     return null;
   });
 
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
   // Login form status
   const [loginReceiverId, setLoginReceiverId] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -172,6 +174,8 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
       const loggedIn = { id: userRecord.id, full_name: userRecord.full_name };
       setLiffLoggedInUser(loggedIn);
       localStorage.setItem('liff_logged_in_user', JSON.stringify(loggedIn));
+      setIsLoginModalOpen(false);
+      setLoginError(null);
     } catch (err: any) {
       console.error(err);
       setLoginError(err.message || 'รหัสผ่านไม่ถูกต้อง');
@@ -437,7 +441,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
 
     const currentUserName = liffLoggedInUser?.full_name || '';
     if (!currentUserName.trim()) {
-      alert("กรุณาระบุชื่อผู้รับงานก่อนทำรายการ");
+      setIsLoginModalOpen(true);
       return;
     }
 
@@ -558,6 +562,207 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
     }
   };
 
+  const renderProfileBanner = (userName: string) => {
+    if (liffLoggedInUser) {
+      return (
+        <div className="bg-gradient-to-r from-[#EFF6FF] to-[#DBEAFE] border-b border-[#BFDBFE] px-5 py-3 flex items-center gap-3 font-thai">
+          <div className="w-9 h-9 rounded-full bg-[#2B8BE8] flex items-center justify-center font-bold text-white text-xs shrink-0">
+            {getAvatarLetter(liffLoggedInUser.full_name)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 justify-between">
+              <span className="text-[13px] font-extrabold text-[#1E40AF] truncate">
+                {liffLoggedInUser.full_name}
+              </span>
+              <button 
+                onClick={handleLiffLogout}
+                className="text-[9px] bg-red-50 hover:bg-red-100 text-red-650 px-2 py-0.5 rounded-lg font-bold border border-red-200/30 shrink-0"
+              >
+                ออกจากระบบ
+              </button>
+            </div>
+            <div className="text-[10px] text-emerald-600 font-bold mt-0.5 flex items-center gap-1">
+              <ShieldCheck size={11} className="text-emerald-500 shrink-0" />
+              <span>ยืนยันตัวตนในระบบ รพ. แล้ว</span>
+            </div>
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div className="bg-amber-50/70 border-b border-amber-200 px-5 py-3 flex items-center gap-3 font-thai justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center font-black text-amber-800 text-sm shrink-0 animate-pulse">
+              ?
+            </div>
+            <div className="min-w-0 font-thai">
+              <div className="text-[12.5px] font-extrabold text-[#1E40AF]">
+                ยังไม่ได้ระบุตัวตนโรงพยาบาล
+              </div>
+              <div className="text-[10px] text-amber-600 font-semibold leading-none mt-0.5">
+                กรุณาเข้าสู่ระบบ รพ. ก่อนกดรับเวรภารกิจ
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            type="button"
+            onClick={() => {
+              setLoginError(null);
+              setIsLoginModalOpen(true);
+            }}
+            className="text-[11px] bg-[#2B8BE8] hover:bg-[#1E6FC7] text-white px-3 py-1.5 rounded-xl font-bold border-none shrink-0 cursor-pointer shadow-sm active:scale-95 transition-all font-thai"
+          >
+            เข้าสู่ระบบ รพ.
+          </button>
+        </div>
+      );
+    }
+  };
+
+  const renderLoginModal = () => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+      <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col relative max-h-[90vh]">
+        
+        {/* Close Button */}
+        <button 
+          onClick={() => {
+            setIsLoginModalOpen(false);
+            setLoginError(null);
+          }}
+          className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:bg-slate-100 hover:text-gray-600 transition-colors z-20"
+          type="button"
+        >
+          <X size={18} />
+        </button>
+
+        {/* Top visual banner */}
+        <div className="bg-[#2B8BE8] text-white px-5 py-6 text-center relative overflow-hidden shrink-0">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-sky-200/10 rounded-full blur-xl" />
+          <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center mx-auto mb-2 border border-white/20 shadow-inner">
+            <ShieldCheck size={24} className="text-white" />
+          </div>
+          <h3 className="text-base font-black tracking-tight font-thai">เข้าสู่ระบบรับเวร LIFF</h3>
+          <p className="text-[10px] text-white/80 font-medium font-thai">กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ</p>
+        </div>
+
+        {/* Login form body */}
+        <form onSubmit={handleLiffLogin} className="flex-1 px-5 py-5 overflow-y-auto space-y-4">
+          <div className="space-y-4">
+            
+            {/* Select User Dropdown */}
+            <div className="space-y-1 relative">
+              <label className="text-[10px] font-extrabold text-[#6B7280] uppercase tracking-widest block ml-1 font-thai">
+                เลือกรายชื่อเจ้าหน้าที่
+              </label>
+              
+              <div className="relative font-thai">
+                <button
+                  type="button"
+                  onClick={() => setIsLoginDropdownOpen(!isLoginDropdownOpen)}
+                  className="w-full h-11 px-3.5 bg-[#F8FAFC] border border-gray-150 rounded-2xl outline-none text-[12.5px] font-bold text-left flex items-center justify-between shadow-sm min-h-[44px]"
+                >
+                  <span className={loginReceiverId ? 'text-slate-800' : 'text-slate-400 font-normal'}>
+                    {loginReceiverId ? (usersList.find(u => u.id === loginReceiverId)?.full_name) : 'เลือกชื่อของคุณ...'}
+                  </span>
+                  <span className="text-gray-400 text-xs">▼</span>
+                </button>
+
+                {/* Dropdown list */}
+                {isLoginDropdownOpen && (
+                  <div className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-white border border-gray-150 rounded-2xl shadow-2xl overflow-hidden max-h-[180px] w-full">
+                    <div className="p-1.5 border-b border-gray-50 bg-slate-50">
+                      <input
+                        type="text"
+                        placeholder="ค้นชื่อ..."
+                        value={loginSearchTerm}
+                        onChange={(e) => setLoginSearchTerm(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-white border border-gray-100 rounded-xl outline-none text-xs font-semibold placeholder:text-gray-400"
+                      />
+                    </div>
+
+                    <div className="max-h-[130px] overflow-y-auto py-1 font-thai">
+                      {filteredLoginUsers.length > 0 ? (
+                        filteredLoginUsers.map((user) => (
+                          <button
+                            key={user.id}
+                            type="button"
+                            onClick={() => {
+                              setLoginReceiverId(user.id);
+                              setIsLoginDropdownOpen(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-xs font-semibold hover:bg-sky-50 transition-colors block ${
+                              loginReceiverId === user.id ? 'text-blue-600 bg-sky-50/50' : 'text-slate-700'
+                            }`}
+                          >
+                            {user.full_name}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-xs text-gray-400 text-center">
+                          ไม่พบรายชื่อ
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-extrabold text-[#6B7280] uppercase tracking-widest block ml-1 font-thai font-sans">
+                รหัสผ่าน
+              </label>
+              <input
+                type="password"
+                placeholder="ใส่รหัสผ่านของคุณ"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full px-4 h-11 bg-[#F8FAFC] border border-gray-150 rounded-2xl outline-none text-[12.5px] font-[900] shadow-sm tracking-widest placeholder:tracking-normal placeholder:font-normal font-thai"
+              />
+            </div>
+
+            {loginError && (
+              <div className="p-2.5 bg-red-50 text-red-650 text-[11px] font-bold rounded-xl border border-red-100 flex items-center gap-1.5 leading-snug font-thai">
+                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                 <span>{loginError}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="pt-2 space-y-2">
+            <button
+              type="submit"
+              disabled={isLoggingIn || !loginReceiverId || !loginPassword}
+              className="w-full h-11 bg-[#2B8BE8] hover:bg-[#1E6FC7] disabled:bg-[#E5E7EB] disabled:text-[#6B7280] text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/5 cursor-pointer text-xs font-thai"
+            >
+              {isLoggingIn ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  กำลังเข้าสู่ระบบ...
+                </>
+              ) : (
+                'เข้าสู่ระบบ รพ.'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsLoginModalOpen(false);
+                setLoginError(null);
+              }}
+              className="w-full h-10 bg-slate-50 text-slate-600 font-bold rounded-xl text-xs flex items-center justify-center border-none cursor-pointer font-thai"
+            >
+              ยกเลิก
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  );
+
   const senderName = targetHandover ? (usersMap[targetHandover.sender_id] || targetHandover.sender_name || 'ไม่ระบุ') : 'กำลังโหลด...';
   const getAvatarLetter = (name: string) => name ? name.trim().slice(0, 1) : '?';
 
@@ -613,28 +818,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
           </div>
 
           {/* Profile Banner */}
-          <div className="bg-gradient-to-r from-[#EFF6FF] to-[#DBEAFE] border-b border-[#BFDBFE] px-5 py-3.5 flex items-center gap-3 font-thai">
-            <div className="w-9 h-9 rounded-full bg-[#2B8BE8] flex items-center justify-center font-bold text-white text-sm shrink-0">
-              {getAvatarLetter(currentUserName)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-bold text-[#1E40AF] truncate">
-                  {currentUserName}
-                </span>
-                <button 
-                  onClick={handleLiffLogout}
-                  className="text-[9px] bg-red-50 hover:bg-red-100 text-red-650 px-1.5 py-0.5 rounded font-bold border border-red-200/30 shrink-0"
-                >
-                  ออกจากระบบ
-                </button>
-              </div>
-              <div className="text-[10.5px] text-[#3B82F6] font-medium mt-0.5 flex items-center gap-1">
-                <ShieldCheck size={11} className="text-blue-500 shrink-0" />
-                <span>เข้าสู่ระบบผ่านรหัสผ่านสำนักงานสำเร็จ</span>
-              </div>
-            </div>
-          </div>
+          {renderProfileBanner(currentUserName)}
 
           {/* Main List Area */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
@@ -786,6 +970,8 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             </button>
           </div>
 
+          {isLoginModalOpen && renderLoginModal()}
+
         </div>
       </div>
     );
@@ -826,142 +1012,6 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
     );
   }
 
-  // ─── FORCE LIFF DATABASE LOGIN FIRST ───────────────────────────────────
-  if (!liffLoggedInUser) {
-    return (
-      <div className="min-h-screen bg-[#DAEAF7] flex items-start justify-center p-0 sm:py-8 sm:px-4 font-sans text-[#1A1A2E]">
-        <div className="w-full max-w-md bg-white sm:rounded-[2.5rem] shadow-2xl overflow-hidden min-h-screen sm:min-h-[790px] flex flex-col relative border border-transparent sm:border-gray-100 animate-fadeIn">
-          
-          {/* Top visual graphic / Header banner */}
-          <div className="bg-[#2B8BE8] text-white px-6 py-9 text-center relative overflow-hidden shrink-0">
-            {/* Ambient glows */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-200/10 rounded-full blur-2xl" />
-            <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-blue-300/10 rounded-full blur-xl" />
-            
-            <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center mx-auto mb-4 border border-white/20 shadow-inner">
-              <ShieldCheck size={32} className="text-white" />
-            </div>
-            
-            <h1 className="text-xl font-black tracking-tight font-thai">เข้าสู่ระบบรับเวร LIFF</h1>
-            <p className="text-xs text-white/80 font-medium font-thai mt-1">กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลสังขะ</p>
-          </div>
-
-          {/* Form container */}
-          <form onSubmit={handleLiffLogin} className="flex-1 px-6 py-8 flex flex-col justify-between">
-            <div className="space-y-6">
-              {/* Select User Dropdown */}
-              <div className="space-y-2 relative">
-                <label className="text-[10px] font-extrabold text-[#6B7280] uppercase tracking-widest block ml-1 font-thai">
-                  เลือกรายชื่อเจ้าหน้าที่
-                </label>
-                
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsLoginDropdownOpen(!isLoginDropdownOpen)}
-                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-gray-100 rounded-2xl outline-none text-[13px] font-bold text-left flex items-center justify-between shadow-sm font-thai min-h-[46px]"
-                  >
-                    <span className={loginReceiverId ? 'text-slate-800' : 'text-slate-400 font-normal'}>
-                      {loginReceiverId ? (usersList.find(u => u.id === loginReceiverId)?.full_name) : 'เลือกชื่อของคุณ...'}
-                    </span>
-                    <span className="text-gray-400">▼</span>
-                  </button>
-
-                  {/* Dropdown list */}
-                  {isLoginDropdownOpen && (
-                    <div className="absolute z-50 left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden animate-fadeIn max-h-[220px] w-full">
-                      <div className="p-2 border-b border-gray-50">
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="ค้นชื่อ..."
-                            value={loginSearchTerm}
-                            onChange={(e) => setLoginSearchTerm(e.target.value)}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border-none rounded-xl outline-none text-xs font-semibold placeholder:text-gray-400 font-thai"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="max-h-[160px] overflow-y-auto py-1">
-                        {filteredLoginUsers.length > 0 ? (
-                          filteredLoginUsers.map((user) => (
-                            <button
-                              key={user.id}
-                              type="button"
-                              onClick={() => {
-                                setLoginReceiverId(user.id);
-                                setIsLoginDropdownOpen(false);
-                              }}
-                              className={`w-full px-4 py-2 text-left text-xs font-semibold hover:bg-sky-50 transition-colors block ${
-                                loginReceiverId === user.id ? 'text-blue-600 bg-sky-50/50' : 'text-slate-700'
-                              }`}
-                            >
-                              {user.full_name}
-                            </button>
-                          ))
-                        ) : (
-                          <div className="px-4 py-4 text-xs text-gray-400 text-center font-thai">
-                            ไม่พบรายชื่อ
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Password Input */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-extrabold text-[#6B7280] uppercase tracking-widest block ml-1 font-thai">
-                  รหัสผ่าน
-                </label>
-                <input
-                  type="password"
-                  placeholder="ใส่รหัสผ่านของคุณ"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-gray-100 rounded-[1.25rem] outline-none text-[13px] font-[900] shadow-sm tracking-widest placeholder:tracking-normal placeholder:font-normal font-thai"
-                />
-              </div>
-
-              {loginError && (
-                <div className="p-3 bg-red-50 text-red-650 text-xs font-bold rounded-xl border border-red-100 flex items-center gap-2 leading-snug font-thai">
-                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-                   <span>{loginError}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-8 space-y-3 pb-4">
-              <button
-                type="submit"
-                disabled={isLoggingIn || !loginReceiverId || !loginPassword}
-                className="w-full h-12 bg-[#2B8BE8] hover:bg-[#1E6FC7] disabled:bg-[#E5E7EB] disabled:text-[#6B7280] text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/10 cursor-pointer text-sm font-thai"
-              >
-                {isLoggingIn ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    กำลังเข้าสู่ระบบ...
-                  </>
-                ) : (
-                  'เข้าสู่ระบบเพื่อดำเนินการต่อ'
-                )}
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => window.location.href = '/'}
-                className="w-full h-11 bg-[#F0F6FC] text-[#1A1A2E] font-bold rounded-xl hover:bg-slate-100 transition-colors text-xs flex items-center justify-center gap-2 font-thai"
-              >
-                กลับสู่หน้าจอสมาร์ทบอร์ดหลัก
-              </button>
-            </div>
-          </form>
-
-        </div>
-      </div>
-    );
-  }
 
   const pendingCount = batchTasks.filter(item => item.status === 'Pending').length;
   const currentUserName = liffLoggedInUser?.full_name || '';
@@ -995,28 +1045,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             </div>
 
             {/* Profile banner */}
-            <div className="bg-gradient-to-r from-[#EFF6FF] to-[#DBEAFE] border-b border-[#BFDBFE] px-5 py-3.5 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#2B8BE8] flex items-center justify-center font-bold text-white text-sm">
-                {getAvatarLetter(currentUserName)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-bold text-[#1E40AF]">
-                    {currentUserName}
-                  </span>
-                  <button 
-                    onClick={handleLiffLogout}
-                    className="text-[9.5px] bg-red-50 hover:bg-red-100 text-red-650 px-1.5 py-0.5 rounded font-bold border border-red-200/30 shrink-0"
-                  >
-                    ออกจากระบบ
-                  </button>
-                </div>
-                <div className="text-[10.5px] text-[#3B82F6] font-medium mt-0.5 flex items-center gap-1">
-                  <ShieldCheck size={11} className="text-blue-500 shrink-0" />
-                  <span>เข้าสู่ระบบผ่านรหัสผ่านสำนักงานสำเร็จ</span>
-                </div>
-              </div>
-            </div>
+            {renderProfileBanner(currentUserName)}
 
             {/* Name editor popup block */}
             {isEmulated && showNameEditor && (
@@ -1202,6 +1231,8 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
             </button>
           </div>
         )}
+
+        {isLoginModalOpen && renderLoginModal()}
 
       </div>
     </div>

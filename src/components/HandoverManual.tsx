@@ -220,63 +220,65 @@ export default function HandoverManual({ onClose }: HandoverManualProps) {
               </p>
 
               {/* Mockup Line Card layout */}
-              <div className="max-w-md mx-auto bg-[#8b9db9] rounded-2xl overflow-hidden shadow-inner p-4 relative min-h-[400px]">
+              <div className="max-w-full sm:max-w-sm md:max-w-[420px] mx-auto bg-[#8b9db9] rounded-2xl overflow-hidden shadow-inner p-2.5 sm:p-4 relative min-h-[400px]">
                  {/* Header */}
                  <div className="flex items-center gap-2 mb-4">
                     <div className="w-8 h-8 bg-[#06c755] rounded-full flex items-center justify-center">
                        <MessageCircle size={16} className="text-white fill-current" />
                     </div>
-                    <span className="text-white text-sm font-bold">LINE Notify</span>
+                    <span className="text-white text-sm font-bold">SangkhaLab BOT</span>
                  </div>
 
                  {/* Message Box */}
-                 <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-lg relative overflow-hidden transition-colors">
-                    <div className="absolute top-0 right-0 p-3 flex flex-col items-end">
-                       <span className="bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-md text-[10px] font-bold">PENDING</span>
-                       <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">🗓 06 มิ.ย. 2026</span>
-                       <span className="text-[10px] text-gray-400 dark:text-gray-500">🕒 17:35</span>
+                 <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 shadow-lg relative overflow-hidden transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+                       <div className="flex items-start gap-2.5">
+                          <div className="w-10 h-10 sm:w-11 sm:h-11 bg-indigo-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                             <img src="https://img.icons8.com/ios-filled/100/2b8be8/checklist.png" alt="Checklist" className="w-5.5 h-5.5 object-contain" />
+                          </div>
+                          <div>
+                             <h4 className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm leading-none mb-1">ส่งเวร</h4>
+                             <p className="text-xl sm:text-2xl font-black text-[#1A1A2E] dark:text-white tracking-tight">LAB-0008</p>
+                          </div>
+                       </div>
+
+                       <div className="flex flex-wrap items-center sm:items-end gap-1.5 sm:gap-0.5 text-right shrink-0">
+                          <span className="bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full text-[9px] font-bold border border-orange-100 dark:border-orange-900/30 shrink-0">PENDING</span>
+                          <span className="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-0.5 min-[360px]:ml-2 sm:ml-0 sm:mt-1 font-semibold">🗓 06 มิ.ย. 2026</span>
+                          <span className="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-0.5 min-[360px]:ml-2 sm:ml-0 font-semibold">🕒 17:35</span>
+                       </div>
                     </div>
 
-                    <div className="flex items-start gap-3 mb-6">
-                       <div className="w-12 h-12 bg-[#2B8BE8] rounded-xl flex items-center justify-center text-white overflow-hidden shrink-0 shadow-sm">
-                          <img src="https://img.icons8.com/ios-filled/100/ffffff/checklist.png" alt="Checklist" className="w-7 h-7 object-contain" />
-                       </div>
-                       <div>
-                          <h4 className="font-bold text-gray-900 dark:text-white text-sm">ส่งเวร</h4>
-                          <p className="text-2xl font-black text-[#1A1A2E] dark:text-white tracking-tight">LAB-0008</p>
-                       </div>
-                    </div>
-
-                    <div className="bg-[#F0F6FC] dark:bg-slate-800/60 rounded-xl p-4 mb-6 border border-blue-50 dark:border-slate-800 transition-colors">
-                         <div className="flex items-center gap-3 mb-3">
-                            <div className="w-9 h-9 bg-white dark:bg-slate-900 rounded-lg flex items-center justify-center border border-gray-100 dark:border-slate-700/50 shadow-sm overflow-hidden shrink-0">
-                               <img src="https://img.icons8.com/ios-filled/100/2b8be8/company.png" alt="Building" className="w-6 h-6 object-contain" />
+                    <div className="bg-[#F0F6FC] dark:bg-slate-800/60 rounded-xl p-3 sm:p-4 mb-4 border border-blue-50/50 dark:border-slate-800 transition-colors">
+                         <div className="flex items-center gap-2.5 mb-2.5">
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white dark:bg-slate-900 rounded-lg flex items-center justify-center border border-gray-100/85 dark:border-slate-700/50 shadow-sm overflow-hidden shrink-0">
+                               <img src="https://img.icons8.com/ios-filled/100/2b8be8/company.png" alt="Building" className="w-5.5 h-5.5 object-contain" />
                             </div>
                             <div>
-                               <span className="text-sm font-bold text-[#1A1A2E] dark:text-white block leading-none mb-1">Blood Bank</span>
+                               <span className="text-xs sm:text-sm font-bold text-[#1A1A2E] dark:text-white block leading-none mb-1">Blood Bank</span>
                                <span className="text-[10px] text-[#2B8BE8] font-bold block leading-none">เวรเช้า</span>
                             </div>
                          </div>
-                         <p className="text-sm text-gray-500 dark:text-gray-400 ml-12 leading-tight">
+                         <p className="text-xs text-gray-500 dark:text-gray-400 ml-10.5 sm:ml-11.5 font-medium leading-tight">
                             ผู้ส่งเวร: นายไพศาล
                          </p>
                      </div>
 
-                    <div className="space-y-3 mb-6 font-semibold text-slate-700 dark:text-slate-350">
+                    <div className="space-y-2 mb-4 font-semibold text-slate-700 dark:text-slate-350">
                        <div className="flex gap-2 items-start py-0.5">
-                          <span className="text-sm transition-colors leading-relaxed">1 ขอเลือดเคส admit</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-semibold">1 ขอเลือดเคส admit</span>
                        </div>
                        <div className="flex gap-2 items-start py-0.5">
-                          <span className="text-sm transition-colors leading-relaxed">2 ER คืน FFP 2 unit</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-semibold">2 ER คืน FFP 2 unit</span>
                        </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                       <button className="bg-[#06c755] text-white py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all cursor-default">
-                           <Check size={14} /> รับทั้งหมด
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                       <button className="bg-[#06c755] text-white py-2 sm:py-2.5 px-2 rounded-xl text-[10px] min-[360px]:text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-all cursor-default shrink-0">
+                           <Check size={12} className="sm:w-3.5 sm:h-3.5" /> รับทั้งหมด
                        </button>
-                       <button className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all cursor-default">
-                           <ListChecks size={14} /> เลือกรับงาน
+                       <button className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 py-2 sm:py-2.5 px-2 rounded-xl text-[10px] min-[360px]:text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all cursor-default shrink-0">
+                           <ListChecks size={12} className="sm:w-3.5 sm:h-3.5" /> เลือกรับงาน
                        </button>
                     </div>
                  </div>
