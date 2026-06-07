@@ -656,7 +656,7 @@ export default function LineLiffAccept({ isDarkMode, onToggleDarkMode }: LineLif
                 ยังไม่ได้ยืนยันตัวตนกลุ่มงาน
               </div>
               <div className="text-[10px] text-amber-600 font-semibold leading-none mt-0.5">
-                กรุณาเข้าสู่ระบบกลุ่มงานก่อนกดรับเวรภารกิจ
+                กรุณาเข้าสู่ระบบกลุ่มงานก่อนกดรับงาน
               </div>
             </div>
           </div>
