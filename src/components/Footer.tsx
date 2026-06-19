@@ -41,13 +41,12 @@ export default function Footer({ onPrivacyClick, onTermsClick }: FooterProps) {
         </div>
 
         <div className="pt-6 border-t border-gray-800 flex flex-col items-center gap-4 text-xs text-gray-500">
-           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center">
-             <p>© 2026 Medical Technology Department. All rights reserved.</p>
-             <span className="hidden sm:inline text-gray-700">|</span>
-             <p>Smart Medical Laboratory</p>
-           </div>
-           <div className="text-[10px] sm:text-[11px] text-gray-500/80 font-mono tracking-wider font-semibold">
-             v1.0.0-rc.1 · Developed by MT. S. Singsard
+           <div className="flex flex-col items-center gap-1 text-center">
+             <p className="text-sm font-medium text-gray-300">Medical Technology Department · Sangkha Hospital</p>
+             <p className="text-xs text-gray-500">© 2026 All rights reserved.</p>
+             <p className="text-[10px] text-gray-600 font-mono tracking-wider whitespace-nowrap">
+               SmartBoard v1.0.0-rc.1 · Developed by MT.S.Singsard
+             </p>
            </div>
            <div className="flex gap-6 justify-center font-thai text-xs text-gray-400">
              <button 
