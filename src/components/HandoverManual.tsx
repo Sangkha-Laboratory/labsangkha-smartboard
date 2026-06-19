@@ -238,7 +238,7 @@ export default function HandoverManual({ onClose }: HandoverManualProps) {
                           </div>
                           <div>
                              <h4 className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm leading-none mb-1">ส่งเวร</h4>
-                             <p className="text-xl sm:text-2xl font-black text-[#1A1A2E] dark:text-white tracking-tight">LAB-0008</p>
+                             <p className="text-xl sm:text-2xl font-black text-[#1A1A2E] dark:text-white tracking-tight whitespace-nowrap">LAB-0008</p>
                           </div>
                        </div>
 

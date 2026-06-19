@@ -46,6 +46,9 @@ export default function Footer({ onPrivacyClick, onTermsClick }: FooterProps) {
              <span className="hidden sm:inline text-gray-700">|</span>
              <p>Smart Medical Laboratory</p>
            </div>
+           <div className="text-[10px] sm:text-[11px] text-gray-500/80 font-mono tracking-wider font-semibold">
+             v1.0.0-rc.1 · Developed by MT. S. Singsard
+           </div>
            <div className="flex gap-6 justify-center font-thai text-xs text-gray-400">
              <button 
                onClick={(e) => { e.preventDefault(); onPrivacyClick?.(); }} 

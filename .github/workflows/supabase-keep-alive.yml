@@ -1,0 +1,38 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # Runs at 00:00 every 3 days to prevent pausing (Supabase pauses after 7 days of inactivity)
+    - cron: "0 0 */3 * *"
+  workflow_dispatch: # Allows manual trigger for testing
+
+jobs:
+  ping-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST URL
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Error: Please set SUPABASE_URL and SUPABASE_ANON_KEY in your GitHub Repository Secrets."
+            exit 1
+          fi
+          
+          echo "Sending keep-alive ping to Supabase API..."
+          
+          # Perform a request to get the REST API root config
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/")
+          
+          echo "Supabase API status response: $STATUS_CODE"
+          
+          if [ "$STATUS_CODE" -eq 200 ] || [ "$STATUS_CODE" -eq 401 ] || [ "$STATUS_CODE" -eq 400 ]; then
+            echo "Keep-alive request completed successfully. Project is active!"
+          else
+            echo "Unexpected status code received: $STATUS_CODE"
+            exit 1
+          fi
